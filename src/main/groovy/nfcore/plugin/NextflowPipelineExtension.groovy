@@ -70,6 +70,11 @@ class NextflowPipelineExtension extends PluginExtensionPoint {
      */
     @Function
     void dumpParametersToJSON(Path outdir, Map params, Path launchDir) {
+        // Skip if outdir is null
+        if (outdir == null) {
+            return
+        }
+        
         def timestamp = new java.util.Date().format('yyyy-MM-dd_HH-mm-ss')
         def filename  = "params_${timestamp}.json"
         def temp_pf   = new File(launchDir.toString(), ".${filename}")
