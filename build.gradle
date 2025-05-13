@@ -13,6 +13,7 @@ nextflowPlugin {
         'nfcore.plugin.NfUtilsExtension',
         'nfcore.plugin.NfUtilsFactory',
         'nfcore.plugin.NextflowPipelineExtension'
+        'nfcore.plugin.ReferencesExtension'
     ]
 
     publishing {
