@@ -30,8 +30,8 @@ class NfcorePipelineObserver implements TraceObserver {
 
     private final NfcoreConfigValidator configValidator
     
-    NfcorePipelineObserver() {
-        this.configValidator = new NfcoreConfigValidator()
+    NfcorePipelineObserver(NfcoreConfigValidator configValidator = new NfcoreConfigValidator()) {
+        this.configValidator = configValidator
     }
 
     @Override
