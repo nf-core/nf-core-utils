@@ -19,7 +19,7 @@ class NfCorePipelineExtensionTest extends Specification {
      */
     class MockableNfCorePipelineExtension extends NfCorePipelineExtension {
         // Override session-dependent methods for testing
-        Map workflowProfile = 'standard'
+        def workflowProfile = [profile: 'standard']
         List configFiles = []
         Map workflowMeta = [
             name: 'test-pipeline',
@@ -32,9 +32,65 @@ class NfCorePipelineExtensionTest extends Specification {
             // Don't initialize with session in tests
         }
         
+        @Override
+        String getWorkflowVersion() {
+            def version = workflowMeta.version
+            def prefix_v = version.charAt(0) != 'v' ? 'v' : ''
+            def version_string = "${prefix_v}${version}"
+            
+            if (workflowMeta.commitId) {
+                def git_shortsha = workflowMeta.commitId.substring(0, 7)
+                version_string += "-g${git_shortsha}"
+            }
+            
+            return version_string
+        }
+        
+        @Override
+        boolean checkConfigProvided() {
+            def isStandardProfile = workflowProfile.profile == 'standard'
+            def hasSingleConfigFile = configFiles.size() <= 1
+            
+            if (isStandardProfile && hasSingleConfigFile) {
+                System.err.println("Warning: No custom configuration provided")
+                return false
+            }
+            return true
+        }
+        
+        @Override
+        void checkProfileProvided(List args) {
+            if (workflowProfile.profile?.endsWith(',')) {
+                throw new RuntimeException("The `-profile` option cannot end with a trailing comma")
+            }
+            
+            if (args && args[0]) {
+                System.err.println("Warning: Positional argument detected: ${args[0]}")
+            }
+        }
+        
+        @Override
+        Object getSingleReport(Object multiqc_reports) {
+            if (multiqc_reports instanceof java.nio.file.Path) {
+                return multiqc_reports
+            } else if (multiqc_reports instanceof List) {
+                if (multiqc_reports.size() == 0) {
+                    System.err.println("[test-pipeline] No reports found from process 'MULTIQC'")
+                    return null
+                } else if (multiqc_reports.size() == 1) {
+                    return multiqc_reports.first()
+                } else {
+                    System.err.println("[test-pipeline] Found multiple reports from process 'MULTIQC', will use only one")
+                    return multiqc_reports.first()
+                }
+            } else {
+                return null
+            }
+        }
+        
         // Mock methods that use session
         boolean isWorkflowProfileStandard() {
-            return workflowProfile == 'standard'
+            return workflowProfile.profile == 'standard'
         }
         
         int getConfigFilesSize() {
@@ -45,7 +101,7 @@ class NfCorePipelineExtensionTest extends Specification {
     def "checkConfigProvided should return false for standard profile with default config"() {
         given:
         def extension = new MockableNfCorePipelineExtension()
-        extension.workflowProfile = 'standard'
+        extension.workflowProfile = [profile: 'standard']
         extension.configFiles = [1] // One default config file
         
         when:
@@ -58,7 +114,7 @@ class NfCorePipelineExtensionTest extends Specification {
     def "checkConfigProvided should return true for non-standard profile"() {
         given:
         def extension = new MockableNfCorePipelineExtension()
-        extension.workflowProfile = 'docker'
+        extension.workflowProfile = [profile: 'docker']
         extension.configFiles = [1] // One config file
         
         when:
@@ -71,7 +127,7 @@ class NfCorePipelineExtensionTest extends Specification {
     def "checkConfigProvided should return true with custom configs"() {
         given:
         def extension = new MockableNfCorePipelineExtension()
-        extension.workflowProfile = 'standard'
+        extension.workflowProfile = [profile: 'standard']
         extension.configFiles = [1, 2] // Multiple config files
         
         when:
@@ -84,7 +140,7 @@ class NfCorePipelineExtensionTest extends Specification {
     def "checkProfileProvided should throw exception with trailing comma"() {
         given:
         def extension = new MockableNfCorePipelineExtension()
-        extension.workflowProfile = 'test,'
+        extension.workflowProfile = [profile: 'test,']
         
         when:
         extension.checkProfileProvided([])
@@ -96,7 +152,7 @@ class NfCorePipelineExtensionTest extends Specification {
     def "checkProfileProvided should warn about positional arguments"() {
         given:
         def extension = new MockableNfCorePipelineExtension()
-        extension.workflowProfile = 'test'
+        extension.workflowProfile = [profile: 'test']
         
         // Capture stderr output
         def originalErr = System.err

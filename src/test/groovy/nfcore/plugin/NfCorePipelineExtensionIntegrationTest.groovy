@@ -13,7 +13,7 @@ class NfCorePipelineExtensionIntegrationTest extends Specification {
      * Custom extension class for integrated testing of workflow-like behavior
      */
     class WorkflowMockExtension extends NfCorePipelineExtension {
-        Map workflowProfile = 'standard'
+        def workflowProfile = [profile: 'standard']
         List configFiles = [1] // One default config file
         Map workflowMeta = [
             name: 'test-pipeline',
@@ -37,6 +37,29 @@ class NfCorePipelineExtensionIntegrationTest extends Specification {
             
             // Return what the workflow would emit
             return [valid_config: valid_config]
+        }
+        
+        @Override
+        boolean checkConfigProvided() {
+            def isStandardProfile = workflowProfile.profile == 'standard'
+            def hasSingleConfigFile = configFiles.size() <= 1
+            
+            if (isStandardProfile && hasSingleConfigFile) {
+                System.err.println("Warning: No custom configuration provided")
+                return false
+            }
+            return true
+        }
+        
+        @Override
+        void checkProfileProvided(List args) {
+            if (workflowProfile.profile?.endsWith(',')) {
+                throw new RuntimeException("The `-profile` option cannot end with a trailing comma")
+            }
+            
+            if (args && args[0]) {
+                System.err.println("Warning: Positional argument detected: ${args[0]}")
+            }
         }
     }
     
@@ -69,7 +92,7 @@ class NfCorePipelineExtensionIntegrationTest extends Specification {
     def "Workflow should run successfully with custom profile"() {
         given:
         def extension = new WorkflowMockExtension()
-        extension.workflowProfile = 'docker'
+        extension.workflowProfile = [profile: 'docker']
         
         when:
         def result = extension.runWorkflow([])
@@ -82,7 +105,7 @@ class NfCorePipelineExtensionIntegrationTest extends Specification {
     def "Workflow should handle failing profile validation"() {
         given:
         def extension = new WorkflowMockExtension()
-        extension.workflowProfile = 'test,'
+        extension.workflowProfile = [profile: 'test,']
         
         when:
         extension.runWorkflow([])

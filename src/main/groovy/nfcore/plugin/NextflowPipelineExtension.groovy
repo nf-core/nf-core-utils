@@ -93,30 +93,37 @@ class NextflowPipelineExtension extends PluginExtensionPoint {
     @Function
     boolean checkCondaChannels() {
         def parser = new Yaml()
-        def channels = []
+        def channels = [] as List
         try {
-            def result = "conda config --show channels".execute().text
-            def config = parser.load(result)
-            if (config && config instanceof Map && config.containsKey('channels')) {
-                channels = config['channels'] as List
+            def result = "conda config --show channels".execute()?.text
+            if (result) {
+                def config = parser.load(result)
+                if (config && config instanceof Map && config.containsKey('channels')) {
+                    channels = config['channels'] as List ?: []
+                }
             }
         }
-        catch (NullPointerException e) {
+        catch (Exception e) {
             System.err.println("WARN: Could not verify conda channel configuration: ${e.message}")
             return true
         }
-        catch (IOException e) {
-            System.err.println("WARN: Could not verify conda channel configuration: ${e.message}")
+
+        // If channels is null or empty, return true to avoid NPE
+        if (channels == null || channels.isEmpty()) {
             return true
         }
 
         // Check that all channels are present
         // This channel list is ordered by required channel priority.
         def required_channels_in_order = ['conda-forge', 'bioconda']
-        def channels_missing = ((required_channels_in_order as Set) - (channels as Set)) as Boolean
+        def channels_as_set = channels as Set ?: [] as Set
+        def required_as_set = required_channels_in_order as Set
+
+        def channels_missing = !required_as_set.every { ch -> channels_as_set.contains(ch) }
 
         // Check that they are in the right order
-        def channel_priority_violation = required_channels_in_order != channels.findAll { ch -> ch in required_channels_in_order }
+        def channel_subset = channels.findAll { ch -> ch in required_channels_in_order } ?: []
+        def channel_priority_violation = !channel_subset.equals(required_channels_in_order)
 
         if (channels_missing | channel_priority_violation) {
             System.err.println("""\

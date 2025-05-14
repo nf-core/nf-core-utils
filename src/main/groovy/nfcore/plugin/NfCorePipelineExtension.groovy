@@ -47,8 +47,66 @@ class NfCorePipelineExtension extends PluginExtensionPoint {
         this.session = session
     }
 
-    // Note: checkConfigProvided and checkProfileProvided methods have been moved to 
-    // the NfCoreConfigObserver class, which runs these checks automatically at workflow start
+    /**
+     * Warn if a -profile or Nextflow config has not been provided to run the pipeline
+     * 
+     * @return True if config was provided, false otherwise
+     */
+    @Function
+    @CompileStatic(TypeCheckingMode.SKIP)
+    boolean checkConfigProvided() {
+        if (!session) {
+            return false
+        }
+        
+        def isStandardProfile = session.workflowProfile == 'standard'
+        def hasSingleConfigFile = session.configFiles?.size() <= 1
+        
+        if (isStandardProfile && hasSingleConfigFile) {
+            def name = "unknown"
+            if (session.config && session.config.navigate) {
+                name = session.config.navigate('workflow.manifest.name') ?: "unknown"
+            }
+            
+            System.err.println(
+                "[${name}] You are attempting to run the pipeline without any custom configuration!\n\n" +
+                "This will be dependent on your local compute environment but can be achieved via one or more of the following:\n" + 
+                "   (1) Using an existing pipeline profile e.g. `-profile docker` or `-profile singularity`\n" + 
+                "   (2) Using an existing nf-core/configs for your Institution e.g. `-profile crick` or `-profile uppmax`\n" + 
+                "   (3) Using your own local custom config e.g. `-c /path/to/your/custom.config`\n\n" + 
+                "Please refer to the quick start section and usage docs for the pipeline.\n "
+            )
+            return false
+        }
+        return true
+    }
+
+    /**
+     * Exit pipeline if --profile contains spaces
+     * 
+     * @param args The pipeline arguments
+     */
+    @Function
+    @CompileStatic(TypeCheckingMode.SKIP)
+    void checkProfileProvided(List args) {
+        if (!session) {
+            return
+        }
+        
+        if (session.workflowProfile?.endsWith(',')) {
+            throw new RuntimeException(
+                "The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!\n" + 
+                "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
+            )
+        }
+        
+        if (args && args[0]) {
+            System.err.println(
+                "nf-core pipelines do not accept positional arguments. The positional argument `${args[0]}` has been detected.\n" + 
+                "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
+            )
+        }
+    }
 
     /**
      * Generate workflow version string
