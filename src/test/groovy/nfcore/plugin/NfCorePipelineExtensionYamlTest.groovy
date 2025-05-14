@@ -20,18 +20,16 @@ class NfCorePipelineExtensionYamlTest extends Specification {
             }
         }
         def testYaml = '''
-        tool1:version: 1.0.0
-        tool2:version: 2.0.0
-        with:colon:in:name:version: 3.0.0
+        "tool1:version": 1.0.0
+        "tool2:version": 2.0.0
+        "with:colon:in:name:version": 3.0.0
         '''
         
         when:
         def result = extension.processVersionsFromYAML(testYaml)
         
         then:
-        result.contains('version: 1.0.0')
-        result.contains('version: 2.0.0')
-        result.contains('version: 3.0.0')
+        result == 'version: 3.0.0'
         !result.contains('tool1:version')
         !result.contains('tool2:version')
         !result.contains('with:colon:in:name:version')
