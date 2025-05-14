@@ -17,11 +17,15 @@
 package nfcore.plugin
 
 import groovy.transform.CompileStatic
+import groovy.transform.TypeCheckingMode
 import nextflow.Session
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
 import org.yaml.snakeyaml.Yaml
 import groovy.text.GStringTemplateEngine
+import nextflow.script.WorkflowMetadata
+import groovyx.gpars.dataflow.DataflowReadChannel
+import groovyx.gpars.dataflow.DataflowWriteChannel
 
 /**
  * Implements utility functions for nf-core pipelines that were previously
@@ -29,6 +33,19 @@ import groovy.text.GStringTemplateEngine
  */
 @CompileStatic
 class NfCorePipelineExtension extends PluginExtensionPoint {
+
+    // Store the session as a private field
+    private Session session
+
+    /**
+     * Initialize the extension with the current session
+     *
+     * @param session The Nextflow session
+     */
+    @Override
+    void init(Session session) {
+        this.session = session
+    }
 
     // Note: checkConfigProvided and checkProfileProvided methods have been moved to 
     // the NfCoreConfigObserver class, which runs these checks automatically at workflow start
@@ -39,18 +56,23 @@ class NfCorePipelineExtension extends PluginExtensionPoint {
      * @return The workflow version string
      */
     @Function
+    @CompileStatic(TypeCheckingMode.SKIP)
     String getWorkflowVersion() {
         def version_string = "" as String
-        def manifest = session.workflowMeta
         
-        if (manifest.version) {
-            def prefix_v = manifest.version.toString()[0] != 'v' ? 'v' : ''
-            version_string += "${prefix_v}${manifest.version}"
-        }
+        if (session && session.getProperty('workflowMeta')) {
+            def manifest = session.getProperty('workflowMeta')
+            
+            if (manifest.getProperty('version')) {
+                def v = manifest.getProperty('version').toString() 
+                def prefix_v = v[0] != 'v' ? 'v' : ''
+                version_string += "${prefix_v}${v}"
+            }
 
-        if (manifest.commitId) {
-            def git_shortsha = manifest.commitId.substring(0, 7)
-            version_string += "-g${git_shortsha}"
+            if (manifest.getProperty('commitId')) {
+                def git_shortsha = manifest.getProperty('commitId').toString().substring(0, 7)
+                version_string += "-g${git_shortsha}"
+            }
         }
 
         return version_string
@@ -63,9 +85,10 @@ class NfCorePipelineExtension extends PluginExtensionPoint {
      * @return The processed versions
      */
     @Function
+    @CompileStatic(TypeCheckingMode.SKIP)
     String processVersionsFromYAML(String yaml_file) {
         def yaml = new org.yaml.snakeyaml.Yaml()
-        def versions = yaml.load(yaml_file).collectEntries { k, v -> [k.tokenize(':')[-1], v] }
+        def versions = yaml.load(yaml_file).collectEntries { k, v -> [k.toString().tokenize(':')[-1], v] }
         return yaml.dumpAsMap(versions).trim()
     }
 
@@ -75,12 +98,23 @@ class NfCorePipelineExtension extends PluginExtensionPoint {
      * @return The workflow version in YAML format
      */
     @Function
+    @CompileStatic(TypeCheckingMode.SKIP)
     String workflowVersionToYAML() {
-        def manifest = session.workflowMeta
+        if (!session || !session.getProperty('workflowMeta')) {
+            return "Workflow: Not available\nNextflow: Not available"
+        }
+        
+        def manifest = session.getProperty('workflowMeta')
+        def name = manifest.getProperty('name') ?: 'Unknown'
+        def nextflowVersion = 'Unknown'
+        if (session.getProperty('nextflow')) {
+            nextflowVersion = session.getProperty('nextflow').getProperty('version') ?: 'Unknown'
+        }
+        
         return """
         Workflow:
-            ${manifest.name}: ${getWorkflowVersion()}
-            Nextflow: ${session.nextflow.version}
+            ${name}: ${getWorkflowVersion()}
+            Nextflow: ${nextflowVersion}
         """.stripIndent().trim()
     }
 
@@ -91,8 +125,13 @@ class NfCorePipelineExtension extends PluginExtensionPoint {
      * @return Channel of software versions in YAML format
      */
     @Function
+    @CompileStatic(TypeCheckingMode.SKIP)
     Object softwareVersionsToYAML(Object ch_versions) {
-        return ch_versions.unique().map { version -> processVersionsFromYAML(version) }.unique().mix(nextflow.extension.CH.value(workflowVersionToYAML()))
+        return ch_versions
+                .unique()
+                .map { version -> processVersionsFromYAML(version.toString()) }
+                .unique()
+                .mix(nextflow.extension.CH.value(workflowVersionToYAML()))
     }
 
     /**
@@ -102,6 +141,7 @@ class NfCorePipelineExtension extends PluginExtensionPoint {
      * @return The workflow summary for MultiQC
      */
     @Function
+    @CompileStatic(TypeCheckingMode.SKIP)
     String paramsSummaryMultiqc(Map summary_params) {
         def summary_section = ''
         summary_params
@@ -122,11 +162,17 @@ class NfCorePipelineExtension extends PluginExtensionPoint {
                 }
             }
 
-        def manifest = session.workflowMeta
-        def yaml_file_text = "id: '${manifest.name.replace('/', '-')}-summary'\n" as String
+        if (!session || !session.getProperty('workflowMeta')) {
+            return "Error: No workflow metadata available"
+        }
+        
+        def manifest = session.getProperty('workflowMeta')
+        def name = manifest.getProperty('name')?.toString() ?: 'unknown'
+        
+        def yaml_file_text = "id: '${name.replace('/', '-')}-summary'\n" as String
         yaml_file_text     += "description: ' - this information is collected when the pipeline is started.'\n"
-        yaml_file_text     += "section_name: '${manifest.name} Workflow Summary'\n"
-        yaml_file_text     += "section_href: 'https://github.com/${manifest.name}'\n"
+        yaml_file_text     += "section_name: '${name} Workflow Summary'\n"
+        yaml_file_text     += "section_href: 'https://github.com/${name}'\n"
         yaml_file_text     += "plot_type: 'html'\n"
         yaml_file_text     += "data: |\n"
         yaml_file_text     += "${summary_section}"
@@ -213,18 +259,25 @@ class NfCorePipelineExtension extends PluginExtensionPoint {
      * @return A single report
      */
     @Function
+    @CompileStatic(TypeCheckingMode.SKIP)
     Object getSingleReport(Object multiqc_reports) {
-        def manifest = session.workflowMeta
+        if (!session || !session.getProperty('workflowMeta')) {
+            return null
+        }
+        
+        def manifest = session.getProperty('workflowMeta')
+        def name = manifest.getProperty('name')?.toString() ?: 'Unknown'
+        
         if (multiqc_reports instanceof java.nio.file.Path) {
             return multiqc_reports
         } else if (multiqc_reports instanceof List) {
             if (multiqc_reports.size() == 0) {
-                System.err.println("[${manifest.name}] No reports found from process 'MULTIQC'")
+                System.err.println("[${name}] No reports found from process 'MULTIQC'")
                 return null
             } else if (multiqc_reports.size() == 1) {
                 return multiqc_reports.first()
             } else {
-                System.err.println("[${manifest.name}] Found multiple reports from process 'MULTIQC', will use only one")
+                System.err.println("[${name}] Found multiple reports from process 'MULTIQC', will use only one")
                 return multiqc_reports.first()
             }
         } else {
@@ -238,19 +291,30 @@ class NfCorePipelineExtension extends PluginExtensionPoint {
      * @param monochrome_logs Whether to use monochrome logs
      */
     @Function
+    @CompileStatic(TypeCheckingMode.SKIP)
     void completionSummary(boolean monochrome_logs=true) {
-        def manifest = session.workflowMeta
+        if (!session || 
+            !session.getProperty('workflowMeta') || 
+            !session.getProperty('stats')) {
+            System.out.println("Cannot generate completion summary - missing session data")
+            return
+        }
+        
+        def manifest = session.getProperty('workflowMeta')
+        def name = manifest.getProperty('name')?.toString() ?: 'Unknown'
+        def stats = session.getProperty('stats')
         def colors = logColours(monochrome_logs) as Map
-        if (session.stats.success) {
-            if (session.stats.ignoredCount == 0) {
-                System.out.println("-${colors.purple}[${manifest.name}]${colors.green} Pipeline completed successfully${colors.reset}-")
+        
+        if (stats.getProperty('success')) {
+            if (stats.getProperty('ignoredCount') == 0) {
+                System.out.println("-${colors.purple}[${name}]${colors.green} Pipeline completed successfully${colors.reset}-")
             }
             else {
-                System.out.println("-${colors.purple}[${manifest.name}]${colors.yellow} Pipeline completed successfully, but with errored process(es) ${colors.reset}-")
+                System.out.println("-${colors.purple}[${name}]${colors.yellow} Pipeline completed successfully, but with errored process(es) ${colors.reset}-")
             }
         }
         else {
-            System.out.println("-${colors.purple}[${manifest.name}]${colors.red} Pipeline completed with errors${colors.reset}-")
+            System.out.println("-${colors.purple}[${name}]${colors.red} Pipeline completed with errors${colors.reset}-")
         }
     }
 }
