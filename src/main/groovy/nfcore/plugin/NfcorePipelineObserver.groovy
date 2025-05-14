@@ -50,6 +50,33 @@ class NfcorePipelineObserver implements TraceObserver {
         return true
     }
 
+    /**
+     * Checks if the profile string is valid and warns about positional arguments.
+     *
+     * @param profile The profile string (e.g. from workflow.profile)
+     * @param commandLine The command line string
+     */
+    void checkProfileProvided(String profile, String commandLine) {
+        if (profile?.endsWith(',')) {
+            throw new IllegalArgumentException(
+                "The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!\n" +
+                "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
+            )
+        }
+        if (commandLine != null && !commandLine.isEmpty()) {
+            // Split the command line into arguments
+            def args = commandLine.split(/\s+/)
+            // Find the first positional argument (not starting with '-')
+            def positional = args.find { !it.startsWith('-') }
+            if (positional) {
+                log.warn(
+                    "nf-core pipelines do not accept positional arguments. The positional argument `${positional}` has been detected.\n" +
+                    "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
+                )
+            }
+        }
+    }
+
     @Override
     void onFlowCreate(Session session) {
         def meta = session.getWorkflowMetadata()
@@ -59,6 +86,7 @@ class NfcorePipelineObserver implements TraceObserver {
             projectName = meta.projectName
         }
         checkConfigProvided(projectName, config)
+        checkProfileProvided(session.profile, session.commandLine)
         println "Pipeline is starting! 🚀"
     }
 

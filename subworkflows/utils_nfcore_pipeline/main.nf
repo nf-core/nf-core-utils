@@ -27,22 +27,6 @@ workflow UTILS_NFCORE_PIPELINE {
 */
 
 //
-// Exit pipeline if --profile contains spaces
-//
-def checkProfileProvided(nextflow_cli_args) {
-    if (workflow.profile.endsWith(',')) {
-        error(
-            "The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!\n" + "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
-        )
-    }
-    if (nextflow_cli_args[0]) {
-        log.warn(
-            "nf-core pipelines do not accept positional arguments. The positional argument `${nextflow_cli_args[0]}` has been detected.\n" + "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
-        )
-    }
-}
-
-//
 // Generate workflow version string
 //
 def getWorkflowVersion() {

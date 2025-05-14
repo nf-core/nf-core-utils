@@ -9,26 +9,6 @@ nextflow_function {
     tag "utils_nfcore_pipeline"
     tag "subworkflows/utils_nfcore_pipeline"
 
-    test("Test Function checkProfileProvided") {
-
-        function "checkProfileProvided"
-
-        when {
-            function {
-                """
-                input[0] = []
-                """
-            }
-        }
-
-        then {
-            assertAll(
-                { assert function.success },
-                { assert snapshot(function.result).match() }
-            )
-        }
-    }
-
     test("Test Function without logColours") {
 
         function "logColours"
