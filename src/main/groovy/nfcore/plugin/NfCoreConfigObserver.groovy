@@ -57,10 +57,10 @@ class NfCoreConfigObserver implements TraceObserverV2 {
         }
     }
 
-    // Implement V2 methods
-    @Override void onProcessSubmit(String name, String process, int attempt) {}
-    @Override void onProcessStart(String name, String process, int attempt, String module, String container, String cpus, String memory, String disk, String time, String queue, Map env) {}
-    @Override void onProcessComplete(String name, String process, int attempt, String script, String status, long submit, long start, long complete, String module, String container, String cpus, String memory, String disk, String time, String queue, Map env, Map errorAction, String machineType, String cloudZone, double cost, String errorMessage) {}
-    @Override void onProcessCached(String name, String process, int attempt, String module, String container, String cpus, String memory, String disk, String time, String queue, Map env, String machineType, String cloudZone, double cost) {}
+    // Implement V2 methods with appropriate signatures
+    void onProcessSubmit(String name, String process, int attempt) {}
+    void onProcessStart(String name, String process, int attempt, String module, String container, String cpus, String memory, String disk, String time, String queue, Map env) {}
+    void onProcessComplete(String name, String process, int attempt, String script, String status, long submit, long start, long complete, String module, String container, String cpus, String memory, String disk, String time, String queue, Map env, Map errorAction, String machineType, String cloudZone, double cost, String errorMessage) {}
+    void onProcessCached(String name, String process, int attempt, String module, String container, String cpus, String memory, String disk, String time, String queue, Map env, String machineType, String cloudZone, double cost) {}
     @Override void onFlowComplete() {}
 } 
