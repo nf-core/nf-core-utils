@@ -28,7 +28,7 @@ class NfCorePipelineExtensionTest extends Specification {
         ]
         
         @Override
-        protected void init(Session session) {
+        public void init(Session session) {
             // Don't initialize with session in tests
         }
         

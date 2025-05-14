@@ -2,6 +2,8 @@ package nfcore.plugin
 
 import spock.lang.Specification
 import org.yaml.snakeyaml.Yaml
+import java.lang.reflect.Field
+import java.lang.reflect.Modifier
 
 /**
  * Tests for YAML-related functions in NfCorePipelineExtension
@@ -39,12 +41,25 @@ class NfCorePipelineExtensionYamlTest extends Specification {
             // Mock relevant session methods
             def getSession() {
                 return [
-                    workflowMeta: [
-                        name: 'test-pipeline'
-                    ],
-                    nextflow: [
-                        version: '23.10.0'
-                    ]
+                    getProperty: { name ->
+                        if (name == 'workflowMeta') {
+                            return [
+                                getProperty: { propName ->
+                                    if (propName == 'name') return 'test-pipeline'
+                                    return null
+                                }
+                            ]
+                        }
+                        else if (name == 'nextflow') {
+                            return [
+                                getProperty: { propName ->
+                                    if (propName == 'version') return '23.10.0'
+                                    return null
+                                }
+                            ]
+                        }
+                        return null
+                    }
                 ]
             }
         }
@@ -83,11 +98,9 @@ class NfCorePipelineExtensionYamlTest extends Specification {
             }
         ]
         
-        // Mock CH.value
-        def originalCH = nextflow.extension.CH
-        nextflow.extension.CH = [
-            value: { val -> return [val] }
-        ]
+        // Use Spock's GroovyMock to mock the static method
+        GroovyMock(nextflow.extension.CH, global: true)
+        nextflow.extension.CH.value(_) >> { args -> [args[0]] }
         
         when:
         def result = extension.softwareVersionsToYAML(mockChannel)
@@ -96,9 +109,6 @@ class NfCorePipelineExtensionYamlTest extends Specification {
         result.contains('Processed: yaml1')
         result.contains('Processed: yaml2')
         result.contains('Workflow info')
-        
-        cleanup:
-        nextflow.extension.CH = originalCH
     }
     
     def "paramsSummaryMultiqc should format summary correctly"() {
@@ -107,9 +117,17 @@ class NfCorePipelineExtensionYamlTest extends Specification {
             // Mock relevant session methods
             def getSession() {
                 return [
-                    workflowMeta: [
-                        name: 'test/pipeline'
-                    ]
+                    getProperty: { name ->
+                        if (name == 'workflowMeta') {
+                            return [
+                                getProperty: { propName ->
+                                    if (propName == 'name') return 'test/pipeline'
+                                    return null
+                                }
+                            ]
+                        }
+                        return null
+                    }
                 ]
             }
         }
