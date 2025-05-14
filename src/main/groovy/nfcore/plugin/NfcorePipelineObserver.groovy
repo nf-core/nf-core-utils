@@ -29,20 +29,36 @@ import nextflow.trace.TraceObserver
 @CompileStatic
 class NfcorePipelineObserver implements TraceObserver {
 
-    @Override
-    void onFlowCreate(Session session) {
-        def meta = session.getWorkflowMetadata()
-        def config = session.config
-        def profile = config?.profile ?: 'standard'
-        List configFiles = (config?.configFiles instanceof List) ? (List)config.configFiles : []
+    /**
+     * Checks if a custom config or profile has been provided, logs a warning if not.
+     * @param projectName The project name
+     * @param config The config map (should have profile and configFiles)
+     * @return true if config is valid, false otherwise
+     */
+    boolean checkConfigProvided(String projectName, Map config) {
+        def profile = config?.get('profile') ?: 'standard'
+        List configFiles = (config?.get('configFiles') instanceof List) ? (List)config.get('configFiles') : []
         if (profile == 'standard' && configFiles.size() <= 1) {
-            log.warn("[${meta.projectName}] You are attempting to run the pipeline without any custom configuration!\n\n" +
+            log.warn("[${projectName}] You are attempting to run the pipeline without any custom configuration!\n\n" +
                 "This will be dependent on your local compute environment but can be achieved via one or more of the following:\n" +
                 "   (1) Using an existing pipeline profile e.g. `-profile docker` or `-profile singularity`\n" +
                 "   (2) Using an existing nf-core/configs for your Institution e.g. `-profile crick` or `-profile uppmax`\n" +
                 "   (3) Using your own local custom config e.g. `-c /path/to/your/custom.config`\n\n" +
                 "Please refer to the quick start section and usage docs for the pipeline.\n ")
+            return false
         }
+        return true
+    }
+
+    @Override
+    void onFlowCreate(Session session) {
+        def meta = session.getWorkflowMetadata()
+        def config = session.config
+        String projectName = null
+        if (meta != null && meta.metaClass?.hasProperty(meta, 'projectName')) {
+            projectName = meta.projectName
+        }
+        checkConfigProvided(projectName, config)
         println "Pipeline is starting! 🚀"
     }
 

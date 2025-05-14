@@ -13,7 +13,7 @@ nextflowPlugin {
         'nfcore.plugin.NfUtilsExtension',
         'nfcore.plugin.NfUtilsFactory',
         'nfcore.plugin.NextflowPipelineExtension',
-        'nfcore.plugin.NfCorePipelineExtension',
+        'nfcore.plugin.NfCorePipelineObserver',
         'nfcore.plugin.ReferencesExtension'
     ]
 
