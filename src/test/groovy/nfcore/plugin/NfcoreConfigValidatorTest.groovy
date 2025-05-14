@@ -2,6 +2,7 @@ package nfcore.plugin
 
 import spock.lang.Specification
 import org.slf4j.LoggerFactory
+import nfcore.plugin.util.NfcoreConfigValidator
 
 class NfcoreConfigValidatorTest extends Specification {
     def 'should log warning if profile is standard and configFiles is empty or size 1'() {

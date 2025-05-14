@@ -18,6 +18,7 @@ package nfcore.plugin.util
 
 import groovy.util.logging.Slf4j
 import nextflow.Session
+import java.nio.file.Path
 
 /**
  * Utility functions for nf-core pipelines
@@ -70,37 +71,79 @@ class NfcorePipelineUtils {
      * @return YAML formatted string for MultiQC
      */
     static String paramsSummaryMultiqc(Map<String, Map<String, Object>> summaryParams) {
-        def session = (Session) nextflow.Nextflow.session
-        def manifest = session.getManifest()
-        def workflowName = manifest?.getName() ?: 'unknown'
-        
-        def summarySection = ''
-        summaryParams
-            .keySet()
-            .each { group ->
-                def groupParams = summaryParams.get(group)
-                // This gets the parameters of that particular group
-                if (groupParams) {
-                    summarySection += "    <p style=\"font-size:110%\"><b>${group}</b></p>\n"
-                    summarySection += "    <dl class=\"dl-horizontal\">\n"
-                    groupParams
-                        .keySet()
-                        .sort()
-                        .each { param ->
-                            summarySection += "        <dt>${param}</dt><dd><samp>${groupParams.get(param) ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>\n"
-                        }
-                    summarySection += "    </dl>\n"
-                }
-            }
-
-        def yamlFileText = "id: '${workflowName.replace('/', '-')}-summary'\n" as String
-        yamlFileText     += "description: ' - this information is collected when the pipeline is started.'\n"
-        yamlFileText     += "section_name: '${workflowName} Workflow Summary'\n"
-        yamlFileText     += "section_href: 'https://github.com/${workflowName}'\n"
-        yamlFileText     += "plot_type: 'html'\n"
-        yamlFileText     += "data: |\n"
-        yamlFileText     += "${summarySection}"
-
-        return yamlFileText
+        return NfcoreReportingUtils.paramsSummaryMultiqc(summaryParams)
+    }
+    
+    /**
+     * ANSII colour codes used for terminal logging
+     * @param monochrome_logs Boolean indicating whether to use monochrome logs
+     * @return Map of colour codes
+     */
+    static Map logColours(boolean monochrome_logs=true) {
+        return NfcoreNotificationUtils.logColours(monochrome_logs)
+    }
+    
+    /**
+     * Return a single report from an object that may be a Path or List
+     * @param multiqc_reports The reports object
+     * @return A single report Path or null
+     */
+    static Path getSingleReport(def multiqc_reports) {
+        return NfcoreNotificationUtils.getSingleReport(multiqc_reports)
+    }
+    
+    /**
+     * Construct and send completion email
+     * @param summary_params Map of summary parameters
+     * @param email Email address
+     * @param email_on_fail Email address for failures only
+     * @param plaintext_email Whether to send plaintext email
+     * @param outdir Output directory
+     * @param monochrome_logs Whether to use monochrome logs
+     * @param multiqc_report MultiQC report file
+     */
+    static void completionEmail(Map summary_params, String email, String email_on_fail, 
+                               boolean plaintext_email, String outdir, 
+                               boolean monochrome_logs=true, def multiqc_report=null) {
+        NfcoreNotificationUtils.completionEmail(summary_params, email, email_on_fail, 
+                                             plaintext_email, outdir, monochrome_logs, multiqc_report)
+    }
+    
+    /**
+     * Print pipeline summary on completion
+     * @param monochrome_logs Whether to use monochrome logs
+     */
+    static void completionSummary(boolean monochrome_logs=true) {
+        NfcoreNotificationUtils.completionSummary(monochrome_logs)
+    }
+    
+    /**
+     * Construct and send a notification to a web server as JSON e.g. Microsoft Teams and Slack
+     * @param summary_params Map of summary parameters
+     * @param hook_url Webhook URL
+     */
+    static void imNotification(Map summary_params, String hook_url) {
+        NfcoreNotificationUtils.imNotification(summary_params, hook_url)
+    }
+    
+    /**
+     * Create workflow summary template for MultiQC
+     * @param summary Map of parameters
+     * @param nfMetadataList List of metadata fields to include
+     * @param results Map of pipeline results
+     * @return Map with HTML summaries for MultiQC
+     */
+    static Map workflowSummaryMQC(Map summary, List nfMetadataList, Map results) {
+        return NfcoreReportingUtils.workflowSummaryMQC(summary, nfMetadataList, results)
+    }
+    
+    /**
+     * Generate summary logs for each section of a pipeline
+     * @param sections Map of section names with their log messages
+     * @param monochrome Whether to use colors in logs
+     * @return Map of colored section logs
+     */
+    static Map sectionLogs(Map sections, boolean monochrome=false) {
+        return NfcoreReportingUtils.sectionLogs(sections, monochrome)
     }
 } 
