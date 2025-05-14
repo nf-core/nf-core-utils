@@ -16,17 +16,16 @@
 
 package nfcore.plugin
 
-import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.trace.TraceObserver
+import org.yaml.snakeyaml.Yaml
 
 /**
  * Implements an observer that allows implementing custom
  * logic on nextflow execution events.
  */
 @Slf4j
-@CompileStatic
 class NfcorePipelineObserver implements TraceObserver {
 
     /**
@@ -93,5 +92,63 @@ class NfcorePipelineObserver implements TraceObserver {
     @Override
     void onFlowComplete() {
         println "Pipeline complete! 👋"
+    }
+
+    /**
+     * Generate workflow version string using session manifest
+     */
+    String getWorkflowVersion(Session session) {
+        def manifest = session.getManifest()
+        def version = manifest?.getVersion()
+        def versionString = ""
+        if (version) {
+            def prefixV = version[0] != 'v' ? 'v' : ''
+            versionString += "${prefixV}${version}"
+        }
+        return versionString
+    }
+
+    /**
+     * Get software versions for pipeline from YAML string
+     */
+    String processVersionsFromYAML(String yamlFile) {
+        def yaml = new Yaml()
+        def loaded = yaml.load(yamlFile)
+        if (!(loaded instanceof Map)) return ''
+        def versions = ((Map)loaded).collectEntries { k, v ->
+            if (k instanceof String) {
+                [k.tokenize(':')[-1], v]
+            } else {
+                [k, v]
+            }
+        }
+        return yaml.dumpAsMap(versions).trim()
+    }
+
+    /**
+     * Get workflow version for pipeline as YAML string
+     */
+    String workflowVersionToYAML(Session session) {
+        def manifest = session.getManifest()
+        def workflowName = manifest?.getName() ?: 'unknown'
+        def workflowVersion = getWorkflowVersion(session)
+        def nextflowVersion = (session.config instanceof Map && session.config.nextflow instanceof Map && session.config.nextflow['version']) ? session.config.nextflow['version'] : 'unknown'
+        return """
+        Workflow:
+            ${workflowName}: ${workflowVersion}
+            Nextflow: ${nextflowVersion}
+        """.stripIndent().trim()
+    }
+
+    /**
+     * Get YAML string of software versions used in pipeline
+     * @param chVersions List of YAML strings
+     * @param session The Nextflow session
+     * @return YAML string
+     */
+    String softwareVersionsToYAML(List<String> chVersions, Session session) {
+        def uniqueVersions = chVersions.unique().collect { processVersionsFromYAML(it) }.unique()
+        def workflowYaml = workflowVersionToYAML(session)
+        return (uniqueVersions + workflowYaml).join("\n")
     }
 } 
