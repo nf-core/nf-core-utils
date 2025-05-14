@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, Seqera Labs
+ * Copyright 2025, nf-core
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,10 +27,22 @@ import nextflow.trace.TraceObserver
  */
 @Slf4j
 @CompileStatic
-class NfUtilsObserver implements TraceObserver {
+class NfcorePipelineObserver implements TraceObserver {
 
     @Override
     void onFlowCreate(Session session) {
+        def meta = session.getWorkflowMetadata()
+        def config = session.config
+        def profile = config?.profile ?: 'standard'
+        def configFiles = config?.configFiles ?: []
+        if (profile == 'standard' && configFiles.size() <= 1) {
+            log.warn("[${meta.name}] You are attempting to run the pipeline without any custom configuration!\n\n" +
+                "This will be dependent on your local compute environment but can be achieved via one or more of the following:\n" +
+                "   (1) Using an existing pipeline profile e.g. `-profile docker` or `-profile singularity`\n" +
+                "   (2) Using an existing nf-core/configs for your Institution e.g. `-profile crick` or `-profile uppmax`\n" +
+                "   (3) Using your own local custom config e.g. `-c /path/to/your/custom.config`\n\n" +
+                "Please refer to the quick start section and usage docs for the pipeline.\n ")
+        }
         println "Pipeline is starting! 🚀"
     }
 
@@ -38,4 +50,4 @@ class NfUtilsObserver implements TraceObserver {
     void onFlowComplete() {
         println "Pipeline complete! 👋"
     }
-}
+} 

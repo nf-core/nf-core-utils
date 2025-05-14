@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, Seqera Labs
+ * Copyright 2025, nf-core
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,14 @@ import nextflow.trace.TraceObserverFactory
 
 /**
  * Implements a factory object required to create
- * the {@link NfUtilsObserver} instance.
+ * the {@link NfcorePipelineObserver} instance.
  */
 @CompileStatic
-class NfUtilsFactory implements TraceObserverFactory {
+class NfcorePipelineObserverFactory implements TraceObserverFactory {
 
     @Override
     Collection<TraceObserver> create(Session session) {
-        return List.<TraceObserver>of(new NfUtilsObserver())
+        return List.<TraceObserver>of(new NfcorePipelineObserver())
     }
 
-}
+} 
