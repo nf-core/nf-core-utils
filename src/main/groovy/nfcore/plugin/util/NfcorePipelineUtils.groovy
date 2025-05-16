@@ -19,6 +19,9 @@ package nfcore.plugin.util
 import groovy.util.logging.Slf4j
 import nextflow.Session
 import java.nio.file.Path
+import org.yaml.snakeyaml.Yaml
+import java.nio.file.Files
+import java.nio.file.Paths
 
 /**
  * Utility functions for nf-core pipelines
@@ -199,34 +202,40 @@ class NfcorePipelineUtils {
     }
 
     /**
-     * Generate methods description for MultiQC
+     * Generate methods description for MultiQC, generalized to read tools from meta.yml
+     * @param metaFilePath Path to the meta.yml file (String or File)
+     * @return Formatted citation string for tools used in the workflow
      */
-    static String toolCitationText(Map params = [:]) {
-        // Optionally use params to conditionally include tools
-        def citation_text = "Tools used in the workflow included: " + [
-            "BEDTools (Quinlan 2010)",
-            "Bowtie 2 (Langmead 2012)",
-            "BWA-MEM (Li 2013)",
-            "BWA-MEM2 (Vasimuddin 2019)",
-            "deepTools (Ramírez 2016)",
-            "FastQC (Andrews 2010)",
-            "FastP (Chen 2018)",
-            "featureCounts (Liao 2013)",
-            "GffRead (Pertea 2013)",
-            "HISAT2 (Kim 2019)",
-            "HOMER (Heinz 2010)",
-            "MultiQC (Ewels et al. 2016)",
-            "PINTS (Yao 2022)",
-            "preseq (Daley 2013)",
-            "RSeQC (Wang 2012)",
-            "SAMTools (Li 2009)",
-            "STAR (Dobin 2013)",
-            "UMI-tools (Li 2009)",
-            "Genomic Alignments (Lawrence 2013)",
-            "groHMM (Chae 2015)",
-            "."
-        ].join(', ').trim()
-        return citation_text
+    static String toolCitationText(Object metaFilePath) {
+        File file = metaFilePath instanceof File ? metaFilePath : new File(metaFilePath.toString())
+        if (!file.exists()) {
+            throw new IllegalArgumentException("meta.yml file not found at: ${file.getAbsolutePath()}")
+        }
+        def yaml = new Yaml()
+        Map meta
+        file.withInputStream { is ->
+            meta = yaml.load(is)
+        }
+        def tools = meta?.tools ?: []
+        def toolCitations = []
+        tools.each { toolEntry ->
+            toolEntry.each { toolName, toolInfo ->
+                def citation = toolName
+                // Try to add author/year/doi if available
+                if (toolInfo instanceof Map) {
+                    if (toolInfo.doi) {
+                        citation += " (DOI: ${toolInfo.doi})"
+                    } else if (toolInfo.description) {
+                        citation += " (${toolInfo.description})"
+                    }
+                }
+                toolCitations << citation
+            }
+        }
+        if (toolCitations.isEmpty()) {
+            return "No tools listed in meta.yml."
+        }
+        return "Tools used in the workflow included: " + toolCitations.join(', ') + "."
     }
 
     static String toolBibliographyText(Map params = [:]) {
@@ -274,7 +283,7 @@ class NfcorePipelineUtils {
             meta["doi_text"] = ""
         }
         meta["nodoi_text"] = meta.manifest_map?.doi ? "" : "<li>If available, make sure to update the text to include the Zenodo DOI of version of the pipeline used. </li>"
-        meta["tool_citations"] = toolCitationText()
+        meta["tool_citations"] = toolCitationText(meta)
         meta["tool_bibliography"] = toolBibliographyText()
         def methods_text = mqc_methods_yaml.text
         def engine = new groovy.text.SimpleTemplateEngine()

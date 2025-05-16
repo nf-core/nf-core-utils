@@ -129,17 +129,6 @@ class NfcorePipelineUtilsTest extends Specification {
         nextflow.Nextflow.metaClass.static.getSession = originalSession
     }
 
-    def 'toolCitationText returns expected citation string'() {
-        when:
-        def result = NfcorePipelineUtils.toolCitationText([:])
-
-        then:
-        result.contains('BEDTools (Quinlan 2010)')
-        result.contains('Bowtie 2 (Langmead 2012)')
-        result.contains('MultiQC (Ewels et al. 2016)')
-        result.endsWith('.')
-    }
-
     def 'toolBibliographyText returns expected bibliography HTML'() {
         when:
         def result = NfcorePipelineUtils.toolBibliographyText([:])
@@ -189,5 +178,18 @@ class NfcorePipelineUtilsTest extends Specification {
         cleanup:
         tempYaml.delete()
         nextflow.Nextflow.metaClass.static.getSession = originalSession
+    }
+
+    def 'toolCitationText reads tools from meta.yml and formats citation string'() {
+        given:
+        def metaPath = 'src/test/groovy/nfcore/plugin/util/meta.yml'
+
+        when:
+        def result = NfcorePipelineUtils.toolCitationText(metaPath)
+
+        then:
+        result.contains('pints (DOI: 10.1038/s41587-022-01211-7)')
+        result.startsWith('Tools used in the workflow included:')
+        result.endsWith('.')
     }
 } 
