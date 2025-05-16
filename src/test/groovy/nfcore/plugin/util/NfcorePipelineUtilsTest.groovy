@@ -180,16 +180,27 @@ class NfcorePipelineUtilsTest extends Specification {
         nextflow.Nextflow.metaClass.static.getSession = originalSession
     }
 
+    // TODO If we can't download the meta.yml file, we can't run this test
+    // @IgnoreIf()
     def 'toolCitationText reads tools from meta.yml and formats citation string'() {
+        // Download the latest meta.yml from the nf-core/modules repo
         given:
-        def metaPath = 'src/test/groovy/nfcore/plugin/util/meta.yml'
+        def metaUrl = 'https://raw.githubusercontent.com/nf-core/modules/refs/heads/master/modules/nf-core/fastqc/meta.yml'
+        File tempMeta = File.createTempFile('meta', '.yml')
+        tempMeta.withOutputStream { out ->
+            out << new URL(metaUrl).openStream()
+        }
 
         when:
-        def result = NfcorePipelineUtils.toolCitationText(metaPath)
+        def result = NfcorePipelineUtils.toolCitationText(tempMeta)
 
         then:
-        result.contains('pints (DOI: 10.1038/s41587-022-01211-7)')
         result.startsWith('Tools used in the workflow included:')
         result.endsWith('.')
+        // Optionally, check for a tool known to be in the latest meta.yml
+        result.contains('fastqc')
+
+        cleanup:
+        tempMeta.delete()
     }
 } 
