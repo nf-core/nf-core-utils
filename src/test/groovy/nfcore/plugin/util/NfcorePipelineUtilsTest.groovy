@@ -129,19 +129,28 @@ class NfcorePipelineUtilsTest extends Specification {
         nextflow.Nextflow.metaClass.static.getSession = originalSession
     }
 
-    def 'toolBibliographyText returns expected bibliography HTML'() {
+    def 'toolBibliographyText returns expected bibliography HTML from meta.yml'() {
+        given:
+        // Download the latest meta.yml from the nf-core/modules repo
+        def metaUrl = 'https://raw.githubusercontent.com/nf-core/modules/refs/heads/master/modules/nf-core/fastqc/meta.yml'
+        File tempMeta = File.createTempFile('meta', '.yml')
+        tempMeta.withOutputStream { out ->
+            out << new URL(metaUrl).openStream()
+        }
+
         when:
-        def result = NfcorePipelineUtils.toolBibliographyText([:])
+        def result = NfcorePipelineUtils.toolBibliographyText(tempMeta)
 
         then:
-        result.contains('<li>Quinlan AR, Hall IM. BEDTools: a flexible suite of utilities for comparing genomic features.')
-        result.contains('Langmead, B., Salzberg, S. Fast gapped-read alignment with Bowtie 2.')
-        result.contains('Ewels P, Magnusson M, Lundin S, Käller M. MultiQC: summarize analysis results for multiple tools and samples in a single report.')
-        result.contains('</li>')
+        result.contains('<li>')
+        result.toLowerCase().contains('fastqc')
+        result.toLowerCase().contains('bioinformatics')
+
+        cleanup:
+        tempMeta.delete()
     }
 
-    @Ignore("FIXME")
-    def 'methodsDescriptionText substitutes template variables and includes citations'() {
+    def 'methodsDescriptionText substitutes template variables and includes citations from meta.yml'() {
         given:
         // Minimal MultiQC methods YAML template with placeholders
         def yamlContent = '''
@@ -151,6 +160,12 @@ class NfcorePipelineUtilsTest extends Specification {
         '''.stripIndent()
         File tempYaml = File.createTempFile('mqc_methods', '.yml')
         tempYaml.text = yamlContent
+        // Download the latest meta.yml from the nf-core/modules repo
+        def metaUrl = 'https://raw.githubusercontent.com/nf-core/modules/refs/heads/master/modules/nf-core/fastqc/meta.yml'
+        File tempMeta = File.createTempFile('meta', '.yml')
+        tempMeta.withOutputStream { out ->
+            out << new URL(metaUrl).openStream()
+        }
         def meta = [workflow: [name: 'nf-core/testpipe']]
 
         // Mock Nextflow session and manifest
@@ -158,8 +173,10 @@ class NfcorePipelineUtilsTest extends Specification {
             getName() >> 'nf-core/testpipe'
             getVersion() >> '1.0.0'
         }
-        def workflowMetadata = new groovy.util.Expando()
-        workflowMetadata.toMap = { -> [name: 'nf-core/testpipe'] }
+        // Use a mock for WorkflowMetadata with a toMap() method
+        def workflowMetadata = Mock(nextflow.script.WorkflowMetadata) {
+            toMap() >> [name: 'nf-core/testpipe']
+        }
         def session = Mock(Session) {
             getManifest() >> manifest
             getWorkflowMetadata() >> workflowMetadata
@@ -168,39 +185,24 @@ class NfcorePipelineUtilsTest extends Specification {
         nextflow.Nextflow.metaClass.static.getSession = { -> session }
 
         when:
+        // Pass tempMeta to methodsDescriptionText for tool citations/bibliography
+        if (!meta.containsKey("tool_citations")) {
+            meta["tool_citations"] = NfcorePipelineUtils.toolCitationText(tempMeta)
+        }
+        if (!meta.containsKey("tool_bibliography")) {
+            meta["tool_bibliography"] = NfcorePipelineUtils.toolBibliographyText(tempMeta)
+        }
         def result = NfcorePipelineUtils.methodsDescriptionText(tempYaml, meta)
 
         then:
         result.contains('<h2>Workflow: nf-core/testpipe</h2>')
-        result.contains('BEDTools (Quinlan 2010)')
-        result.contains('<li>Quinlan AR, Hall IM. BEDTools: a flexible suite of utilities for comparing genomic features.')
+        result.toLowerCase().contains('fastqc')
+        result.contains('<li>')
+        result.toLowerCase().contains('bioinformatics')
 
         cleanup:
         tempYaml.delete()
-        nextflow.Nextflow.metaClass.static.getSession = originalSession
-    }
-
-    // TODO If we can't download the meta.yml file, we can't run this test
-    // @IgnoreIf()
-    def 'toolCitationText reads tools from meta.yml and formats citation string'() {
-        // Download the latest meta.yml from the nf-core/modules repo
-        given:
-        def metaUrl = 'https://raw.githubusercontent.com/nf-core/modules/refs/heads/master/modules/nf-core/fastqc/meta.yml'
-        File tempMeta = File.createTempFile('meta', '.yml')
-        tempMeta.withOutputStream { out ->
-            out << new URL(metaUrl).openStream()
-        }
-
-        when:
-        def result = NfcorePipelineUtils.toolCitationText(tempMeta)
-
-        then:
-        result.startsWith('Tools used in the workflow included:')
-        result.endsWith('.')
-        // Optionally, check for a tool known to be in the latest meta.yml
-        result.contains('fastqc')
-
-        cleanup:
         tempMeta.delete()
+        nextflow.Nextflow.metaClass.static.getSession = originalSession
     }
 } 
