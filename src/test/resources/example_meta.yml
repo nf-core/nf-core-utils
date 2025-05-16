@@ -1,0 +1,42 @@
+name: fastqc
+description: Quality control for high-throughput sequencing data
+keywords:
+  - qc
+  - fastq
+  - quality control
+tools:
+  - fastqc:
+      description: "Quality control tool for high throughput sequence data"
+      homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+      documentation: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/"
+      doi: "10.5555/example-doi-12345"
+      license: "GPL v3"
+      author: "Andrews S"
+      year: 2010
+      title: "FastQC: A Quality Control Tool for High Throughput Sequence Data"
+  - multiqc:
+      description: "Aggregate results from bioinformatics analyses across many samples into a single report"
+      homepage: "https://multiqc.info/"
+      documentation: "https://multiqc.info/docs/"
+      doi: "10.1093/bioinformatics/btw354"
+      license: "GPL v3"
+      author: "Ewels P, Magnusson M, Lundin S, et al."
+      year: 2016
+      title: "MultiQC: summarize analysis results for multiple tools and samples in a single report"
+      journal: "Bioinformatics"
+
+input:
+  - fastq:
+      type: file
+      description: FASTQ file
+      pattern: "*.fastq.gz"
+
+output:
+  - html:
+      type: file
+      description: QC report
+      pattern: "*.html"
+  - zip:
+      type: file
+      description: Zip archive of results
+      pattern: "*.zip" 

@@ -202,11 +202,11 @@ class NfcorePipelineUtils {
     }
 
     /**
-     * Generate methods description for MultiQC, generalized to read tools from meta.yml
+     * Generate citation for a tool from meta.yml at the module level
      * @param metaFilePath Path to the meta.yml file (String or File)
-     * @return Formatted citation string for tools used in the workflow
+     * @return Map containing tool citations for the module
      */
-    static String toolCitationText(Object metaFilePath) {
+    static Map generateModuleToolCitation(Object metaFilePath) {
         File file = metaFilePath instanceof File ? metaFilePath : new File(metaFilePath.toString())
         if (!file.exists()) {
             throw new IllegalArgumentException("meta.yml file not found at: ${file.getAbsolutePath()}")
@@ -217,67 +217,88 @@ class NfcorePipelineUtils {
             meta = yaml.load(is)
         }
         def tools = meta?.tools ?: []
-        def toolCitations = []
+        def moduleCitations = [:]
+        
         tools.each { toolEntry ->
             toolEntry.each { toolName, toolInfo ->
                 def citation = toolName
-                // Try to add author/year/doi if available
+                def bibEntry = null
+                
+                // Generate citation text
                 if (toolInfo instanceof Map) {
                     if (toolInfo.doi) {
                         citation += " (DOI: ${toolInfo.doi})"
                     } else if (toolInfo.description) {
                         citation += " (${toolInfo.description})"
                     }
-                }
-                toolCitations << citation
-            }
-        }
-        if (toolCitations.isEmpty()) {
-            return "No tools listed in meta.yml."
-        }
-        return "Tools used in the workflow included: " + toolCitations.join(', ') + "."
-    }
-
-    static String toolBibliographyText(Object metaFilePath) {
-        File file = metaFilePath instanceof File ? metaFilePath : new File(metaFilePath.toString())
-        if (!file.exists()) {
-            throw new IllegalArgumentException("meta.yml file not found at: ${file.getAbsolutePath()}")
-        }
-        def yaml = new Yaml()
-        Map meta
-        file.withInputStream { is ->
-            meta = yaml.load(is)
-        }
-        def tools = meta?.tools ?: []
-        def bibEntries = []
-        tools.each { toolEntry ->
-            toolEntry.each { toolName, toolInfo ->
-                if (toolInfo instanceof Map) {
-                    // Compose bibliography string from available fields
+                    
+                    // Generate bibliography entry
                     def author = toolInfo.author ?: ""
                     def year = toolInfo.year ?: ""
                     def title = toolInfo.title ?: toolName
                     def journal = toolInfo.journal ?: ""
                     def doi = toolInfo.doi ? "doi: ${toolInfo.doi}" : ""
                     def url = toolInfo.homepage ?: ""
-                    def citation = [author, year, title, journal, doi].findAll { it }.join(". ")
-                    if (url) citation += ". <a href='${url}'>${url}</a>"
-                    bibEntries << "<li>${citation}</li>"
+                    def bibCitation = [author, year, title, journal, doi].findAll { it }.join(". ")
+                    if (url) bibCitation += ". <a href='${url}'>${url}</a>"
+                    bibEntry = "<li>${bibCitation}</li>"
                 }
+                
+                moduleCitations[toolName] = [
+                    citation: citation,
+                    bibliography: bibEntry
+                ]
             }
         }
-        if (bibEntries.isEmpty()) {
-            return "No bibliography entries found in meta.yml."
+        
+        return moduleCitations
+    }
+
+    /**
+     * Generate methods description for MultiQC using collected citations
+     * @param collectedCitations Map containing all tool citations from modules
+     * @return Formatted citation string for tools used in the workflow
+     */
+    static String toolCitationText(Map collectedCitations) {
+        if (collectedCitations.isEmpty()) {
+            return "No tools used in the workflow."
         }
+        
+        def toolCitations = collectedCitations.values().collect { it.citation }
+        return "Tools used in the workflow included: " + toolCitations.join(', ') + "."
+    }
+
+    /**
+     * Generate bibliography text from collected citations
+     * @param collectedCitations Map containing all tool citations from modules
+     * @return Formatted bibliography HTML for tools used in the workflow
+     */
+    static String toolBibliographyText(Map collectedCitations) {
+        if (collectedCitations.isEmpty()) {
+            return "No bibliography entries found."
+        }
+        
+        def bibEntries = collectedCitations.values()
+            .findAll { it.bibliography }
+            .collect { it.bibliography }
+        
         return bibEntries.join(" ")
     }
 
-    static String methodsDescriptionText(File mqc_methods_yaml, Map meta = [:]) {
+    /**
+     * Generate methods description text using collected citations
+     * @param mqc_methods_yaml MultiQC methods YAML file
+     * @param collectedCitations Map containing all tool citations from modules (optional)
+     * @param meta Additional metadata (optional)
+     * @return Formatted methods description HTML
+     */
+    static String methodsDescriptionText(File mqc_methods_yaml, Map collectedCitations = [:], Map meta = [:]) {
         // Convert to a named map so can be used as with familiar NXF ${workflow} variable syntax in the MultiQC YML file
         if (!meta) meta = [:]
         def session = (Session) nextflow.Nextflow.session
         meta.workflow = session.getWorkflowMetadata()?.toMap() ?: [:]
         meta["manifest_map"] = session.getManifest()?.toMap() ?: [:]
+        
         // Pipeline DOI
         if (meta.manifest_map?.doi) {
             def temp_doi_ref = ""
@@ -290,23 +311,18 @@ class NfcorePipelineUtils {
             meta["doi_text"] = ""
         }
         meta["nodoi_text"] = meta.manifest_map?.doi ? "" : "<li>If available, make sure to update the text to include the Zenodo DOI of version of the pipeline used. </li>"
-        // Only set tool_citations/tool_bibliography if meta is not a Map (i.e., is a file path)
-        if (!(meta instanceof Map)) {
-            meta = [
-                tool_citations   : toolCitationText(meta),
-                tool_bibliography: toolBibliographyText(meta)
-            ]
-        } else {
-            if (!meta.containsKey("tool_citations")) {
-                meta["tool_citations"] = toolCitationText(meta)
-            }
-            if (!meta.containsKey("tool_bibliography")) {
-                meta["tool_bibliography"] = toolBibliographyText(meta)
-            }
+        
+        // Generate tool citations and bibliography if not already provided
+        if (!meta.containsKey("tool_citations")) {
+            meta["tool_citations"] = toolCitationText(collectedCitations)
         }
-        def methods_text = mqc_methods_yaml.text
+        if (!meta.containsKey("tool_bibliography")) {
+            meta["tool_bibliography"] = toolBibliographyText(collectedCitations)
+        }
+        
+        def binding = new groovy.lang.Binding(meta)
         def engine = new groovy.text.SimpleTemplateEngine()
-        def description_html = engine.createTemplate(methods_text).make(meta)
+        def description_html = engine.createTemplate(mqc_methods_yaml.text).make(binding)
         return description_html.toString()
     }
 } 

@@ -4,8 +4,14 @@ import nextflow.Session
 import nextflow.config.Manifest
 import spock.lang.Specification
 import spock.lang.Ignore
+import spock.lang.TempDir
+import java.nio.file.Path
+import org.yaml.snakeyaml.Yaml
 
 class NfcorePipelineUtilsTest extends Specification {
+    @TempDir
+    Path tempDir
+
     def 'paramsSummaryMultiqc generates valid YAML with summary'() {
         given:
         def summaryParams = [
@@ -139,7 +145,8 @@ class NfcorePipelineUtilsTest extends Specification {
         }
 
         when:
-        def result = NfcorePipelineUtils.toolBibliographyText(tempMeta)
+        def citations = NfcorePipelineUtils.generateModuleToolCitation(tempMeta)
+        def result = NfcorePipelineUtils.toolBibliographyText(citations)
 
         then:
         result.contains('<li>')
@@ -185,14 +192,14 @@ class NfcorePipelineUtilsTest extends Specification {
         nextflow.Nextflow.metaClass.static.getSession = { -> session }
 
         when:
-        // Pass tempMeta to methodsDescriptionText for tool citations/bibliography
+        def citations = NfcorePipelineUtils.generateModuleToolCitation(tempMeta)
         if (!meta.containsKey("tool_citations")) {
-            meta["tool_citations"] = NfcorePipelineUtils.toolCitationText(tempMeta)
+            meta["tool_citations"] = NfcorePipelineUtils.toolCitationText(citations)
         }
         if (!meta.containsKey("tool_bibliography")) {
-            meta["tool_bibliography"] = NfcorePipelineUtils.toolBibliographyText(tempMeta)
+            meta["tool_bibliography"] = NfcorePipelineUtils.toolBibliographyText(citations)
         }
-        def result = NfcorePipelineUtils.methodsDescriptionText(tempYaml, meta)
+        def result = NfcorePipelineUtils.methodsDescriptionText(tempYaml, citations, meta)
 
         then:
         result.contains('<h2>Workflow: nf-core/testpipe</h2>')
@@ -203,6 +210,247 @@ class NfcorePipelineUtilsTest extends Specification {
         cleanup:
         tempYaml.delete()
         tempMeta.delete()
+        nextflow.Nextflow.metaClass.static.getSession = originalSession
+    }
+
+    def "generateModuleToolCitation should parse meta.yml and return tool citations"() {
+        given:
+        def metaFile = new File(tempDir.toFile(), "meta.yml")
+        metaFile << """
+        name: test_module
+        tools:
+          - samtools:
+              doi: "10.1093/bioinformatics/btp352"
+              homepage: "https://www.htslib.org/"
+              author: "Li H, Handsaker B, Wysoker A, et al."
+              year: 2009
+              title: "The Sequence Alignment/Map format and SAMtools"
+              journal: "Bioinformatics"
+          - fastqc:
+              description: "Quality control tool for high throughput sequence data"
+        """
+
+        when:
+        def result = NfcorePipelineUtils.generateModuleToolCitation(metaFile)
+        println "DEBUG: result from generateModuleToolCitation: ${result}"
+
+        then:
+        result.size() == 2
+        result.containsKey("samtools")
+        result.containsKey("fastqc")
+        result.samtools.citation == "samtools (DOI: 10.1093/bioinformatics/btp352)"
+        result.samtools.bibliography.contains("<li>Li H, Handsaker B, Wysoker A, et al.. 2009. The Sequence Alignment/Map format and SAMtools. Bioinformatics. doi: 10.1093/bioinformatics/btp352. <a href='https://www.htslib.org/'>https://www.htslib.org/</a></li>")
+        result.fastqc.citation == "fastqc (Quality control tool for high throughput sequence data)"
+        result.fastqc.bibliography == "<li>fastqc</li>"
+    }
+
+    def "toolCitationText should format citations from collected module citations"() {
+        given:
+        def collectedCitations = [
+            'samtools': [
+                citation: "samtools (DOI: 10.1093/bioinformatics/btp352)",
+                bibliography: "<li>Citation 1</li>"
+            ],
+            'fastqc': [
+                citation: "fastqc (Quality control tool)",
+                bibliography: "<li>Citation 2</li>"
+            ]
+        ]
+
+        when:
+        def result = NfcorePipelineUtils.toolCitationText(collectedCitations)
+
+        then:
+        result == "Tools used in the workflow included: samtools (DOI: 10.1093/bioinformatics/btp352), fastqc (Quality control tool)."
+    }
+
+    def "toolBibliographyText should format bibliography from collected module citations"() {
+        given:
+        def collectedCitations = [
+            'samtools': [
+                citation: "samtools citation",
+                bibliography: "<li>Samtools citation details</li>"
+            ],
+            'fastqc': [
+                citation: "fastqc citation",
+                bibliography: "<li>FastQC citation details</li>"
+            ],
+            'empty_bib': [
+                citation: "tool with no bibliography",
+                bibliography: null
+            ]
+        ]
+
+        when:
+        def result = NfcorePipelineUtils.toolBibliographyText(collectedCitations)
+
+        then:
+        result == "<li>Samtools citation details</li> <li>FastQC citation details</li>"
+    }
+
+    def "methodsDescriptionText should generate HTML with collected citations"() {
+        given:
+        def mqcMethodsFile = new File(tempDir.toFile(), "mqc_methods.yml")
+        mqcMethodsFile << """
+        id: 'methods-description'
+        section_name: 'Test Pipeline Methods'
+        section_href: 'https://example.com'
+        plot_type: 'html'
+        description: |
+            This pipeline uses the following tools: ${tool_citations}
+            
+            <h4>Bibliography</h4>
+            <ol>
+            ${tool_bibliography}
+            </ol>
+        """
+
+        def collectedCitations = [
+            'samtools': [
+                citation: "samtools (DOI: 10.1093/bioinformatics/btp352)",
+                bibliography: "<li>Samtools citation details</li>"
+            ],
+            'fastqc': [
+                citation: "fastqc (Quality control tool)",
+                bibliography: "<li>FastQC citation details</li>"
+            ]
+        ]
+
+        // Mock session for the test
+        GroovyMock(Session, global: true)
+        def mockSession = Mock(Session)
+        def mockManifest = Mock() { toMap() >> [name: "test-workflow", doi: "10.5281/zenodo.123456"] }
+        def mockWorkflowMetadata = Mock() { toMap() >> [projectName: "test_pipeline"] }
+        mockSession.getManifest() >> mockManifest
+        mockSession.getWorkflowMetadata() >> mockWorkflowMetadata
+        def originalSession = nextflow.Nextflow.metaClass.static.getSession
+        nextflow.Nextflow.metaClass.static.getSession = { -> mockSession }
+
+        when:
+        def meta = [:]
+        meta["tool_citations"] = NfcorePipelineUtils.toolCitationText(collectedCitations)
+        meta["tool_bibliography"] = NfcorePipelineUtils.toolBibliographyText(collectedCitations)
+        def result
+        try {
+            result = NfcorePipelineUtils.methodsDescriptionText(mqcMethodsFile, collectedCitations, meta)
+        } catch (Exception e) {
+            println "DEBUG: Exception in methodsDescriptionText: ${e}"
+            throw e
+        }
+
+        then:
+        result.contains("samtools (DOI: 10.1093/bioinformatics/btp352)")
+        result.contains("fastqc (Quality control tool)")
+        result.contains("<li>Samtools citation details</li>")
+        result.contains("<li>FastQC citation details</li>")
+
+        cleanup:
+        nextflow.Nextflow.metaClass.static.getSession = originalSession
+    }
+
+    def "should handle empty citations list"() {
+        given:
+        def emptyMap = [:]
+
+        when:
+        def citationText = NfcorePipelineUtils.toolCitationText(emptyMap)
+        def bibText = NfcorePipelineUtils.toolBibliographyText(emptyMap)
+
+        then:
+        citationText == "No tools used in the workflow."
+        bibText == "No bibliography entries found."
+    }
+
+    def "integration test of all citation functions"() {
+        given:
+        // Create test meta.yml files for different modules
+        def metaFile1 = new File(tempDir.toFile(), "module1_meta.yml")
+        metaFile1 << """
+        name: module1
+        tools:
+          - samtools:
+              doi: "10.1093/bioinformatics/btp352"
+              homepage: "https://www.htslib.org/"
+              author: "Li H, et al."
+              year: 2009
+              title: "The Sequence Alignment/Map format and SAMtools"
+              journal: "Bioinformatics"
+        """
+
+        def metaFile2 = new File(tempDir.toFile(), "module2_meta.yml")
+        metaFile2 << """
+        name: module2
+        tools:
+          - fastqc:
+              description: "Quality control tool for sequence data"
+              homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+        """
+        
+        def mqcMethodsFile = new File(tempDir.toFile(), "methods_description.yml")
+        mqcMethodsFile << """
+        id: 'methods-description'
+        section_name: 'Test Pipeline Methods'
+        section_href: 'https://example.com'
+        plot_type: 'html'
+        description: |
+            This pipeline uses the following tools: ${tool_citations}
+            
+            <h4>Bibliography</h4>
+            <ol>
+            ${tool_bibliography}
+            </ol>
+        """
+
+        // Mock Nextflow session
+        GroovyMock(Session, global: true)
+        def mockSession = Mock(Session)
+        def mockManifest = Mock() { toMap() >> [name: "test-workflow", doi: "10.5281/zenodo.123456"] }
+        def mockWorkflowMetadata = Mock() { toMap() >> [projectName: "test_pipeline"] }
+        mockSession.getManifest() >> mockManifest
+        mockSession.getWorkflowMetadata() >> mockWorkflowMetadata
+        def originalSession = nextflow.Nextflow.metaClass.static.getSession
+        nextflow.Nextflow.metaClass.static.getSession = { -> mockSession }
+
+        when:
+        // Simulate processing at module level
+        def module1Citations = NfcorePipelineUtils.generateModuleToolCitation(metaFile1)
+        def module2Citations = NfcorePipelineUtils.generateModuleToolCitation(metaFile2)
+        
+        // Simulate collecting citations from channel
+        def allCitations = [:]
+        allCitations.putAll(module1Citations)
+        allCitations.putAll(module2Citations)
+        
+        // Generate final methods description
+        def meta = [:]
+        meta["tool_citations"] = NfcorePipelineUtils.toolCitationText(allCitations)
+        meta["tool_bibliography"] = NfcorePipelineUtils.toolBibliographyText(allCitations)
+        def methodsHtml
+        try {
+            methodsHtml = NfcorePipelineUtils.methodsDescriptionText(mqcMethodsFile, allCitations, meta)
+        } catch (Exception e) {
+            println "DEBUG: Exception in integration test methodsDescriptionText: ${e}"
+            throw e
+        }
+
+        then:
+        // Verify module level citations
+        module1Citations.size() == 1
+        module1Citations.containsKey("samtools")
+        module1Citations.samtools.citation.contains("samtools")
+        module1Citations.samtools.citation.contains("10.1093/bioinformatics/btp352")
+        
+        module2Citations.size() == 1
+        module2Citations.containsKey("fastqc")
+        module2Citations.fastqc.citation.contains("fastqc")
+        
+        // Verify final methods HTML
+        methodsHtml.contains("samtools")
+        methodsHtml.contains("fastqc")
+        methodsHtml.contains("Quality control tool")
+        methodsHtml.contains("Li H, et al")
+
+        cleanup:
         nextflow.Nextflow.metaClass.static.getSession = originalSession
     }
 } 
