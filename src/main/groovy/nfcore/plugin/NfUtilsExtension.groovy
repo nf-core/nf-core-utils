@@ -42,4 +42,131 @@ class NfUtilsExtension extends PluginExtensionPoint {
         println "Hello, ${target}!"
     }
 
+    // --- Methods from NfcoreExtension ---
+    /**
+     * Generate methods description text for MultiQC report
+     * @param workflow Workflow metadata
+     * @param mqcMethodsYaml Path to MultiQC methods YAML template
+     * @param modulePaths List of paths to module directories containing meta.yml files
+     * @return HTML formatted methods description
+     */
+    // TODO This is still in the works
+    // @Function
+    // String methodsDescriptionText(nextflow.script.WorkflowMetadata workflow, String mqcMethodsYaml, List modulePaths) {
+    //     return NfcoreExtension.methodsDescriptionText(workflow, mqcMethodsYaml, modulePaths)
+    // }
+
+    /**
+     * Send completion email
+     * @param summaryParams Map of parameter groups and their parameters
+     * @param email Email address to send to
+     * @param emailOnFail Email address to send to on failure
+     * @param plaintextEmail Whether to send plaintext email
+     * @param outdir Output directory
+     * @param monochromeLogs Whether to use monochrome logs
+     * @param multiqcReports List of MultiQC report paths
+     */
+    @Function
+    void completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports) {
+        NfcoreExtension.completionEmail(summaryParams, email, emailOnFail, plaintextEmail, outdir, monochromeLogs, multiqcReports)
+    }
+
+    /**
+     * Send completion summary to log
+     * @param monochromeLogs Whether to use monochrome logs
+     */
+    @Function
+    void completionSummary(boolean monochromeLogs) {
+        NfcoreExtension.completionSummary(monochromeLogs)
+    }
+
+    /**
+     * Send Instant Messenger notification
+     * @param summaryParams Map of parameter groups and their parameters
+     * @param hookUrl Hook URL for the IM service
+     */
+    @Function
+    void imNotification(Map summaryParams, String hookUrl) {
+        NfcoreExtension.imNotification(summaryParams, hookUrl)
+    }
+
+    /**
+     * Initialize pipeline utilities
+     * @param version Whether to display version and exit
+     * @param dumpParameters Whether to dump parameters to JSON file
+     * @param outdir Output directory
+     * @param condaEnabled Whether conda/mamba is enabled
+     */
+    @Function
+    void initializeNextflowPipeline(boolean version, boolean dumpParameters, String outdir, boolean condaEnabled) {
+        NfcoreExtension.initializeNextflowPipeline(version, dumpParameters, outdir, condaEnabled)
+    }
+
+    /**
+     * Initialize nf-core specific pipeline utilities
+     * @param nextflowCliArgs List of positional nextflow CLI args
+     */
+    @Function
+    void initializeNfcorePipeline(List nextflowCliArgs) {
+        NfcoreExtension.initializeNfcorePipeline(nextflowCliArgs)
+    }
+
+    // --- Methods from ReferencesExtension ---
+    /**
+     * Get references file from a references list or parameters
+     * @param referencesList The references list (List of [meta, _readme])
+     * @param param The file parameter
+     * @param attribute The attribute to look for in metadata
+     * @param basepath The base path for igenomes
+     * @return A list of reference files
+     */
+    @Function
+    List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
+        return ReferencesExtension.getReferencesFile(referencesList, param, attribute, basepath)
+    }
+
+    /**
+     * Get references value from a references list or parameters
+     * @param referencesList The references list (List of [meta, _readme])
+     * @param param The value parameter
+     * @param attribute The attribute to look for in metadata
+     * @return A list of reference values
+     */
+    @Function
+    List getReferencesValue(List<List> referencesList, String param, String attribute) {
+        return ReferencesExtension.getReferencesValue(referencesList, param, attribute)
+    }
+
+    // --- Methods from NextflowPipelineExtension ---
+    /**
+     * Generate version string for a workflow
+     * @param manifestVersion The workflow version from manifest
+     * @param commitId The workflow commit ID (optional)
+     * @return A formatted version string
+     */
+    @Function
+    String getWorkflowVersion(String manifestVersion, String commitId = null) {
+        return NextflowPipelineExtension.getWorkflowVersion(manifestVersion, commitId)
+    }
+
+    /**
+     * Dump pipeline parameters to a JSON file
+     * @param outdir The output directory
+     * @param params The pipeline parameters
+     * @param launchDir The launch directory
+     */
+    @Function
+    void dumpParametersToJSON(java.nio.file.Path outdir, Map params, java.nio.file.Path launchDir) {
+        NextflowPipelineExtension.dumpParametersToJSON(outdir, params, launchDir)
+    }
+
+    /**
+     * Check if conda channels are set up correctly
+     * @return True if channels are set up correctly, false otherwise
+     */
+    @Function
+    boolean checkCondaChannels() {
+        return NextflowPipelineExtension.checkCondaChannels()
+    }
+
 }

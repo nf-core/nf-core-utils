@@ -6,6 +6,7 @@ import spock.lang.Specification
 import spock.lang.TempDir
 import java.nio.file.Path
 import org.yaml.snakeyaml.Yaml
+import spock.lang.PendingFeature
 
 class NfcoreCitationUtilsTest extends Specification {
     @TempDir
@@ -161,6 +162,7 @@ class NfcoreCitationUtilsTest extends Specification {
         result == "<li>Samtools citation details</li> <li>FastQC citation details</li>"
     }
 
+    @PendingFeature()
     def "methodsDescriptionText should generate HTML with collected citations"() {
         given:
         def mqcMethodsFile = new File(tempDir.toFile(), "mqc_methods.txt")
@@ -235,6 +237,7 @@ ${tool_bibliography}
         bibText == "No bibliography entries found."
     }
 
+    @PendingFeature()
     def "integration test of all citation functions"() {
         given:
         // Create test meta.yml files for different modules

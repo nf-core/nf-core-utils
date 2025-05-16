@@ -29,11 +29,10 @@ import java.nio.file.Path
  * available in the utils_nextflow_pipeline subworkflow.
  */
 @CompileStatic
-class NextflowPipelineExtension extends PluginExtensionPoint {
+class NextflowPipelineExtension {
 
     private Session session
 
-    @Override
     protected void init(Session session) {
         this.session = session
     }
@@ -45,8 +44,7 @@ class NextflowPipelineExtension extends PluginExtensionPoint {
      * @param commitId The workflow commit ID (optional)
      * @return A formatted version string
      */
-    @Function
-    String getWorkflowVersion(String manifestVersion, String commitId = null) {
+    static String getWorkflowVersion(String manifestVersion, String commitId = null) {
         def version_string = "" as String
         if (manifestVersion) {
             def prefix_v = manifestVersion.charAt(0) != 'v' ? 'v' : ''
@@ -68,8 +66,7 @@ class NextflowPipelineExtension extends PluginExtensionPoint {
      * @param params The pipeline parameters
      * @param launchDir The launch directory
      */
-    @Function
-    void dumpParametersToJSON(Path outdir, Map params, Path launchDir) {
+    static void dumpParametersToJSON(Path outdir, Map params, Path launchDir) {
         // Skip if outdir is null
         if (outdir == null) {
             return
@@ -90,8 +87,7 @@ class NextflowPipelineExtension extends PluginExtensionPoint {
      * 
      * @return True if channels are set up correctly, false otherwise
      */
-    @Function
-    boolean checkCondaChannels() {
+    static boolean checkCondaChannels() {
         def parser = new Yaml()
         def channels = [] as List
         try {

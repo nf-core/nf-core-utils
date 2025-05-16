@@ -3,10 +3,10 @@ package nfcore.plugin
 import spock.lang.Specification
 
 class ReferencesExtensionTest extends Specification {
-    def extension = new ReferencesExtension()
+    def extension
 
     def setup() {
-        extension.init(null) // No session needed for these tests
+        extension = new ReferencesExtension() // Use correct package
     }
 
     def "test getReferencesFile with param and getReferencesValue without param"() {

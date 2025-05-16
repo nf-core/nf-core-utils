@@ -30,12 +30,7 @@ import groovy.util.logging.Slf4j
 /**
  * Plugin extension providing nf-core utilities for Nextflow pipelines
  */
-class NfcoreExtension extends PluginExtensionPoint {
-
-    @Override
-    protected void init(Session session) {
-        // Optionally initialize state with the session
-    }
+class NfcoreExtension {
 
     void onLoad(Session session) {
         // Called when the plugin is loaded
@@ -48,23 +43,6 @@ class NfcoreExtension extends PluginExtensionPoint {
     }
 
     /**
-     * Generate methods description text for MultiQC report
-     * @param workflow Workflow metadata
-     * @param mqcMethodsYaml Path to MultiQC methods YAML template
-     * @param modulePaths List of paths to module directories containing meta.yml files
-     * @return HTML formatted methods description
-     */
-    String methodsDescriptionText(WorkflowMetadata workflow, String mqcMethodsYaml, List modulePaths) {
-        def metadata = NfcoreMethodsUtils.collectMethodsFromMetaYml(modulePaths)
-        return NfcoreMethodsUtils.methodsDescriptionText(
-            workflow,
-            mqcMethodsYaml,
-            metadata.citations,
-            metadata.bibliography
-        )
-    }
-
-    /**
      * Send completion email
      * @param summaryParams Map of parameter groups and their parameters
      * @param email Email address to send to
@@ -74,7 +52,7 @@ class NfcoreExtension extends PluginExtensionPoint {
      * @param monochromeLogs Whether to use monochrome logs
      * @param multiqcReports List of MultiQC report paths
      */
-    void completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports) {
+    static void completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports) {
         NfcoreNotificationUtils.completionEmail(
             summaryParams,
             email,
@@ -90,7 +68,7 @@ class NfcoreExtension extends PluginExtensionPoint {
      * Send completion summary to log
      * @param monochromeLogs Whether to use monochrome logs
      */
-    void completionSummary(boolean monochromeLogs) {
+    static void completionSummary(boolean monochromeLogs) {
         NfcoreNotificationUtils.completionSummary(monochromeLogs)
     }
 
@@ -99,7 +77,7 @@ class NfcoreExtension extends PluginExtensionPoint {
      * @param summaryParams Map of parameter groups and their parameters
      * @param hookUrl Hook URL for the IM service
      */
-    void imNotification(Map summaryParams, String hookUrl) {
+    static void imNotification(Map summaryParams, String hookUrl) {
         NfcoreNotificationUtils.imNotification(summaryParams, hookUrl)
     }
 
@@ -110,7 +88,7 @@ class NfcoreExtension extends PluginExtensionPoint {
      * @param outdir Output directory
      * @param condaEnabled Whether conda/mamba is enabled
      */
-    void initializeNextflowPipeline(boolean version, boolean dumpParameters, String outdir, boolean condaEnabled) {
+    static void initializeNextflowPipeline(boolean version, boolean dumpParameters, String outdir, boolean condaEnabled) {
         NfcoreVersionUtils.printVersionAndExit(version)
         if (dumpParameters) {
             NfcoreReportingUtils.dumpParametersToJson(outdir)
@@ -122,7 +100,7 @@ class NfcoreExtension extends PluginExtensionPoint {
      * Initialize nf-core specific pipeline utilities
      * @param nextflowCliArgs List of positional nextflow CLI args
      */
-    void initializeNfcorePipeline(List nextflowCliArgs) {
+    static void initializeNfcorePipeline(List nextflowCliArgs) {
         NfcoreConfigValidator.validateConfig(nextflowCliArgs)
     }
 } 

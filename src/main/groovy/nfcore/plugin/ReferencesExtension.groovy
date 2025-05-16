@@ -26,11 +26,10 @@ import nextflow.plugin.extension.PluginExtensionPoint
  * that were previously available in the utils_references subworkflow.
  */
 @CompileStatic
-class ReferencesExtension extends PluginExtensionPoint {
+class ReferencesExtension {
 
     private Session session
 
-    @Override
     protected void init(Session session) {
         this.session = session
     }
@@ -44,11 +43,9 @@ class ReferencesExtension extends PluginExtensionPoint {
      * @param basepath The base path for igenomes
      * @return A list of reference files
      */
-    @Function
-    List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
+    static List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
         return referencesList.collect { pair ->
             Map meta = (Map) pair[0]
-            def _readme = pair.size() > 1 ? pair[1] : null
             if (param || (meta != null && meta[attribute])) {
                 [meta.subMap(['id']), param ?: (meta[attribute]?.toString()?.replace('${params.igenomes_base}', basepath))]
             } else {
@@ -65,11 +62,9 @@ class ReferencesExtension extends PluginExtensionPoint {
      * @param attribute The attribute to look for in metadata
      * @return A list of reference values
      */
-    @Function
-    List getReferencesValue(List<List> referencesList, String param, String attribute) {
+    static List getReferencesValue(List<List> referencesList, String param, String attribute) {
         return referencesList.collect { pair ->
             Map meta = (Map) pair[0]
-            def _readme = pair.size() > 1 ? pair[1] : null
             if (param || (meta != null && meta[attribute])) {
                 [meta.subMap(['id']), param ?: meta[attribute]]
             } else {
