@@ -66,19 +66,17 @@ class NextflowPipelineExtension {
      * @param params The pipeline parameters
      * @param launchDir The launch directory
      */
-    static void dumpParametersToJSON(Path outdir, Map params, Path launchDir) {
-        // Skip if outdir is null
-        if (outdir == null) {
-            return
-        }
-        
+    static void dumpParametersToJSON(Path outdir, Map params) {
+        if (outdir == null) return
+
         def timestamp = new java.util.Date().format('yyyy-MM-dd_HH-mm-ss')
         def filename  = "params_${timestamp}.json"
-        def temp_pf   = new File(launchDir.toString(), ".${filename}")
+        // Create a temp file in the system temp directory
+        def temp_pf   = File.createTempFile("params_", ".json")
         def jsonStr   = groovy.json.JsonOutput.toJson(params)
         temp_pf.text  = groovy.json.JsonOutput.prettyPrint(jsonStr)
 
-        nextflow.extension.FilesEx.copyTo(temp_pf.toPath(), "${outdir}/pipeline_info/params_${timestamp}.json")
+        nextflow.extension.FilesEx.copyTo(temp_pf.toPath(), "${outdir}/pipeline_info/${filename}")
         temp_pf.delete()
     }
 

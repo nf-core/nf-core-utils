@@ -65,7 +65,7 @@ class NextflowPipelineExtensionTest extends Specification {
         def extension = new NextflowPipelineExtension()
         
         when:
-        extension.dumpParametersToJSON(outdir, params, launchDir)
+        extension.dumpParametersToJSON(outdir, params)
         
         then:
         def files = pipelineInfoDir.toFile().listFiles()
@@ -91,7 +91,7 @@ class NextflowPipelineExtensionTest extends Specification {
         def extension = new NextflowPipelineExtension()
         
         when:
-        extension.dumpParametersToJSON(null, params, launchDir)
+        extension.dumpParametersToJSON(null, params)
         
         then:
         def files = tempDir.toFile().listFiles()

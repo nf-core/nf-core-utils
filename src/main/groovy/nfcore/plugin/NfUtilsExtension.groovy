@@ -153,11 +153,10 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * Dump pipeline parameters to a JSON file
      * @param outdir The output directory
      * @param params The pipeline parameters
-     * @param launchDir The launch directory
      */
     @Function
-    void dumpParametersToJSON(java.nio.file.Path outdir, Map params, java.nio.file.Path launchDir) {
-        NextflowPipelineExtension.dumpParametersToJSON(outdir, params, launchDir)
+    void dumpParametersToJSON(java.nio.file.Path outdir, Map params) {
+        NextflowPipelineExtension.dumpParametersToJSON(outdir, params)
     }
 
     /**
