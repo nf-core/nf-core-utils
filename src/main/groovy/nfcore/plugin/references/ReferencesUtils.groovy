@@ -26,7 +26,7 @@ import nextflow.plugin.extension.PluginExtensionPoint
  * that were previously available in the utils_references subworkflow.
  */
 @CompileStatic
-class ReferencesExtension {
+class ReferencesUtils {
 
     private Session session
 

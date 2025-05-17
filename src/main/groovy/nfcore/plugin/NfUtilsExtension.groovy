@@ -21,6 +21,7 @@ import nextflow.Session
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
 
+
 /**
  * Implements a custom function which can be imported by
  * Nextflow scripts.
@@ -68,7 +69,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports) {
-        NfcoreExtension.completionEmail(summaryParams, email, emailOnFail, plaintextEmail, outdir, monochromeLogs, multiqcReports)
+        NfcoreUtils.completionEmail(summaryParams, email, emailOnFail, plaintextEmail, outdir, monochromeLogs, multiqcReports)
     }
 
     /**
@@ -77,7 +78,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void completionSummary(boolean monochromeLogs) {
-        NfcoreExtension.completionSummary(monochromeLogs)
+        NfcoreUtils.completionSummary(monochromeLogs)
     }
 
     /**
@@ -87,7 +88,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void imNotification(Map summaryParams, String hookUrl) {
-        NfcoreExtension.imNotification(summaryParams, hookUrl)
+        NfcoreUtils.imNotification(summaryParams, hookUrl)
     }
 
     /**
@@ -99,7 +100,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void initializeNextflowPipeline(boolean version, boolean dumpParameters, String outdir, boolean condaEnabled) {
-        NfcoreExtension.initializeNextflowPipeline(version, dumpParameters, outdir, condaEnabled)
+        NfcoreUtils.initializeNextflowPipeline(version, dumpParameters, outdir, condaEnabled)
     }
 
     /**
@@ -108,7 +109,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void initializeNfcorePipeline(List nextflowCliArgs) {
-        NfcoreExtension.initializeNfcorePipeline(nextflowCliArgs)
+        NfcoreUtils.initializeNfcorePipeline(nextflowCliArgs)
     }
 
     // --- Methods from ReferencesExtension ---
@@ -122,7 +123,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
-        return ReferencesExtension.getReferencesFile(referencesList, param, attribute, basepath)
+        return ReferencesUtils.getReferencesFile(referencesList, param, attribute, basepath)
     }
 
     /**
@@ -134,7 +135,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     List getReferencesValue(List<List> referencesList, String param, String attribute) {
-        return ReferencesExtension.getReferencesValue(referencesList, param, attribute)
+        return ReferencesUtils.getReferencesValue(referencesList, param, attribute)
     }
 
     // --- Methods from NextflowPipelineExtension ---
@@ -146,7 +147,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     String getWorkflowVersion(String manifestVersion, String commitId = null) {
-        return NextflowPipelineExtension.getWorkflowVersion(manifestVersion, commitId)
+        return NextflowPipelineUtils.getWorkflowVersion(manifestVersion, commitId)
     }
 
     /**
@@ -156,7 +157,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void dumpParametersToJSON(java.nio.file.Path outdir, Map params) {
-        NextflowPipelineExtension.dumpParametersToJSON(outdir, params)
+        NextflowPipelineUtils.dumpParametersToJSON(outdir, params)
     }
 
     /**
@@ -165,7 +166,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     boolean checkCondaChannels() {
-        return NextflowPipelineExtension.checkCondaChannels()
+        return NextflowPipelineUtils.checkCondaChannels()
     }
 
 }

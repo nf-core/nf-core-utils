@@ -30,7 +30,7 @@ import groovy.util.logging.Slf4j
 /**
  * Plugin extension providing nf-core utilities for Nextflow pipelines
  */
-class NfcoreExtension {
+class NfcoreUtils {
 
     void onLoad(Session session) {
         // Called when the plugin is loaded

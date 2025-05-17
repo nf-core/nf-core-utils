@@ -1,12 +1,13 @@
 package nfcore.plugin
 
 import spock.lang.Specification
+import nfcore.plugin.ReferencesUtils
 
-class ReferencesExtensionTest extends Specification {
+class ReferencesUtilsTest extends Specification {
     def extension
 
     def setup() {
-        extension = new ReferencesExtension() // Use correct package
+        extension = ReferencesUtils
     }
 
     def "test getReferencesFile with param and getReferencesValue without param"() {
@@ -23,8 +24,8 @@ class ReferencesExtensionTest extends Specification {
         def basepath = '/base/path'
 
         when:
-        def result_file = extension.getReferencesFile(referencesList, param_file, attribute_file, basepath)
-        def result_value = extension.getReferencesValue(referencesList, param_value, attribute_value)
+        def result_file = ReferencesUtils.getReferencesFile(referencesList, param_file, attribute_file, basepath)
+        def result_value = ReferencesUtils.getReferencesValue(referencesList, param_value, attribute_value)
 
         then:
         // getReferencesFile should use param_file for all
@@ -48,11 +49,11 @@ class ReferencesExtensionTest extends Specification {
         def basepath = '/base/path'
 
         when:
-        def result_file = extension.getReferencesFile(referencesList, param_file, attribute_file, basepath)
-        def result_value = extension.getReferencesValue(referencesList, param_value, attribute_value)
+        def result_file = ReferencesUtils.getReferencesFile(referencesList, param_file, attribute_file, basepath)
+        def result_value = ReferencesUtils.getReferencesValue(referencesList, param_value, attribute_value)
 
         then:
         result_file == [null]
         result_value == [null]
     }
-} 
+}

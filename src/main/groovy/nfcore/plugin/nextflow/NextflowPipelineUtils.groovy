@@ -29,7 +29,7 @@ import java.nio.file.Path
  * available in the utils_nextflow_pipeline subworkflow.
  */
 @CompileStatic
-class NextflowPipelineExtension {
+class NextflowPipelineUtils {
 
     private Session session
 
