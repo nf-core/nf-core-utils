@@ -50,5 +50,6 @@ class NfcorePipelineObserver implements TraceObserver {
     @Override
     void onFlowComplete() {
         println "Pipeline complete! 👋"
+        // TODO dumpParametersToJSON(session.params.outdir, session.params)
     }
 } 
