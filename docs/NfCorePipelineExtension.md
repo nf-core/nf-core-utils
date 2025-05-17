@@ -1,8 +1,12 @@
 # NfCorePipelineExtension
 
-This extension provides a DSL2-friendly wrapper for the nf-core utilities, exposing them for use in nf-core pipelines.
+This extension provides a DSL2-friendly wrapper for nf-core utility functions, making them easily accessible in your Nextflow pipelines.
 
-## Import
+---
+
+## Importing Functions
+
+You can import all or specific utility functions from the plugin:
 
 ```nextflow
 // Import all functions
@@ -12,42 +16,51 @@ include { NfcorePipelineUtils } from 'plugin/nf-utils'
 include { checkConfigProvided; completionEmail } from 'plugin/nf-utils'
 ```
 
-## Extension Summary
+---
 
-This extension exposes the utility functions documented in [NfCore Utilities](NfCoreUtilities.md) for convenient use in DSL2 pipelines. Rather than duplicating the full documentation here, this page provides guidance on how to use these utilities in your pipeline.
+## Quick Reference Table
 
-## Usage Guide
+| Function                | Purpose                                      |
+|-------------------------|----------------------------------------------|
+| checkConfigProvided     | Warn if no custom config/profile is provided |
+| checkProfileProvided    | Validate profile argument                    |
+| getWorkflowVersion      | Get workflow version string                  |
+| paramsSummaryMultiqc    | Generate MultiQC summary YAML                |
+| workflowSummaryMQC      | Create MultiQC summary template              |
+| sectionLogs             | Generate colored section logs                |
+| logColours              | Get ANSI color codes for logs                |
+| completionSummary       | Print summary at pipeline completion         |
+| completionEmail         | Send completion email                        |
+| imNotification          | Send Slack/Teams notification                |
+| getSingleReport         | Get a single report from Path/List           |
 
-The utilities are designed to be used at different stages of your pipeline:
+---
+
+## Usage Examples
 
 ### Pipeline Initialization
-
-At the start of your pipeline script:
 
 ```nextflow
 #!/usr/bin/env nextflow
 
-// Check configuration and profile
 include { checkConfigProvided; checkProfileProvided } from 'plugin/nf-utils'
 checkConfigProvided()
 checkProfileProvided(args)
 
-// Get color codes for terminal output
 include { logColours } from 'plugin/nf-utils'
 def colors = logColours(params.monochrome_logs)
 log.info "${colors.purple}Pipeline started${colors.reset}"
 ```
 
-### In Processes
+---
 
-When generating MultiQC reports:
+### In Processes
 
 ```nextflow
 include { paramsSummaryMultiqc } from 'plugin/nf-utils'
 
 process MULTIQC {
     // ... process definition ...
-    
     script:
     def summary = [Run_name: workflow.runName, Output_dir: params.outdir]
     def yaml = paramsSummaryMultiqc([Summary: summary])
@@ -58,18 +71,16 @@ process MULTIQC {
 }
 ```
 
-### At Pipeline Completion
+---
 
-In the workflow completion handler:
+### At Pipeline Completion
 
 ```nextflow
 include { completionSummary; completionEmail; imNotification } from 'plugin/nf-utils'
 
 workflow.onComplete {
-    // Print summary to terminal
     completionSummary(params.monochrome_logs)
-    
-    // Send email notification if configured
+
     if (params.email || params.email_on_fail) {
         def summary = [Run_Name: workflow.runName]
         completionEmail(
@@ -82,8 +93,7 @@ workflow.onComplete {
             multiqc_report
         )
     }
-    
-    // Send Slack/Teams notification if webhook URL provided
+
     if (params.hook_url) {
         def summary = [Run_name: workflow.runName]
         imNotification([Summary: summary], params.hook_url)
@@ -91,14 +101,17 @@ workflow.onComplete {
 }
 ```
 
-## Available Functions
+---
 
-All the following functions are available through this extension:
+## Function Reference
 
-- **Configuration:** `checkConfigProvided`, `checkProfileProvided`
-- **Version Info:** `getWorkflowVersion`
-- **Reporting:** `paramsSummaryMultiqc`, `workflowSummaryMQC`, `sectionLogs`
-- **Notifications:** `logColours`, `completionSummary`, `completionEmail`, `imNotification`
-- **Reports:** `getSingleReport`
+For detailed documentation of each function, including parameters, return values, and advanced usage, see [NfCore Utilities](NfCoreUtilities.md).
 
-For detailed documentation of each function with parameters, return values, and examples, see the comprehensive [NfCore Utilities](NfCoreUtilities.md) documentation. 
+---
+
+## Internal Structure
+
+The extension is implemented in Groovy and organized into several internal utility classes for configuration, reporting, notifications, and versioning.  
+For advanced customization or troubleshooting, see the source code in `src/main/groovy/nfcore/plugin/` and `src/main/groovy/nfcore/plugin/util/`.
+
+---

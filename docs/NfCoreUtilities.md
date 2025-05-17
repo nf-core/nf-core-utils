@@ -1,30 +1,52 @@
 # nf-core Utility Functions
 
-This documentation covers the utility functions provided by the nf-utils plugin for nf-core pipelines.
+This document describes the utility functions provided by the nf-utils plugin for nf-core pipelines.
 
-## Import
+---
+
+## Importing Functions
+
+Import functions in your Nextflow DSL2 script as follows:
 
 ```nextflow
 include { checkConfigProvided; completionEmail; logColours; paramsSummaryMultiqc; 
           completionSummary; imNotification; getWorkflowVersion } from 'plugin/nf-utils'
 ```
 
-## Main Facade Class
+---
 
-### NfcorePipelineUtils
+## Quick Reference Table
 
-The main utility class that provides a facade to specialized utility classes.
+| Function                | Purpose                                      | Typical Usage Example                |
+|-------------------------|----------------------------------------------|--------------------------------------|
+| checkConfigProvided     | Warn if no custom config/profile is provided | `checkConfigProvided()`              |
+| checkProfileProvided    | Validate profile argument                    | `checkProfileProvided(args)`         |
+| getWorkflowVersion      | Get workflow version string                  | `getWorkflowVersion()`               |
+| paramsSummaryMultiqc    | Generate MultiQC summary YAML                | `paramsSummaryMultiqc([Summary: ...])`|
+| workflowSummaryMQC      | Create MultiQC summary template              | `workflowSummaryMQC(...)`            |
+| sectionLogs             | Generate colored section logs                | `sectionLogs(sections, monochrome)`  |
+| logColours              | Get ANSI color codes for logs                | `logColours(params.monochrome_logs)` |
+| completionSummary       | Print summary at pipeline completion         | `completionSummary(params.monochrome_logs)` |
+| completionEmail         | Send completion email                        | `completionEmail(...)`               |
+| imNotification          | Send Slack/Teams notification                | `imNotification(..., hook_url)`      |
+| getSingleReport         | Get a single report from Path/List           | `getSingleReport(multiqc_report)`    |
 
-## Functions
+---
+
+## Function Details
+
+---
 
 ### Configuration and Validation
 
-#### checkConfigProvided
+#### `checkConfigProvided()`
 
-Checks if a custom config or profile has been provided, logs a warning if not.
+**Description:**  
+Checks if a custom Nextflow config or profile has been provided. Logs a warning if not.
 
-**Returns:**
-- `true` if config is valid, `false` otherwise
+**Returns:**  
+- `true` if a custom config/profile is provided  
+- `false` otherwise
 
 **Example:**
 ```nextflow
@@ -33,64 +55,73 @@ if (!checkConfigProvided()) {
 }
 ```
 
-#### checkProfileProvided
+---
 
-Checks if the profile string is valid and warns about positional arguments.
+#### `checkProfileProvided(args)`
+
+**Description:**  
+Checks if the `-profile` argument is valid and warns about positional arguments.
 
 **Parameters:**
-- `args` (Array): The command line arguments
+- `args` (Array): Command-line arguments passed to the pipeline
 
 **Example:**
 ```nextflow
 checkProfileProvided(args)
 ```
 
+---
+
 ### Workflow Information
 
-#### getWorkflowVersion
+#### `getWorkflowVersion()`
 
-Generate workflow version string from session manifest.
+**Description:**  
+Returns a string representing the workflow version, including the git commit short SHA if available.
 
-**Returns:**
-- Version string for the workflow
+**Returns:**  
+- `String` (e.g., `v1.2.3-gabcdef1`)
 
 **Example:**
 ```nextflow
-version_string = getWorkflowVersion()
-log.info "Pipeline version: ${version_string}"
+log.info "Pipeline version: ${getWorkflowVersion()}"
 ```
+
+---
 
 ### Reporting and MultiQC
 
-#### paramsSummaryMultiqc
+#### `paramsSummaryMultiqc(summaryParams)`
 
-Generate workflow summary for MultiQC.
+**Description:**  
+Generates a YAML-formatted string for MultiQC workflow summary.
 
 **Parameters:**
 - `summaryParams` (Map): Map of parameter groups and their parameters
 
-**Returns:**
-- YAML formatted string for MultiQC
+**Returns:**  
+- `String`: YAML for MultiQC
 
 **Example:**
 ```nextflow
-def summary = [:]
-summary['Run Name'] = workflow.runName
-summary['Output Dir'] = params.outdir
-def yaml_file = paramsSummaryMultiqc([Summary: summary])
+def summary = [Run_Name: workflow.runName, Output_Dir: params.outdir]
+def yaml = paramsSummaryMultiqc([Summary: summary])
 ```
 
-#### workflowSummaryMQC
+---
 
-Create workflow summary template for MultiQC.
+#### `workflowSummaryMQC(summary, nfMetadataList, results)`
+
+**Description:**  
+Creates a workflow summary template for MultiQC.
 
 **Parameters:**
 - `summary` (Map): Map of parameters
 - `nfMetadataList` (List): List of metadata fields to include
 - `results` (Map): Map of pipeline results
 
-**Returns:**
-- Map with HTML and text summaries for MultiQC
+**Returns:**  
+- `Map` with HTML and text summaries for MultiQC
 
 **Example:**
 ```nextflow
@@ -100,34 +131,19 @@ def results = [Reads_Processed: '1,000,000', Failed_QC: '0.1%']
 def mqc_summary = workflowSummaryMQC(summary, metadata, results)
 ```
 
-### Notification and Logging
+---
 
-#### logColours
+#### `sectionLogs(sections, monochrome=false)`
 
-ANSI colour codes used for terminal logging.
-
-**Parameters:**
-- `monochrome_logs` (Boolean, default: `true`): Whether to use monochrome logs
-
-**Returns:**
-- Map of colour codes
-
-**Example:**
-```nextflow
-def colors = logColours(params.monochrome_logs)
-log.info "${colors.green}Starting pipeline${colors.reset}"
-```
-
-#### sectionLogs
-
-Generate summary logs for each section of a pipeline.
+**Description:**  
+Generates summary logs for each section of a pipeline, optionally with color.
 
 **Parameters:**
-- `sections` (Map): Map of section names with their log messages
-- `monochrome` (Boolean, default: `false`): Whether to use colors in logs
+- `sections` (Map): Section names and log messages
+- `monochrome` (Boolean, default: `false`): Use monochrome logs
 
-**Returns:**
-- Map of colored section logs
+**Returns:**  
+- `Map` of colored section logs
 
 **Example:**
 ```nextflow
@@ -140,12 +156,36 @@ def logs = sectionLogs(sections, params.monochrome_logs)
 log.info logs.FastQC
 ```
 
-#### completionSummary
+---
 
-Print pipeline summary on completion.
+### Notification and Logging
+
+#### `logColours(monochrome_logs=true)`
+
+**Description:**  
+Returns a map of ANSI color codes for terminal logging.
 
 **Parameters:**
-- `monochrome_logs` (Boolean, default: `true`): Whether to use monochrome logs
+- `monochrome_logs` (Boolean, default: `true`): If true, disables color codes
+
+**Returns:**  
+- `Map<String, String>`: Color codes
+
+**Example:**
+```nextflow
+def colors = logColours(params.monochrome_logs)
+log.info "${colors.purple}Pipeline started${colors.reset}"
+```
+
+---
+
+#### `completionSummary(monochrome_logs=true)`
+
+**Description:**  
+Prints a summary of the pipeline run at completion.
+
+**Parameters:**
+- `monochrome_logs` (Boolean, default: `true`): If true, disables color codes
 
 **Example:**
 ```nextflow
@@ -154,26 +194,26 @@ workflow.onComplete {
 }
 ```
 
-#### completionEmail
+---
 
-Construct and send completion email.
+#### `completionEmail(summary_params, email, email_on_fail, plaintext_email, outdir, monochrome_logs=true, multiqc_report=null)`
+
+**Description:**  
+Constructs and sends a completion email with pipeline summary and optional MultiQC report.
 
 **Parameters:**
-- `summary_params` (Map): Map of summary parameters
-- `email` (String): Email address
-- `email_on_fail` (String): Email address for failures only
-- `plaintext_email` (Boolean): Whether to send plaintext email
-- `outdir` (String): Output directory
-- `monochrome_logs` (Boolean, default: `true`): Whether to use monochrome logs
-- `multiqc_report` (Path|List, optional): MultiQC report file
+- `summary_params` (Map): Summary parameters
+- `email` (String): Email address to notify
+- `email_on_fail` (String): Email for failures only
+- `plaintext_email` (Boolean): Send plaintext email if true
+- `outdir` (String): Output directory for reports
+- `monochrome_logs` (Boolean, default: `true`): Use monochrome logs
+- `multiqc_report` (Path|List, optional): MultiQC report file(s)
 
 **Example:**
 ```nextflow
 workflow.onComplete {
-    def summary = [:]
-    summary['Run Name'] = workflow.runName
-    summary['Output Dir'] = params.outdir
-    
+    def summary = [Run_Name: workflow.runName]
     completionEmail(
         [Summary: summary], 
         params.email, 
@@ -186,41 +226,53 @@ workflow.onComplete {
 }
 ```
 
-#### imNotification
+---
 
-Construct and send a notification to a web server as JSON (e.g., Microsoft Teams and Slack).
+#### `imNotification(summary_params, hook_url)`
+
+**Description:**  
+Sends a notification to a webhook (e.g., Slack, Teams) with pipeline summary.
 
 **Parameters:**
-- `summary_params` (Map): Map of summary parameters
+- `summary_params` (Map): Summary parameters
 - `hook_url` (String): Webhook URL
 
 **Example:**
 ```nextflow
 if (params.hook_url) {
-    def summary = [:]
-    summary['Run Name'] = workflow.runName
-    summary['Status'] = workflow.success ? 'SUCCESS' : 'FAILED'
-    
+    def summary = [Run_Name: workflow.runName]
     imNotification([Summary: summary], params.hook_url)
 }
 ```
 
+---
+
+#### `getSingleReport(multiqc_reports)`
+
+**Description:**  
+Returns a single report file from a Path or List of Paths.
+
+**Parameters:**
+- `multiqc_reports` (Path or List): MultiQC report(s)
+
+**Returns:**  
+- `Path` or `null`
+
+**Example:**
+```nextflow
+def mqc_report = getSingleReport(multiqc_report)
+```
+
+---
+
 ## Internal Helper Classes
 
-The functionality is organized into several internal utility classes:
+The plugin organizes functionality into several internal utility classes:
+- **NfcoreNotificationUtils:** Handles notifications, emails, and terminal output formatting.
+- **NfcoreReportingUtils:** Manages reporting functions for MultiQC and pipeline summaries.
+- **NfcoreVersionUtils:** Provides version-related utility functions.
+- **NfcoreConfigValidator:** Validates pipeline configurations and profiles.
 
-### NfcoreNotificationUtils
+For advanced usage or troubleshooting, see the source code in `src/main/groovy/nfcore/plugin/util/`.
 
-Handles notifications, emails, and terminal output formatting.
-
-### NfcoreReportingUtils
-
-Manages reporting functions for MultiQC and pipeline summaries.
-
-### NfcoreVersionUtils
-
-Provides version-related utility functions.
-
-### NfcoreConfigValidator
-
-Validates pipeline configurations and profiles. 
+---
