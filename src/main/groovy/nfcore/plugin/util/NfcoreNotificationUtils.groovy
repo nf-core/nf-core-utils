@@ -260,8 +260,10 @@ class NfcoreNotificationUtils {
         def workflowName = manifest?.getName() ?: 'unknown'
         
         def colors = logColours(monochrome_logs) as Map
+        def statsObserver = session.getStatsObserver()
+        def stats = statsObserver ? statsObserver.getStats() : null
         if (session.success) {
-            if (session.stats.ignoredCount == 0) {
+            if (stats && stats.getIgnoredCount() == 0) {
                 log.info("-${colors.purple}[${workflowName}]${colors.green} Pipeline completed successfully${colors.reset}-")
             }
             else {
@@ -340,4 +342,4 @@ class NfcoreNotificationUtils {
             log.warn(post.getErrorStream().getText())
         }
     }
-} 
+}

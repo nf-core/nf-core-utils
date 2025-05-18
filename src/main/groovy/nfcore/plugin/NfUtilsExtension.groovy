@@ -112,6 +112,24 @@ class NfUtilsExtension extends PluginExtensionPoint {
         NfcoreUtils.initializeNfcorePipeline(nextflowCliArgs)
     }
 
+    /**
+     * Check if the profile string is valid and warn about positional arguments
+     * @param args The command line arguments (as List)
+     */
+    @Function
+    void checkProfileProvided(List args) {
+        nfcore.plugin.util.NfcorePipelineUtils.checkProfileProvided(args)
+    }
+
+    /**
+     * Check if a custom config or profile has been provided, logs a warning if not.
+     * @return true if config is valid, false otherwise
+     */
+    @Function
+    boolean checkConfigProvided() {
+        return nfcore.plugin.util.NfcorePipelineUtils.checkConfigProvided()
+    }
+
     // --- Methods from ReferencesExtension ---
     /**
      * Get references file from a references list or parameters
