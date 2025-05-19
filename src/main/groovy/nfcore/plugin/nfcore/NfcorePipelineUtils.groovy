@@ -56,15 +56,6 @@ class NfcorePipelineUtils {
         def commandLine = args ? args.join(' ') : null
         configValidator.checkProfileProvided(profile, commandLine)
     }
-
-    /**
-     * Generate workflow version string from session manifest
-     * @return Version string
-     */
-    static String getWorkflowVersion() {
-        def session = (Session) nextflow.Nextflow.session
-        return NfcoreVersionUtils.getWorkflowVersion(session)
-    }
     
     /**
      * Generate workflow summary for MultiQC

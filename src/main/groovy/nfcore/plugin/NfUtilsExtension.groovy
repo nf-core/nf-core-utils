@@ -142,13 +142,13 @@ class NfUtilsExtension extends PluginExtensionPoint {
     // --- Methods from NextflowPipelineExtension ---
     /**
      * Generate version string for a workflow
-     * @param manifestVersion The workflow version from manifest
+     * @param version The workflow version (optional)
      * @param commitId The workflow commit ID (optional)
      * @return A formatted version string
      */
     @Function
-    String getWorkflowVersion() {
-        return NfcoreVersionUtils.getWorkflowVersion(this.session)
+    String getWorkflowVersion(String version = null, String commitId = null) {
+        return NfcoreVersionUtils.getWorkflowVersion(this.session, version, commitId)
     }
 
     /**

@@ -1,12 +1,12 @@
-package nfcore.plugin.util
+package nfcore.plugin.nfcore
 
+import spock.lang.Specification
 import nextflow.Session
 import nextflow.config.Manifest
-import spock.lang.Specification
-import nfcore.plugin.nfcore.NfcoreVersionUtils
 
 class NfcoreVersionUtilsTest extends Specification {
-    def 'getWorkflowVersion formats version with v prefix'() {
+
+    def 'getWorkflowVersion formats version with v prefix when using Session'() {
         given:
         def manifest = Mock(Manifest) {
             getVersion() >> version
@@ -27,6 +27,57 @@ class NfcoreVersionUtilsTest extends Specification {
         'v2.1.0'    | 'v2.1.0'
         null        | ''
         '3.0.0'     | 'v3.0.0'
+    }
+
+    def 'getWorkflowVersion formats version with explicit version parameter'() {
+        when:
+        def result = NfcoreVersionUtils.getWorkflowVersion(null, version)
+
+        then:
+        result == expected
+
+        where:
+        version     | expected
+        '1.0.0'     | 'v1.0.0'
+        'v2.1.0'    | 'v2.1.0'
+        null        | ''
+        '3.0.0'     | 'v3.0.0'
+    }
+
+    def 'getWorkflowVersion formats version with commit ID'() {
+        when:
+        def result = NfcoreVersionUtils.getWorkflowVersion(null, version, commitId)
+
+        then:
+        result == expected
+
+        where:
+        version     | commitId              | expected
+        '1.0.0'     | 'abcdef1234567890'    | 'v1.0.0-gabcdef1'
+        'v2.1.0'    | '1234567890abcdef'    | 'v2.1.0-g1234567'
+        null        | 'abcdef1234567890'    | '-gabcdef1'
+    }
+
+    def 'getWorkflowVersion formats version with Session and commit ID'() {
+        given:
+        def manifest = Mock(Manifest) {
+            getVersion() >> version
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+        }
+
+        when:
+        def result = NfcoreVersionUtils.getWorkflowVersion(session, null, commitId)
+
+        then:
+        result == expected
+
+        where:
+        version     | commitId              | expected
+        '1.0.0'     | 'abcdef1234567890'    | 'v1.0.0-gabcdef1'
+        'v2.1.0'    | '1234567890abcdef'    | 'v2.1.0-g1234567'
+        null        | 'abcdef1234567890'    | '-gabcdef1'
     }
 
     def 'processVersionsFromYAML should parse and flatten YAML keys'() {

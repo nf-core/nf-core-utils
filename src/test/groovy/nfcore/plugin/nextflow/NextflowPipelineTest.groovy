@@ -16,30 +16,6 @@ class NextflowPipelineTest extends Specification {
     @TempDir
     Path tempDir
     
-    def "getWorkflowVersion should format version correctly with version only"() {
-        when:
-        def result = NextflowPipelineUtils.getWorkflowVersion('1.0.0')
-        
-        then:
-        result == 'v1.0.0'
-    }
-    
-    def "getWorkflowVersion should preserve v prefix"() {
-        when:
-        def result = NextflowPipelineUtils.getWorkflowVersion('v1.0.0')
-        
-        then:
-        result == 'v1.0.0'
-    }
-    
-    def "getWorkflowVersion should format version with commit ID"() {
-        when:
-        def result = NextflowPipelineUtils.getWorkflowVersion('1.0.0', 'abcdef1234567890')
-        
-        then:
-        result == 'v1.0.0-gabcdef1'
-    }
-    
     def "dumpParametersToJSON should write parameters to file"() {
         given:
         def outdir = tempDir

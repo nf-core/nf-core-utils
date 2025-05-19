@@ -23,6 +23,7 @@ import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
 import org.yaml.snakeyaml.Yaml
 import java.nio.file.Path
+import nfcore.plugin.nfcore.NfcoreVersionUtils
 
 /**
  * Implements utility functions for Nextflow pipelines that were previously
@@ -35,28 +36,6 @@ class NextflowPipelineUtils {
 
     protected void init(Session session) {
         this.session = session
-    }
-
-    /**
-     * Generate version string for a workflow
-     *
-     * @param manifestVersion The workflow version from manifest
-     * @param commitId The workflow commit ID (optional)
-     * @return A formatted version string
-     */
-    static String getWorkflowVersion(String manifestVersion, String commitId = null) {
-        def version_string = "" as String
-        if (manifestVersion) {
-            def prefix_v = manifestVersion.charAt(0) != 'v' ? 'v' : ''
-            version_string += "${prefix_v}${manifestVersion}"
-        }
-
-        if (commitId) {
-            def git_shortsha = commitId.substring(0, 7)
-            version_string += "-g${git_shortsha}"
-        }
-
-        return version_string
     }
 
     /**

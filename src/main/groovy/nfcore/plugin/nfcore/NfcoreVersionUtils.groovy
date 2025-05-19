@@ -25,16 +25,30 @@ import org.yaml.snakeyaml.Yaml
 class NfcoreVersionUtils {
 
     /**
-     * Generate workflow version string using session manifest
+     * Generate workflow version string
+     *
+     * @param session The Nextflow session (if null, version must be provided)
+     * @param version The workflow version (optional if session is provided)
+     * @param commitId The workflow commit ID (optional)
+     * @return A formatted version string
      */
-    static String getWorkflowVersion(Session session) {
-        def manifest = session.getManifest()
-        def version = manifest?.getVersion()
+    static String getWorkflowVersion(Session session = null, String version = null, String commitId = null) {
+        // Get version from session if not explicitly provided
+        if (session && !version) {
+            def manifest = session.getManifest()
+            version = manifest?.getVersion()
+        }
 
         def versionString = ""
         if (version) {
             def prefixV = version[0] != 'v' ? 'v' : ''
             versionString += "${prefixV}${version}"
+        }
+
+        // Add git commit information if provided
+        if (commitId) {
+            def gitShortsha = commitId.substring(0, 7)
+            versionString += "-g${gitShortsha}"
         }
 
         return versionString
