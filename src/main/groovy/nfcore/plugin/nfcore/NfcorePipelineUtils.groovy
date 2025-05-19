@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package nfcore.plugin.util
+package nfcore.plugin.nfcore
 
 import groovy.util.logging.Slf4j
 import nextflow.Session
+
 import java.nio.file.Path
-import org.yaml.snakeyaml.Yaml
-import java.nio.file.Files
-import java.nio.file.Paths
 
 /**
  * Utility functions for nf-core pipelines

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package nfcore.plugin.util
+package nfcore.plugin.nfcore
 
 import nextflow.Session
 import org.yaml.snakeyaml.Yaml
@@ -30,11 +30,13 @@ class NfcoreVersionUtils {
     static String getWorkflowVersion(Session session) {
         def manifest = session.getManifest()
         def version = manifest?.getVersion()
+
         def versionString = ""
         if (version) {
             def prefixV = version[0] != 'v' ? 'v' : ''
             versionString += "${prefixV}${version}"
         }
+
         return versionString
     }
 
@@ -81,4 +83,4 @@ class NfcoreVersionUtils {
         def workflowYaml = workflowVersionToYAML(session)
         return (uniqueVersions + workflowYaml).join("\n")
     }
-} 
+}

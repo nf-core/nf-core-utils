@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package nfcore.plugin.util
+package nfcore.plugin.nfcore
 
 import groovy.util.logging.Slf4j
+import nextflow.Session
 
 /**
  * Validates pipeline configurations and provides feedback
@@ -30,7 +31,7 @@ class NfcoreConfigValidator {
      * @param config The config map (should have profile and configFiles)
      * @return true if config is valid, false otherwise
      */
-    boolean checkConfigProvided(String projectName, Map config) {
+    static boolean checkConfigProvided(String projectName, Map config) {
         def profile = config?.get('profile') ?: 'standard'
         List configFiles = (config?.get('configFiles') instanceof List) ? (List)config.get('configFiles') : []
         if (profile == 'standard' && configFiles.size() <= 1) {
@@ -51,7 +52,7 @@ class NfcoreConfigValidator {
      * @param profile The profile string (e.g. from workflow.profile)
      * @param commandLine The command line string
      */
-    void checkProfileProvided(String profile, String commandLine) {
+    static void checkProfileProvided(String profile, String commandLine) {
         if (profile?.endsWith(',')) {
             throw new IllegalArgumentException(
                 "The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!\n" +
@@ -70,5 +71,28 @@ class NfcoreConfigValidator {
                 )
             }
         }
+    }
+
+    /**
+     * Validate nf-core CLI configuration
+     * @param nextflowCliArgs List of positional nextflow CLI args
+     */
+    static void validateConfig(List nextflowCliArgs) {
+        // Get session info
+        def session = (Session) nextflow.Nextflow.session
+        def profile = session.profile
+        def commandLine = nextflowCliArgs ? nextflowCliArgs.join(' ') : null
+        
+        // Check profile
+        checkProfileProvided(profile, commandLine)
+        
+        // Check config
+        def meta = session.getWorkflowMetadata()
+        def config = session.config
+        String projectName = null
+        if (meta != null && meta.metaClass?.hasProperty(meta, 'projectName')) {
+            projectName = meta.projectName
+        }
+        checkConfigProvided(projectName, config)
     }
 } 

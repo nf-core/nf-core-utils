@@ -7,6 +7,7 @@ import spock.lang.TempDir
 import java.nio.file.Path
 import org.yaml.snakeyaml.Yaml
 import spock.lang.PendingFeature
+import nfcore.plugin.nfcore.NfcoreCitationUtils
 
 class NfcoreCitationUtilsTest extends Specification {
     @TempDir

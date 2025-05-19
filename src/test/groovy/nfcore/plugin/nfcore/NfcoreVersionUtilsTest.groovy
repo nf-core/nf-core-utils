@@ -3,6 +3,7 @@ package nfcore.plugin.util
 import nextflow.Session
 import nextflow.config.Manifest
 import spock.lang.Specification
+import nfcore.plugin.nfcore.NfcoreVersionUtils
 
 class NfcoreVersionUtilsTest extends Specification {
     def 'getWorkflowVersion formats version with v prefix'() {

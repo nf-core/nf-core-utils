@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package nfcore.plugin.util
+package nfcore.plugin.nfcore
 
 import groovy.util.logging.Slf4j
 import nextflow.Session

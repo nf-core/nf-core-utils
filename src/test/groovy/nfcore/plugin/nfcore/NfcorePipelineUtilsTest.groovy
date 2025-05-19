@@ -7,7 +7,7 @@ import spock.lang.Ignore
 import spock.lang.TempDir
 import java.nio.file.Path
 import org.yaml.snakeyaml.Yaml
-import nfcore.plugin.util.NfcoreCitationUtils
+import nfcore.plugin.nfcore.NfcorePipelineUtils
 
 class NfcorePipelineUtilsTest extends Specification {
     @TempDir

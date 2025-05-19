@@ -20,6 +20,7 @@ import groovy.transform.CompileStatic
 import nextflow.Session
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
+import nfcore.plugin.nfcore.NfcoreVersionUtils
 
 
 /**
@@ -29,8 +30,11 @@ import nextflow.plugin.extension.PluginExtensionPoint
 @CompileStatic
 class NfUtilsExtension extends PluginExtensionPoint {
 
+    private Session session
+
     @Override
     protected void init(Session session) {
+        this.session = session
     }
 
     /**
@@ -69,7 +73,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports) {
-        NfcoreUtils.completionEmail(summaryParams, email, emailOnFail, plaintextEmail, outdir, monochromeLogs, multiqcReports)
+        nfcore.NfcoreNotificationUtils.completionEmail(summaryParams, email, emailOnFail, plaintextEmail, outdir, monochromeLogs, multiqcReports)
     }
 
     /**
@@ -78,7 +82,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void completionSummary(boolean monochromeLogs) {
-        NfcoreUtils.completionSummary(monochromeLogs)
+        nfcore.NfcoreNotificationUtils.completionSummary(monochromeLogs)
     }
 
     /**
@@ -88,28 +92,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void imNotification(Map summaryParams, String hookUrl) {
-        NfcoreUtils.imNotification(summaryParams, hookUrl)
-    }
-
-    /**
-     * Initialize pipeline utilities
-     * @param version Whether to display version and exit
-     * @param dumpParameters Whether to dump parameters to JSON file
-     * @param outdir Output directory
-     * @param condaEnabled Whether conda/mamba is enabled
-     */
-    @Function
-    void initializeNextflowPipeline(boolean version, boolean dumpParameters, String outdir, boolean condaEnabled) {
-        NfcoreUtils.initializeNextflowPipeline(version, dumpParameters, outdir, condaEnabled)
-    }
-
-    /**
-     * Initialize nf-core specific pipeline utilities
-     * @param nextflowCliArgs List of positional nextflow CLI args
-     */
-    @Function
-    void initializeNfcorePipeline(List nextflowCliArgs) {
-        NfcoreUtils.initializeNfcorePipeline(nextflowCliArgs)
+        nfcore.NfcoreNotificationUtils.imNotification(summaryParams, hookUrl)
     }
 
     /**
@@ -118,7 +101,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void checkProfileProvided(List args) {
-        nfcore.plugin.util.NfcorePipelineUtils.checkProfileProvided(args)
+        nfcore.plugin.nfcore.NfcorePipelineUtils.checkProfileProvided(args)
     }
 
     /**
@@ -127,7 +110,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     boolean checkConfigProvided() {
-        return nfcore.plugin.util.NfcorePipelineUtils.checkConfigProvided()
+        return nfcore.plugin.nfcore.NfcorePipelineUtils.checkConfigProvided()
     }
 
     // --- Methods from ReferencesExtension ---
@@ -164,8 +147,8 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @return A formatted version string
      */
     @Function
-    String getWorkflowVersion(String manifestVersion, String commitId = null) {
-        return NextflowPipelineUtils.getWorkflowVersion(manifestVersion, commitId)
+    String getWorkflowVersion() {
+        return NfcoreVersionUtils.getWorkflowVersion(this.session)
     }
 
     /**

@@ -19,7 +19,7 @@ package nfcore.plugin
 import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.trace.TraceObserver
-import nfcore.plugin.util.NfcoreConfigValidator
+import nfcore.plugin.nfcore.NfcoreConfigValidator
 
 /**
  * Implements an observer that allows implementing custom
