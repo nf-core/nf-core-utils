@@ -3,7 +3,6 @@ package nfcore.plugin
 import spock.lang.Specification
 import spock.lang.Unroll
 import nfcore.plugin.nfcore.NfcoreConfigValidator
-import nfcore.plugin.nfcore.NfcorePipelineUtils
 import spock.lang.PendingFeature
 
 class NfcorePipelineObserverTest extends Specification {

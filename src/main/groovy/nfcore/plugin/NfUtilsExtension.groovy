@@ -21,7 +21,11 @@ import nextflow.Session
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
 import nfcore.plugin.nfcore.NfcoreVersionUtils
-
+import nfcore.plugin.nfcore.NfcoreNotificationUtils
+import nfcore.plugin.nfcore.NfcoreConfigValidator
+import nfcore.plugin.nfcore.NfcoreNotificationUtils
+import nfcore.plugin.nfcore.NfcoreReportingUtils
+import nfcore.plugin.nfcore.NfcoreVersionUtils
 
 /**
  * Implements a custom function which can be imported by
@@ -101,7 +105,15 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void checkProfileProvided(List args) {
-        nfcore.plugin.nfcore.NfcorePipelineUtils.checkProfileProvided(args)
+        String profile = null
+        for (int i = 0; i < args.size(); i++) {
+            if (args[i] == '-profile' && i + 1 < args.size()) {
+                profile = args[i + 1]
+                break
+            }
+        }
+        String commandLine = args.join(' ')
+        NfcoreConfigValidator.checkProfileProvided(profile, commandLine)
     }
 
     /**
@@ -110,7 +122,13 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     boolean checkConfigProvided() {
-        return nfcore.plugin.nfcore.NfcorePipelineUtils.checkConfigProvided()
+        def meta = this.session?.getWorkflowMetadata()
+        def config = this.session?.config
+        String projectName = null
+        if (meta != null && meta.metaClass?.hasProperty(meta, 'projectName')) {
+            projectName = meta.projectName
+        }
+        return NfcoreConfigValidator.checkConfigProvided(projectName, config)
     }
 
     // --- Methods from ReferencesExtension ---

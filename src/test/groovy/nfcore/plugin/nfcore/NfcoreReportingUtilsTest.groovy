@@ -7,9 +7,9 @@ import spock.lang.Ignore
 import spock.lang.TempDir
 import java.nio.file.Path
 import org.yaml.snakeyaml.Yaml
-import nfcore.plugin.nfcore.NfcorePipelineUtils
+import nfcore.plugin.nfcore.NfcoreReportingUtils
 
-class NfcorePipelineUtilsTest extends Specification {
+class NfcoreReportingUtilsTest extends Specification {
     @TempDir
     Path tempDir
 
@@ -39,7 +39,7 @@ class NfcorePipelineUtilsTest extends Specification {
         }
         
         when:
-        def result = NfcorePipelineUtils.paramsSummaryMultiqc(summaryParams)
+        def result = NfcoreReportingUtils.paramsSummaryMultiqc(summaryParams)
         
         then:
         // Check YAML structure
@@ -83,9 +83,9 @@ class NfcorePipelineUtilsTest extends Specification {
                 getManifest() >> manifest
             }
         }
-        
+
         when:
-        def result = NfcorePipelineUtils.paramsSummaryMultiqc(summaryParams)
+        def result = NfcoreReportingUtils.paramsSummaryMultiqc(summaryParams)
         
         then:
         // Non-empty group is included
@@ -122,8 +122,8 @@ class NfcorePipelineUtilsTest extends Specification {
         }
         
         when:
-        def result = NfcorePipelineUtils.paramsSummaryMultiqc(summaryParams)
-        
+        def result = NfcoreReportingUtils.paramsSummaryMultiqc(summaryParams)
+
         then:
         // Normal parameter is included
         result.contains("<dt>param1</dt><dd><samp>value1</samp></dd>")
