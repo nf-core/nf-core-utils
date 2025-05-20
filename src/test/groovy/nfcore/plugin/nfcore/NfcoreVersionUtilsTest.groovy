@@ -148,4 +148,73 @@ class NfcoreVersionUtilsTest extends Specification {
         result.contains('pipe: v1.0.0')
         result.contains('Nextflow: 23.04.1')
     }
+
+    def 'softwareVersionsToYAML supports piecemeal conversion to eval format'() {
+        given:
+        def yamlFragments = []
+        yamlFragments << 'foo: 1.0.0\nbar: 2.0.0'
+        yamlFragments << 'baz: 3.0.0\nfoo: 1.0.0' // duplicate foo
+        def manifest = Mock(Manifest) {
+            getName() >> 'pipe'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(yamlFragments, session)
+
+        then:
+        result.contains('foo: 1.0.0')
+        result.contains('bar: 2.0.0')
+        result.contains('baz: 3.0.0')
+        result.contains('Workflow:')
+        result.contains('pipe: v1.0.0')
+        result.contains('Nextflow: 23.04.1')
+    }
+
+    def 'softwareVersionsToYAMLFromChannel combines YAMLs from a list'() {
+        given:
+        def yamlList = ['foo: 1.0.0', 'bar: 2.0.0', 'foo: 1.0.0']
+        def manifest = Mock(Manifest) {
+            getName() >> 'pipe'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAMLFromChannel(yamlList, session)
+
+        then:
+        result.contains('foo: 1.0.0')
+        result.contains('bar: 2.0.0')
+        result.contains('Workflow:')
+        result.contains('pipe: v1.0.0')
+        result.contains('Nextflow: 23.04.1')
+    }
+
+    def 'softwareVersionsToYAML handles empty input'() {
+        given:
+        def manifest = Mock(Manifest) {
+            getName() >> 'pipe'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML([], session)
+
+        then:
+        result.contains('Workflow:')
+        result.contains('pipe: v1.0.0')
+        result.contains('Nextflow: 23.04.1')
+    }
 } 
