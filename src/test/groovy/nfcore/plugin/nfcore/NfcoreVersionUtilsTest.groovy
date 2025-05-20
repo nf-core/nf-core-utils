@@ -1,8 +1,8 @@
 package nfcore.plugin.nfcore
 
-import spock.lang.Specification
 import nextflow.Session
 import nextflow.config.Manifest
+import spock.lang.Specification
 
 class NfcoreVersionUtilsTest extends Specification {
 
@@ -22,11 +22,11 @@ class NfcoreVersionUtilsTest extends Specification {
         result == expected
 
         where:
-        version     | expected
-        '1.0.0'     | 'v1.0.0'
-        'v2.1.0'    | 'v2.1.0'
-        null        | ''
-        '3.0.0'     | 'v3.0.0'
+        version  | expected
+        '1.0.0'  | 'v1.0.0'
+        'v2.1.0' | 'v2.1.0'
+        null     | ''
+        '3.0.0'  | 'v3.0.0'
     }
 
     def 'getWorkflowVersion formats version with explicit version parameter'() {
@@ -37,11 +37,11 @@ class NfcoreVersionUtilsTest extends Specification {
         result == expected
 
         where:
-        version     | expected
-        '1.0.0'     | 'v1.0.0'
-        'v2.1.0'    | 'v2.1.0'
-        null        | ''
-        '3.0.0'     | 'v3.0.0'
+        version  | expected
+        '1.0.0'  | 'v1.0.0'
+        'v2.1.0' | 'v2.1.0'
+        null     | ''
+        '3.0.0'  | 'v3.0.0'
     }
 
     def 'getWorkflowVersion formats version with commit ID'() {
@@ -52,10 +52,10 @@ class NfcoreVersionUtilsTest extends Specification {
         result == expected
 
         where:
-        version     | commitId              | expected
-        '1.0.0'     | 'abcdef1234567890'    | 'v1.0.0-gabcdef1'
-        'v2.1.0'    | '1234567890abcdef'    | 'v2.1.0-g1234567'
-        null        | 'abcdef1234567890'    | '-gabcdef1'
+        version  | commitId           | expected
+        '1.0.0'  | 'abcdef1234567890' | 'v1.0.0-gabcdef1'
+        'v2.1.0' | '1234567890abcdef' | 'v2.1.0-g1234567'
+        null     | 'abcdef1234567890' | '-gabcdef1'
     }
 
     def 'getWorkflowVersion formats version with Session and commit ID'() {
@@ -74,10 +74,10 @@ class NfcoreVersionUtilsTest extends Specification {
         result == expected
 
         where:
-        version     | commitId              | expected
-        '1.0.0'     | 'abcdef1234567890'    | 'v1.0.0-gabcdef1'
-        'v2.1.0'    | '1234567890abcdef'    | 'v2.1.0-g1234567'
-        null        | 'abcdef1234567890'    | '-gabcdef1'
+        version  | commitId           | expected
+        '1.0.0'  | 'abcdef1234567890' | 'v1.0.0-gabcdef1'
+        'v2.1.0' | '1234567890abcdef' | 'v2.1.0-g1234567'
+        null     | 'abcdef1234567890' | '-gabcdef1'
     }
 
     def 'processVersionsFromYAML should parse and flatten YAML keys'() {
@@ -109,7 +109,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         when:
         def result = NfcoreVersionUtils.workflowVersionToYAML(session)
-        
+
         then:
         result.contains(wfName ?: 'unknown')
         result.contains(nfVersion ?: 'unknown')
@@ -118,9 +118,9 @@ class NfcoreVersionUtilsTest extends Specification {
         }
 
         where:
-        wfName      | wfVersion | nfVersion
-        'mypipe'    | '1.0.0'   | '23.04.1'
-        null        | null      | null
+        wfName   | wfVersion | nfVersion
+        'mypipe' | '1.0.0'   | '23.04.1'
+        null     | null      | null
     }
 
     def 'softwareVersionsToYAML combines unique YAMLs and workflow YAML'() {

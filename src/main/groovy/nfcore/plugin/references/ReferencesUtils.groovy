@@ -18,8 +18,6 @@ package nfcore.plugin
 
 import groovy.transform.CompileStatic
 import nextflow.Session
-import nextflow.plugin.extension.Function
-import nextflow.plugin.extension.PluginExtensionPoint
 
 /**
  * Implements utility functions for handling reference files and values

@@ -62,7 +62,7 @@ class NfcoreVersionUtils {
         def yaml = new Yaml()
         def loaded = yaml.load(yamlFile)
         if (!(loaded instanceof Map)) return ''
-        def versions = ((Map)loaded).collectEntries { k, v ->
+        def versions = ((Map) loaded).collectEntries { k, v ->
             if (k instanceof String) {
                 [k.tokenize(':')[-1], v]
             } else {
@@ -77,8 +77,8 @@ class NfcoreVersionUtils {
      */
     def workflowVersionToYAML() {
         return Channel.of(
-            [ 'Workflow', workflow.manifest.name, getWorkflowVersion() ],
-            [ 'Workflow', 'Nextflow', workflow.nextflow.version ]
+                ['Workflow', workflow.manifest.name, getWorkflowVersion()],
+                ['Workflow', 'Nextflow', workflow.nextflow.version]
         )
     }
 
@@ -142,14 +142,14 @@ class NfcoreVersionUtils {
     //
     def softwareVersionsChannelToYAML() {
         return Channel.topic('versions')
-            .unique()
-            .mix(workflowVersionToYAML())
-            .map { process, name, version ->
-                [
-                    (process.tokenize(':').last()): [
-                        (name): version
+                .unique()
+                .mix(workflowVersionToYAML())
+                .map { process, name, version ->
+                    [
+                            (process.tokenize(':').last()): [
+                                    (name): version
+                            ]
                     ]
-                ]
-            }
+                }
     }
 }

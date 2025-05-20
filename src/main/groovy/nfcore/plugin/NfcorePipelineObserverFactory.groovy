@@ -30,7 +30,7 @@ class NfcorePipelineObserverFactory implements TraceObserverFactory {
 
     @Override
     Collection<TraceObserver> create(Session session) {
-        return List.<TraceObserver>of(new NfcorePipelineObserver())
+        return List.<TraceObserver> of(new NfcorePipelineObserver())
     }
 
 } 

@@ -2,12 +2,12 @@ package nfcore.plugin.util
 
 import nextflow.Session
 import nextflow.config.Manifest
+import nfcore.plugin.nfcore.NfcoreCitationUtils
+import spock.lang.PendingFeature
 import spock.lang.Specification
 import spock.lang.TempDir
+
 import java.nio.file.Path
-import org.yaml.snakeyaml.Yaml
-import spock.lang.PendingFeature
-import nfcore.plugin.nfcore.NfcoreCitationUtils
 
 class NfcoreCitationUtilsTest extends Specification {
     @TempDir
@@ -122,14 +122,14 @@ class NfcoreCitationUtilsTest extends Specification {
     def "toolCitationText should format citations from collected module citations"() {
         given:
         def collectedCitations = [
-            'samtools': [
-                citation: "samtools (DOI: 10.1093/bioinformatics/btp352)",
-                bibliography: "<li>Citation 1</li>"
-            ],
-            'fastqc': [
-                citation: "fastqc (Quality control tool)",
-                bibliography: "<li>Citation 2</li>"
-            ]
+                'samtools': [
+                        citation    : "samtools (DOI: 10.1093/bioinformatics/btp352)",
+                        bibliography: "<li>Citation 1</li>"
+                ],
+                'fastqc'  : [
+                        citation    : "fastqc (Quality control tool)",
+                        bibliography: "<li>Citation 2</li>"
+                ]
         ]
 
         when:
@@ -142,18 +142,18 @@ class NfcoreCitationUtilsTest extends Specification {
     def "toolBibliographyText should format bibliography from collected module citations"() {
         given:
         def collectedCitations = [
-            'samtools': [
-                citation: "samtools citation",
-                bibliography: "<li>Samtools citation details</li>"
-            ],
-            'fastqc': [
-                citation: "fastqc citation",
-                bibliography: "<li>FastQC citation details</li>"
-            ],
-            'empty_bib': [
-                citation: "tool with no bibliography",
-                bibliography: null
-            ]
+                'samtools' : [
+                        citation    : "samtools citation",
+                        bibliography: "<li>Samtools citation details</li>"
+                ],
+                'fastqc'   : [
+                        citation    : "fastqc citation",
+                        bibliography: "<li>FastQC citation details</li>"
+                ],
+                'empty_bib': [
+                        citation    : "tool with no bibliography",
+                        bibliography: null
+                ]
         ]
 
         when:
@@ -177,14 +177,14 @@ ${tool_bibliography}
 """
 
         def collectedCitations = [
-            'samtools': [
-                citation: "samtools (DOI: 10.1093/bioinformatics/btp352)",
-                bibliography: "<li>Samtools citation details</li>"
-            ],
-            'fastqc': [
-                citation: "fastqc (Quality control tool)",
-                bibliography: "<li>FastQC citation details</li>"
-            ]
+                'samtools': [
+                        citation    : "samtools (DOI: 10.1093/bioinformatics/btp352)",
+                        bibliography: "<li>Samtools citation details</li>"
+                ],
+                'fastqc'  : [
+                        citation    : "fastqc (Quality control tool)",
+                        bibliography: "<li>FastQC citation details</li>"
+                ]
         ]
 
         // Mock session for the test
@@ -263,7 +263,7 @@ ${tool_bibliography}
               description: "Quality control tool for sequence data"
               homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
         """
-        
+
         def mqcMethodsFile = new File(tempDir.toFile(), "methods_description.yml")
         mqcMethodsFile << """
         id: 'methods-description'
@@ -293,12 +293,12 @@ ${tool_bibliography}
         // Simulate processing at module level
         def module1Citations = NfcoreCitationUtils.generateModuleToolCitation(metaFile1)
         def module2Citations = NfcoreCitationUtils.generateModuleToolCitation(metaFile2)
-        
+
         // Simulate collecting citations from channel
         def allCitations = [:]
         allCitations.putAll(module1Citations)
         allCitations.putAll(module2Citations)
-        
+
         // Generate final methods description
         def meta = [:]
         if (!meta.containsKey("workflow")) {
@@ -323,11 +323,11 @@ ${tool_bibliography}
         module1Citations.containsKey("samtools")
         module1Citations.samtools.citation.contains("samtools")
         module1Citations.samtools.citation.contains("10.1093/bioinformatics/btp352")
-        
+
         module2Citations.size() == 1
         module2Citations.containsKey("fastqc")
         module2Citations.fastqc.citation.contains("fastqc")
-        
+
         // Verify final methods HTML
         methodsHtml.contains("samtools")
         methodsHtml.contains("fastqc")

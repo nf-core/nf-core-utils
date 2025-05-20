@@ -18,12 +18,9 @@ package nfcore.plugin
 
 import groovy.transform.CompileStatic
 import nextflow.Session
-import nextflow.script.WorkflowMetadata
-import nextflow.plugin.extension.Function
-import nextflow.plugin.extension.PluginExtensionPoint
 import org.yaml.snakeyaml.Yaml
+
 import java.nio.file.Path
-import nfcore.plugin.nfcore.NfcoreVersionUtils
 
 /**
  * Implements utility functions for Nextflow pipelines that were previously
@@ -49,11 +46,11 @@ class NextflowPipelineUtils {
         if (outdir == null) return
 
         def timestamp = new java.util.Date().format('yyyy-MM-dd_HH-mm-ss')
-        def filename  = "params_${timestamp}.json"
+        def filename = "params_${timestamp}.json"
         // Create a temp file in the system temp directory
-        def temp_pf   = File.createTempFile("params_", ".json")
-        def jsonStr   = groovy.json.JsonOutput.toJson(params)
-        temp_pf.text  = groovy.json.JsonOutput.prettyPrint(jsonStr)
+        def temp_pf = File.createTempFile("params_", ".json")
+        def jsonStr = groovy.json.JsonOutput.toJson(params)
+        temp_pf.text = groovy.json.JsonOutput.prettyPrint(jsonStr)
 
         nextflow.extension.FilesEx.copyTo(temp_pf.toPath(), "${outdir}/pipeline_info/${filename}")
         temp_pf.delete()
@@ -61,7 +58,7 @@ class NextflowPipelineUtils {
 
     /**
      * Check if conda channels are set up correctly
-     * 
+     *
      * @return True if channels are set up correctly, false otherwise
      */
     static boolean checkCondaChannels() {
@@ -112,7 +109,7 @@ class NextflowPipelineUtils {
             """.stripIndent(true))
             return false
         }
-        
+
         return true
     }
 } 

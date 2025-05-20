@@ -1,15 +1,15 @@
 package nfcore.plugin
 
-import spock.lang.Specification
-import org.slf4j.LoggerFactory
 import nfcore.plugin.nfcore.NfcoreConfigValidator
+import org.slf4j.LoggerFactory
+import spock.lang.Specification
 
 class NfcoreConfigValidatorTest extends Specification {
     def 'should log warning if profile is standard and configFiles is empty or size 1'() {
         given:
         def validator = new NfcoreConfigValidator()
         def projectName = 'test-pipeline'
-        def config = [ profile: 'standard', configFiles: configFiles ]
+        def config = [profile: 'standard', configFiles: configFiles]
         // Capture logs
         def appender = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>()
         def logger = LoggerFactory.getLogger(NfcoreConfigValidator)
@@ -78,11 +78,11 @@ class NfcoreConfigValidatorTest extends Specification {
         }
 
         where:
-        profile           | nextflowCliArgs      || shouldThrow | shouldWarn
-        'test,'           | []                   || true        | false
-        'test'            | ['foo']              || false       | true
-        'test'            | []                   || false       | false
-        null              | ['bar']              || false       | true
-        null              | []                   || false       | false
+        profile | nextflowCliArgs || shouldThrow | shouldWarn
+        'test,' | []              || true        | false
+        'test'  | ['foo']         || false       | true
+        'test'  | []              || false       | false
+        null    | ['bar']         || false       | true
+        null    | []              || false       | false
     }
 } 

@@ -43,12 +43,12 @@ class NfcoreCitationUtils {
         }
         def tools = meta?.tools ?: []
         def moduleCitations = [:]
-        
+
         tools.each { toolEntry ->
             toolEntry.each { toolName, toolInfo ->
                 def citation = toolName
                 def bibEntry = null
-                
+
                 // Generate citation text
                 if (toolInfo instanceof Map) {
                     if (toolInfo.doi) {
@@ -56,7 +56,7 @@ class NfcoreCitationUtils {
                     } else if (toolInfo.description) {
                         citation += " (${toolInfo.description})"
                     }
-                    
+
                     // Generate bibliography entry
                     def author = toolInfo.author ?: ""
                     def year = toolInfo.year ?: ""
@@ -68,14 +68,14 @@ class NfcoreCitationUtils {
                     if (url) bibCitation += ". <a href='${url}'>${url}</a>"
                     bibEntry = "<li>${bibCitation}</li>"
                 }
-                
+
                 moduleCitations[toolName] = [
-                    citation: citation,
-                    bibliography: bibEntry
+                        citation    : citation,
+                        bibliography: bibEntry
                 ]
             }
         }
-        
+
         return moduleCitations
     }
 
@@ -88,7 +88,7 @@ class NfcoreCitationUtils {
         if (collectedCitations.isEmpty()) {
             return "No tools used in the workflow."
         }
-        
+
         def toolCitations = collectedCitations.values().collect { it.citation }
         return "Tools used in the workflow included: " + toolCitations.join(', ') + "."
     }
@@ -102,11 +102,11 @@ class NfcoreCitationUtils {
         if (collectedCitations.isEmpty()) {
             return "No bibliography entries found."
         }
-        
+
         def bibEntries = collectedCitations.values()
-            .findAll { it.bibliography }
-            .collect { it.bibliography }
-        
+                .findAll { it.bibliography }
+                .collect { it.bibliography }
+
         return bibEntries.join(" ")
     }
 

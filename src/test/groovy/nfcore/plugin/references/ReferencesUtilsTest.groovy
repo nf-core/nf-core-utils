@@ -1,7 +1,6 @@
 package nfcore.plugin
 
 import spock.lang.Specification
-import nfcore.plugin.ReferencesUtils
 
 class ReferencesUtilsTest extends Specification {
     def extension
@@ -14,8 +13,8 @@ class ReferencesUtilsTest extends Specification {
         given:
         // Simulate references list data (List of [meta, _readme])
         def referencesList = [
-            [[id: 'test', fasta: '/path/to/genome.fasta', species: 'Homo sapiens'], null],
-            [[id: 'test2', fasta: '/path/to/genome2.fasta', species: 'Mus musculus'], null]
+                [[id: 'test', fasta: '/path/to/genome.fasta', species: 'Homo sapiens'], null],
+                [[id: 'test2', fasta: '/path/to/genome2.fasta', species: 'Mus musculus'], null]
         ]
         def param_file = '/override/genome.fasta'
         def param_value = null
@@ -40,7 +39,7 @@ class ReferencesUtilsTest extends Specification {
     def "test getReferencesFile and getReferencesValue with nulls"() {
         given:
         def referencesList = [
-            [[id: 'test', fasta: null, species: null], null]
+                [[id: 'test', fasta: null, species: null], null]
         ]
         def param_file = null
         def param_value = null

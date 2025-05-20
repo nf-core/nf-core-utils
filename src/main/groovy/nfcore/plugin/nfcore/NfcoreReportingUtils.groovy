@@ -34,37 +34,37 @@ class NfcoreReportingUtils {
         def session = (Session) nextflow.Nextflow.session
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
-        
+
         def summarySection = ''
         summaryParams
-            .keySet()
-            .each { group ->
-                def groupParams = summaryParams.get(group)
-                // This gets the parameters of that particular group
-                if (groupParams) {
-                    summarySection += "    <p style=\"font-size:110%\"><b>${group}</b></p>\n"
-                    summarySection += "    <dl class=\"dl-horizontal\">\n"
-                    groupParams
-                        .keySet()
-                        .sort()
-                        .each { param ->
-                            summarySection += "        <dt>${param}</dt><dd><samp>${groupParams.get(param) ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>\n"
-                        }
-                    summarySection += "    </dl>\n"
+                .keySet()
+                .each { group ->
+                    def groupParams = summaryParams.get(group)
+                    // This gets the parameters of that particular group
+                    if (groupParams) {
+                        summarySection += "    <p style=\"font-size:110%\"><b>${group}</b></p>\n"
+                        summarySection += "    <dl class=\"dl-horizontal\">\n"
+                        groupParams
+                                .keySet()
+                                .sort()
+                                .each { param ->
+                                    summarySection += "        <dt>${param}</dt><dd><samp>${groupParams.get(param) ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>\n"
+                                }
+                        summarySection += "    </dl>\n"
+                    }
                 }
-            }
 
         def yamlFileText = "id: '${workflowName.replace('/', '-')}-summary'\n" as String
-        yamlFileText     += "description: ' - this information is collected when the pipeline is started.'\n"
-        yamlFileText     += "section_name: '${workflowName} Workflow Summary'\n"
-        yamlFileText     += "section_href: 'https://github.com/${workflowName}'\n"
-        yamlFileText     += "plot_type: 'html'\n"
-        yamlFileText     += "data: |\n"
-        yamlFileText     += "${summarySection}"
+        yamlFileText += "description: ' - this information is collected when the pipeline is started.'\n"
+        yamlFileText += "section_name: '${workflowName} Workflow Summary'\n"
+        yamlFileText += "section_href: 'https://github.com/${workflowName}'\n"
+        yamlFileText += "plot_type: 'html'\n"
+        yamlFileText += "data: |\n"
+        yamlFileText += "${summarySection}"
 
         return yamlFileText
     }
-    
+
     /**
      * Create workflow summary template for MultiQC
      * @param summary Map of parameters
@@ -76,7 +76,7 @@ class NfcoreReportingUtils {
         def session = (Session) nextflow.Nextflow.session
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
-        
+
         String reportHeaderMD = """
         # ${workflowName}
 
@@ -87,14 +87,14 @@ class NfcoreReportingUtils {
         | Section | Description |
         |---------|-------------|
         """
-        
+
         String reportMD = reportHeaderMD
 
         // Add workflow summary section
         reportMD += "## Workflow Summary\n\n"
-        def summarySection = summary.collect { k,v -> " - **$k:** $v" }.join("\n")
+        def summarySection = summary.collect { k, v -> " - **$k:** $v" }.join("\n")
         reportMD += summarySection + "\n\n"
-        
+
         // Add Nextflow metadata
         reportMD += "## Nextflow Metadata\n\n"
         def metadataSection = nfMetadataList.collect { k ->
@@ -105,37 +105,37 @@ class NfcoreReportingUtils {
             return " - **$k:** " + (v ?: 'N/A')
         }.join("\n")
         reportMD += metadataSection + "\n\n"
-        
+
         // Add results summary if provided
         if (results) {
             reportMD += "## Results Summary\n\n"
             reportMD += reportSectionMD
-            def resultSection = results.collect { k,v -> "| $k | $v |" }.join("\n")
+            def resultSection = results.collect { k, v -> "| $k | $v |" }.join("\n")
             reportMD += resultSection + "\n\n"
         }
-        
+
         return [
-            "workflow_summary_txt": reportMD,
-            "workflow_summary_html": "<pre>${reportMD}</pre>"
+                "workflow_summary_txt" : reportMD,
+                "workflow_summary_html": "<pre>${reportMD}</pre>"
         ]
     }
-    
+
     /**
      * Generate summary logs for each section of a pipeline
      * @param sections Map of section names with their log messages
      * @param monochrome Whether to use colors in logs
      * @return Map of colored section logs
      */
-    static Map sectionLogs(Map sections, boolean monochrome=false) {
+    static Map sectionLogs(Map sections, boolean monochrome = false) {
         def colors = NfcoreNotificationUtils.logColours(monochrome)
         def result = [:]
-        
+
         sections.each { name, content ->
             def header = "-${colors.purple}[${name}]${colors.reset}- "
             def formattedContent = content.replaceAll(/\n/, "\n${header}")
             result[name] = "${header}${formattedContent}"
         }
-        
+
         return result
     }
 } 

@@ -1,9 +1,8 @@
 package nfcore.plugin
 
-import spock.lang.Specification
-import spock.lang.Unroll
 import nfcore.plugin.nfcore.NfcoreConfigValidator
 import spock.lang.PendingFeature
+import spock.lang.Specification
 
 class NfcorePipelineObserverTest extends Specification {
     // This file is now reserved for observer-specific logic tests.

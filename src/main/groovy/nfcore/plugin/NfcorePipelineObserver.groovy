@@ -29,7 +29,7 @@ import nfcore.plugin.nfcore.NfcoreConfigValidator
 class NfcorePipelineObserver implements TraceObserver {
 
     private final NfcoreConfigValidator configValidator
-    
+
     NfcorePipelineObserver(NfcoreConfigValidator configValidator = new NfcoreConfigValidator()) {
         this.configValidator = configValidator
     }

@@ -1,8 +1,7 @@
 package nfcore.plugin
 
-import spock.lang.Specification
 import org.yaml.snakeyaml.Yaml
-import nfcore.plugin.NextflowPipelineUtils
+import spock.lang.Specification
 
 /**
  * Specialized tests for the checkCondaChannels function

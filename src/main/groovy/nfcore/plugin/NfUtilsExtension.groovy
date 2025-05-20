@@ -20,11 +20,7 @@ import groovy.transform.CompileStatic
 import nextflow.Session
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
-import nfcore.plugin.nfcore.NfcoreVersionUtils
-import nfcore.plugin.nfcore.NfcoreNotificationUtils
 import nfcore.plugin.nfcore.NfcoreConfigValidator
-import nfcore.plugin.nfcore.NfcoreNotificationUtils
-import nfcore.plugin.nfcore.NfcoreReportingUtils
 import nfcore.plugin.nfcore.NfcoreVersionUtils
 
 /**

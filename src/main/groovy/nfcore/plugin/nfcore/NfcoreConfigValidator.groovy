@@ -33,14 +33,14 @@ class NfcoreConfigValidator {
      */
     static boolean checkConfigProvided(String projectName, Map config) {
         def profile = config?.get('profile') ?: 'standard'
-        List configFiles = (config?.get('configFiles') instanceof List) ? (List)config.get('configFiles') : []
+        List configFiles = (config?.get('configFiles') instanceof List) ? (List) config.get('configFiles') : []
         if (profile == 'standard' && configFiles.size() <= 1) {
             log.warn("[${projectName}] You are attempting to run the pipeline without any custom configuration!\n\n" +
-                "This will be dependent on your local compute environment but can be achieved via one or more of the following:\n" +
-                "   (1) Using an existing pipeline profile e.g. `-profile docker` or `-profile singularity`\n" +
-                "   (2) Using an existing nf-core/configs for your Institution e.g. `-profile crick` or `-profile uppmax`\n" +
-                "   (3) Using your own local custom config e.g. `-c /path/to/your/custom.config`\n\n" +
-                "Please refer to the quick start section and usage docs for the pipeline.\n ")
+                    "This will be dependent on your local compute environment but can be achieved via one or more of the following:\n" +
+                    "   (1) Using an existing pipeline profile e.g. `-profile docker` or `-profile singularity`\n" +
+                    "   (2) Using an existing nf-core/configs for your Institution e.g. `-profile crick` or `-profile uppmax`\n" +
+                    "   (3) Using your own local custom config e.g. `-c /path/to/your/custom.config`\n\n" +
+                    "Please refer to the quick start section and usage docs for the pipeline.\n ")
             return false
         }
         return true
@@ -55,8 +55,8 @@ class NfcoreConfigValidator {
     static void checkProfileProvided(String profile, String commandLine) {
         if (profile?.endsWith(',')) {
             throw new IllegalArgumentException(
-                "The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!\n" +
-                "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
+                    "The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!\n" +
+                            "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
             )
         }
         if (commandLine != null && !commandLine.isEmpty()) {
@@ -66,8 +66,8 @@ class NfcoreConfigValidator {
             def positional = args.find { !it.startsWith('-') }
             if (positional) {
                 log.warn(
-                    "nf-core pipelines do not accept positional arguments. The positional argument `${positional}` has been detected.\n" +
-                    "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
+                        "nf-core pipelines do not accept positional arguments. The positional argument `${positional}` has been detected.\n" +
+                                "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
                 )
             }
         }
@@ -82,10 +82,10 @@ class NfcoreConfigValidator {
         def session = (Session) nextflow.Nextflow.session
         def profile = session.profile
         def commandLine = nextflowCliArgs ? nextflowCliArgs.join(' ') : null
-        
+
         // Check profile
         checkProfileProvided(profile, commandLine)
-        
+
         // Check config
         def meta = session.getWorkflowMetadata()
         def config = session.config
