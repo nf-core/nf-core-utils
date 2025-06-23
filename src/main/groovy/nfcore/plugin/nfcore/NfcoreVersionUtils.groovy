@@ -22,6 +22,9 @@ import org.yaml.snakeyaml.Yaml
 /**
  * Utility class for handling version information in nf-core pipelines.
  * Supports both legacy versions.yml files and new topic channels approach.
+ * 
+ * This class is focused solely on version management and does not handle
+ * citation-related functionality (see NfcoreCitationUtils for that).
  */
 class NfcoreVersionUtils {
 
@@ -197,85 +200,6 @@ class NfcoreVersionUtils {
         combinedVersions.add(workflowYaml)
         
         return combinedVersions.unique().join("\n").trim()
-    }
-
-    /**
-     * Generate comprehensive version information including citations and methods
-     * This integrates with NfcoreCitationUtils for complete reporting
-     * 
-     * @param topicVersions List of topic channel data [process, name, version]
-     * @param legacyVersions List of legacy YAML version strings (optional)
-     * @param metaFilePaths List of paths to module meta.yml files for citations
-     * @param mqcMethodsYaml Path to MultiQC methods description template
-     * @param session The Nextflow session
-     * @return Map containing versions YAML, citations, bibliography, and methods description
-     */
-    static Map generateComprehensiveVersionReport(
-        List<List> topicVersions, 
-        List<String> legacyVersions = [], 
-        List<String> metaFilePaths = [],
-        File mqcMethodsYaml = null,
-        Session session
-    ) {
-        // Generate versions YAML
-        def versionsYaml = processVersionsFromTopicChannels(topicVersions, legacyVersions, session)
-        
-        // Generate citations if meta files provided
-        def allCitations = [:]
-        if (metaFilePaths) {
-            metaFilePaths.each { metaPath ->
-                try {
-                    def citations = NfcoreCitationUtils.generateModuleToolCitation(metaPath)
-                    allCitations.putAll(citations)
-                } catch (Exception e) {
-                    // Log warning but continue processing
-                    println "Warning: Could not process meta.yml at ${metaPath}: ${e.message}"
-                }
-            }
-        }
-        
-        // Generate citation text and bibliography
-        def toolCitations = NfcoreCitationUtils.toolCitationText(allCitations)
-        def toolBibliography = NfcoreCitationUtils.toolBibliographyText(allCitations)
-        
-        // Generate methods description if template provided
-        def methodsDescription = ""
-        if (mqcMethodsYaml && mqcMethodsYaml.exists()) {
-            try {
-                // Create a mock meta map for the template processing
-                def meta = [:]
-                def manifest = session?.getManifest()
-                if (manifest) {
-                    meta["manifest_map"] = manifest.toMap() ?: [:]
-                } else {
-                    meta["manifest_map"] = [:]
-                }
-                
-                // Mock workflow metadata if session is available
-                try {
-                    if (session) {
-                        meta.workflow = session.getWorkflowMetadata()?.toMap() ?: [:]
-                    } else {
-                        meta.workflow = [:]
-                    }
-                } catch (Exception e) {
-                    // Handle case where getWorkflowMetadata() is not available
-                    meta.workflow = [:]
-                }
-                
-                methodsDescription = NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml, allCitations, meta)
-            } catch (Exception e) {
-                println "Warning: Could not generate methods description: ${e.message}"
-            }
-        }
-        
-        return [
-            versions_yaml: versionsYaml,
-            tool_citations: toolCitations,
-            tool_bibliography: toolBibliography,
-            methods_description: methodsDescription,
-            citations_map: allCitations
-        ]
     }
 
     //

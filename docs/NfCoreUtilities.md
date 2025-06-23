@@ -33,6 +33,57 @@ include { checkConfigProvided; completionEmail; logColours; paramsSummaryMultiqc
 
 ---
 
+## Version and Citation Reporting (New Architecture)
+
+### Overview
+
+Version and citation management are now cleanly separated for maintainability and clarity. Use the following classes for advanced reporting:
+
+- **NfcoreVersionUtils**: Handles version aggregation and formatting (YAML, topic channels, etc.)
+- **NfcoreCitationUtils**: Handles citation extraction and formatting from module meta.yml files
+- **NfcoreReportingOrchestrator**: Orchestrates both for comprehensive reporting (versions, citations, bibliography, methods)
+
+### Usage Examples
+
+#### Version-only Reporting
+
+```groovy
+import nfcore.plugin.nfcore.NfcoreReportingOrchestrator
+
+def versionReport = NfcoreReportingOrchestrator.generateVersionReport(
+    topicVersions, legacyVersions, session
+)
+println versionReport.versions_yaml
+```
+
+#### Citation-only Reporting
+
+```groovy
+import nfcore.plugin.nfcore.NfcoreReportingOrchestrator
+
+def citationReport = NfcoreReportingOrchestrator.generateCitationReport(
+    metaFilePaths, mqcMethodsYaml, session
+)
+println citationReport.tool_citations
+println citationReport.tool_bibliography
+```
+
+#### Comprehensive Reporting (Versions + Citations)
+
+```groovy
+import nfcore.plugin.nfcore.NfcoreReportingOrchestrator
+
+def report = NfcoreReportingOrchestrator.generateComprehensiveReport(
+    topicVersions, legacyVersions, metaFilePaths, mqcMethodsYaml, session
+)
+println report.versions_yaml
+println report.tool_citations
+println report.tool_bibliography
+println report.methods_description
+```
+
+---
+
 ## Usage Examples
 
 ### Pipeline Initialization
@@ -370,6 +421,7 @@ The plugin organizes functionality into several internal utility classes, now lo
 - **NfcoreReportingUtils:** Manages reporting functions for MultiQC and pipeline summaries.
 - **NfcoreVersionUtils:** Provides version-related utility functions.
 - **NfcoreCitationUtils:** Handles citation-related functionalities (e.g., generating software citation information).
+- **NfcoreReportingOrchestrator:** Orchestrates version and citation utilities for comprehensive reporting (versions, citations, bibliography, methods).
 
 For advanced usage or troubleshooting, see the source code in `src/main/groovy/nfcore/plugin/nfcore/`.
 
