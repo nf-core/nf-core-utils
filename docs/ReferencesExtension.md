@@ -4,7 +4,7 @@ This extension provides utility functions for handling reference files and value
 
 ```nextflow
 // Import utilities
-include { getReferencesFile; getReferencesValue } from 'plugin/nf-utils'
+include { getReferencesFile; getReferencesValue } from 'plugin/nf-core-utils'
 
 // Get reference files from a references YAML file or parameters
 references = Channel.fromList(samplesheetToList(yaml_reference, "${projectDir}/assets/schema_references.json"))

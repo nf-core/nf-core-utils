@@ -1,6 +1,6 @@
-# nf-utils plugin
+# nf-core-utils plugin
 
-The nf-utils plugin provides utility functions used by nf-core pipelines.
+The nf-core-utils plugin provides utility functions used by nf-core pipelines.
 
 ## Features
 
@@ -22,7 +22,7 @@ make assemble
 The plugin can be tested without a local Nextflow installation:
 
 1. Build and install the plugin to your local Nextflow installation: `make install`
-2. Run a pipeline with the plugin: `nextflow run hello -plugins nf-utils@0.1.0`
+2. Run a pipeline with the plugin: `nextflow run hello -plugins nf-core-utils@0.1.0`
 
 <!-- TODO ## Publishing -->
 

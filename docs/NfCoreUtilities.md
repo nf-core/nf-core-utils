@@ -1,6 +1,6 @@
 # nf-core Utility Functions
 
-This extension provides a DSL2-friendly wrapper for nf-core utility functions, making them easily accessible in your Nextflow pipelines. This document describes these utility functions provided by the nf-utils plugin for nf-core pipelines.
+This extension provides a DSL2-friendly wrapper for nf-core utility functions, making them easily accessible in your Nextflow pipelines. This document describes these utility functions provided by the nf-core-utils plugin for nf-core pipelines.
 
 ---
 
@@ -10,7 +10,7 @@ Import functions in your Nextflow DSL2 script as follows:
 
 ```nextflow
 include { checkConfigProvided; completionEmail; logColours; paramsSummaryMultiqc;
-          completionSummary; imNotification; getWorkflowVersion } from 'plugin/nf-utils'
+          completionSummary; imNotification; getWorkflowVersion } from 'plugin/nf-core-utils'
 ```
 
 ---
@@ -40,11 +40,11 @@ include { checkConfigProvided; completionEmail; logColours; paramsSummaryMultiqc
 ```nextflow
 #!/usr/bin/env nextflow
 
-include { checkConfigProvided; checkProfileProvided } from 'plugin/nf-utils'
+include { checkConfigProvided; checkProfileProvided } from 'plugin/nf-core-utils'
 checkConfigProvided()
 checkProfileProvided(args)
 
-include { logColours } from 'plugin/nf-utils'
+include { logColours } from 'plugin/nf-core-utils'
 def colors = logColours(params.monochrome_logs)
 log.info "${colors.purple}Pipeline started${colors.reset}"
 ```
@@ -56,7 +56,7 @@ log.info "${colors.purple}Pipeline started${colors.reset}"
 <!-- TODO Idk if this will work? -->
 
 ```nextflow
-include { paramsSummaryMultiqc } from 'plugin/nf-utils'
+include { paramsSummaryMultiqc } from 'plugin/nf-core-utils'
 
 process MULTIQC {
     // ... process definition ...
@@ -75,7 +75,7 @@ process MULTIQC {
 ### At Pipeline Completion
 
 ```nextflow
-include { completionSummary; completionEmail; imNotification } from 'plugin/nf-utils'
+include { completionSummary; completionEmail; imNotification } from 'plugin/nf-core-utils'
 
 workflow.onComplete {
     completionSummary(params.monochrome_logs)

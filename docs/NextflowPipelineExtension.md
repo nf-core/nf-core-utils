@@ -4,12 +4,12 @@ This extension provides utility functions for Nextflow pipelines, migrated from 
 
 ## Migration Note
 
-The functions in this extension replace those previously found in the `utils_nextflow_pipeline` subworkflow. They are now available as part of the nf-utils plugin, making them easier to import and maintain.
+The functions in this extension replace those previously found in the `utils_nextflow_pipeline` subworkflow. They are now available as part of the nf-core-utils plugin, making them easier to import and maintain.
 
 ## Import
 
 ```nextflow
-include { getWorkflowVersion; dumpParametersToJSON; checkCondaChannels } from 'plugin/nf-utils'
+include { getWorkflowVersion; dumpParametersToJSON; checkCondaChannels } from 'plugin/nf-core-utils'
 ```
 
 ## Functions

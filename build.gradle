@@ -2,7 +2,7 @@ plugins {
     id 'io.nextflow.nextflow-plugin' version '0.0.1-alpha3'
 }
 
-version = '0.1.0'
+version = '0.2.0'
 
 nextflowPlugin {
     nextflowVersion = '25.04.0'
@@ -16,7 +16,7 @@ nextflowPlugin {
 
     publishing {
         github {
-            repository = 'nf-core/nf-utils'
+            repository = 'nf-core/nf-core-utils'
             userName = project.findProperty('github_username')
             authToken = project.findProperty('github_access_token')
             email = project.findProperty('github_commit_email')
