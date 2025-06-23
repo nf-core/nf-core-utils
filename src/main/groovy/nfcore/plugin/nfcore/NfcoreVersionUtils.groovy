@@ -20,7 +20,8 @@ import nextflow.Session
 import org.yaml.snakeyaml.Yaml
 
 /**
- * Utility class for handling version information in nf-core pipelines
+ * Utility class for handling version information in nf-core pipelines.
+ * Supports both legacy versions.yml files and new topic channels approach.
  */
 class NfcoreVersionUtils {
 
@@ -73,13 +74,41 @@ class NfcoreVersionUtils {
     }
 
     /**
-     * Get workflow version for pipeline
+     * Process version information from topic channel format
+     * Handles the new eval syntax: [process, name, version]
+     * 
+     * @param topicData List containing [process, name, version] tuples
+     * @return YAML string with processed versions
      */
-    def workflowVersionToYAML() {
-        return Channel.of(
-                ['Workflow', workflow.manifest.name, getWorkflowVersion()],
-                ['Workflow', 'Nextflow', workflow.nextflow.version]
-        )
+    static String processVersionsFromTopic(List<List> topicData) {
+        def versions = [:]
+        topicData.each { tuple ->
+            if (tuple.size() >= 3) {
+                def process = tuple[0]
+                def name = tuple[1]
+                def version = tuple[2]
+                
+                // Extract tool name from process (remove module path prefix)
+                def toolName = process.tokenize(':').last()
+                versions[name] = version
+            }
+        }
+        
+        def yaml = new Yaml()
+        def yamlString = yaml.dumpAsMap(versions)
+        // Remove trailing newline for consistency
+        return yamlString.trim()
+    }
+
+    /**
+     * Get workflow version for pipeline as channel data
+     * For use with topic channels
+     */
+    def workflowVersionToChannel() {
+        return [
+            ['Workflow', workflow.manifest.name, getWorkflowVersion()],
+            ['Workflow', 'Nextflow', workflow.nextflow.version]
+        ]
     }
 
     /**
@@ -137,13 +166,126 @@ class NfcoreVersionUtils {
         return softwareVersionsToYAML(versionsList, session)
     }
 
+    /**
+     * Process versions from topic channels (new approach)
+     * Supports both legacy versions.yml files and new topic channel format
+     * 
+     * @param topicVersions List of topic channel data [process, name, version]
+     * @param legacyVersions List of legacy YAML version strings (optional)
+     * @param session The Nextflow session
+     * @return Combined YAML string with all versions
+     */
+    static String processVersionsFromTopicChannels(List<List> topicVersions, List<String> legacyVersions = [], Session session) {
+        def combinedVersions = []
+        
+        // Process topic channel versions (new format)
+        if (topicVersions) {
+            def topicYaml = processVersionsFromTopic(topicVersions)
+            if (topicYaml) {
+                combinedVersions.add(topicYaml)
+            }
+        }
+        
+        // Process legacy YAML versions (old format)
+        if (legacyVersions) {
+            def parsedLegacy = legacyVersions.collect { processVersionsFromYAML(it) }
+            combinedVersions.addAll(parsedLegacy.findAll { it })
+        }
+        
+        // Add workflow version info
+        def workflowYaml = workflowVersionToYAML(session)
+        combinedVersions.add(workflowYaml)
+        
+        return combinedVersions.unique().join("\n").trim()
+    }
+
+    /**
+     * Generate comprehensive version information including citations and methods
+     * This integrates with NfcoreCitationUtils for complete reporting
+     * 
+     * @param topicVersions List of topic channel data [process, name, version]
+     * @param legacyVersions List of legacy YAML version strings (optional)
+     * @param metaFilePaths List of paths to module meta.yml files for citations
+     * @param mqcMethodsYaml Path to MultiQC methods description template
+     * @param session The Nextflow session
+     * @return Map containing versions YAML, citations, bibliography, and methods description
+     */
+    static Map generateComprehensiveVersionReport(
+        List<List> topicVersions, 
+        List<String> legacyVersions = [], 
+        List<String> metaFilePaths = [],
+        File mqcMethodsYaml = null,
+        Session session
+    ) {
+        // Generate versions YAML
+        def versionsYaml = processVersionsFromTopicChannels(topicVersions, legacyVersions, session)
+        
+        // Generate citations if meta files provided
+        def allCitations = [:]
+        if (metaFilePaths) {
+            metaFilePaths.each { metaPath ->
+                try {
+                    def citations = NfcoreCitationUtils.generateModuleToolCitation(metaPath)
+                    allCitations.putAll(citations)
+                } catch (Exception e) {
+                    // Log warning but continue processing
+                    println "Warning: Could not process meta.yml at ${metaPath}: ${e.message}"
+                }
+            }
+        }
+        
+        // Generate citation text and bibliography
+        def toolCitations = NfcoreCitationUtils.toolCitationText(allCitations)
+        def toolBibliography = NfcoreCitationUtils.toolBibliographyText(allCitations)
+        
+        // Generate methods description if template provided
+        def methodsDescription = ""
+        if (mqcMethodsYaml && mqcMethodsYaml.exists()) {
+            try {
+                // Create a mock meta map for the template processing
+                def meta = [:]
+                def manifest = session?.getManifest()
+                if (manifest) {
+                    meta["manifest_map"] = manifest.toMap() ?: [:]
+                } else {
+                    meta["manifest_map"] = [:]
+                }
+                
+                // Mock workflow metadata if session is available
+                try {
+                    if (session) {
+                        meta.workflow = session.getWorkflowMetadata()?.toMap() ?: [:]
+                    } else {
+                        meta.workflow = [:]
+                    }
+                } catch (Exception e) {
+                    // Handle case where getWorkflowMetadata() is not available
+                    meta.workflow = [:]
+                }
+                
+                methodsDescription = NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml, allCitations, meta)
+            } catch (Exception e) {
+                println "Warning: Could not generate methods description: ${e.message}"
+            }
+        }
+        
+        return [
+            versions_yaml: versionsYaml,
+            tool_citations: toolCitations,
+            tool_bibliography: toolBibliography,
+            methods_description: methodsDescription,
+            citations_map: allCitations
+        ]
+    }
+
     //
     // Get channel of software versions used in pipeline in YAML format
+    // This method supports the new topic channel approach
     //
     def softwareVersionsChannelToYAML() {
         return Channel.topic('versions')
                 .unique()
-                .mix(workflowVersionToYAML())
+                .mix(workflowVersionToChannel())
                 .map { process, name, version ->
                     [
                             (process.tokenize(':').last()): [
@@ -151,5 +293,18 @@ class NfcoreVersionUtils {
                             ]
                     ]
                 }
+    }
+
+    /**
+     * Get channel of software versions from topic channels
+     * Supports both 'versions' and 'versions_file' topics for backward compatibility
+     */
+    def getAllVersionsFromTopics() {
+        def versionsChannel = Channel.topic('versions').ifEmpty([])
+        def versionsFileChannel = Channel.topic('versions_file').ifEmpty([])
+        
+        return versionsChannel
+            .mix(versionsFileChannel)
+            .mix(workflowVersionToChannel())
     }
 }
