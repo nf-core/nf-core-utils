@@ -4,6 +4,7 @@ import nextflow.Session
 import nextflow.config.Manifest
 import spock.lang.Issue
 import spock.lang.Specification
+import spock.lang.TempDir
 
 class NfcoreVersionUtilsTest extends Specification {
 
@@ -341,5 +342,173 @@ class NfcoreVersionUtilsTest extends Specification {
         result.contains('bcftools: 1.16')
         result.contains('testpipeline: v1.0.0')
         result.contains('Nextflow: 23.04.1')
+    }
+
+    @Issue("https://github.com/nf-core/proposals/issues/46")
+    def 'processVersionsFromFile should handle file paths'() {
+        given:
+        def tempFile = File.createTempFile('versions', '.yml')
+        tempFile.text = '''
+        fastqc: 0.12.1
+        tool:samtools: 1.17
+        '''.stripIndent()
+        def filePaths = [tempFile.absolutePath]
+
+        when:
+        def result = NfcoreVersionUtils.processVersionsFromFile(filePaths)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    @Issue("https://github.com/nf-core/proposals/issues/46")
+    def 'processVersionsFromFile should handle missing files gracefully'() {
+        given:
+        def nonExistentPaths = ['/non/existent/path/versions.yml']
+
+        when:
+        def result = NfcoreVersionUtils.processVersionsFromFile(nonExistentPaths)
+
+        then:
+        result == '{}'
+    }
+
+    @Issue("https://github.com/nf-core/proposals/issues/46")
+    def 'processMixedVersionSources should combine topic and file sources'() {
+        given:
+        def topicVersions = [
+            ['NFCORE_FASTQC', 'fastqc', '0.12.1']
+        ]
+        def tempFile = File.createTempFile('versions', '.yml')
+        tempFile.text = 'samtools: 1.17'
+        def versionsFiles = [tempFile.absolutePath]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.processMixedVersionSources(topicVersions, versionsFiles, session)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+        result.contains('testpipeline: v1.0.0')
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    @Issue("https://github.com/nf-core/proposals/issues/46")
+    def 'convertLegacyYamlToEvalSyntax should convert YAML to eval format'() {
+        given:
+        def yamlContent = '''
+        fastqc: 0.12.1
+        tool:samtools: 1.17
+        multiqc: 1.15
+        '''.stripIndent()
+        def processName = 'TEST_PROCESS'
+
+        when:
+        def result = NfcoreVersionUtils.convertLegacyYamlToEvalSyntax(yamlContent, processName)
+
+        then:
+        result.size() == 3
+        result.contains([processName, 'fastqc', '0.12.1'])
+        result.contains([processName, 'samtools', '1.17'])
+        result.contains([processName, 'multiqc', '1.15'])
+    }
+
+    @Issue("https://github.com/nf-core/proposals/issues/46")
+    def 'convertLegacyYamlToEvalSyntax should handle malformed YAML gracefully'() {
+        given:
+        def invalidYaml = 'invalid: yaml: content:'
+
+        when:
+        def result = NfcoreVersionUtils.convertLegacyYamlToEvalSyntax(invalidYaml)
+
+        then:
+        result == []
+    }
+
+    @Issue("https://github.com/nf-core/proposals/issues/46")
+    def 'generateYamlFromEvalSyntax should convert eval format to YAML'() {
+        given:
+        def evalData = [
+            ['NFCORE_FASTQC', 'fastqc', '0.12.1'],
+            ['NFCORE_SAMTOOLS', 'samtools', '1.17'],
+            ['NFCORE_MULTIQC', 'multiqc', '1.15']
+        ]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.generateYamlFromEvalSyntax(evalData, session, true)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17') || result.contains("samtools: '1.17'")
+        result.contains('multiqc: 1.15') || result.contains("multiqc: '1.15'")
+        result.contains('Workflow:')
+        result.contains('testpipeline: v1.0.0')
+    }
+
+    @Issue("https://github.com/nf-core/proposals/issues/46")
+    def 'generateYamlFromEvalSyntax should exclude workflow when requested'() {
+        given:
+        def evalData = [
+            ['NFCORE_FASTQC', 'fastqc', '0.12.1']
+        ]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.generateYamlFromEvalSyntax(evalData, session, false)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        !result.contains('Workflow:')
+        !result.contains('testpipeline: v1.0.0')
+    }
+
+    @Issue("https://github.com/nf-core/proposals/issues/46")
+    def 'workflowVersionToChannel should return eval syntax for workflow info'() {
+        given:
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.workflowVersionToChannel(session)
+
+        then:
+        result.size() == 2
+        result[0] == ['Workflow', 'testpipeline', 'v1.0.0']
+        result[1] == ['Workflow', 'Nextflow', '23.04.1']
     }
 } 

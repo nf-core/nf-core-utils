@@ -16,7 +16,6 @@
 
 package nfcore.plugin
 
-import groovy.transform.CompileStatic
 import nextflow.Session
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
@@ -27,7 +26,6 @@ import nfcore.plugin.nfcore.NfcoreVersionUtils
  * Implements a custom function which can be imported by
  * Nextflow scripts.
  */
-@CompileStatic
 class NfUtilsExtension extends PluginExtensionPoint {
 
     private Session session
@@ -73,7 +71,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports) {
-        nfcore.NfcoreNotificationUtils.completionEmail(summaryParams, email, emailOnFail, plaintextEmail, outdir, monochromeLogs, multiqcReports)
+        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionEmail(summaryParams, email, emailOnFail, plaintextEmail, outdir, monochromeLogs, multiqcReports)
     }
 
     /**
@@ -82,7 +80,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void completionSummary(boolean monochromeLogs) {
-        nfcore.NfcoreNotificationUtils.completionSummary(monochromeLogs)
+        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionSummary(monochromeLogs)
     }
 
     /**
@@ -92,7 +90,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void imNotification(Map summaryParams, String hookUrl) {
-        nfcore.NfcoreNotificationUtils.imNotification(summaryParams, hookUrl)
+        nfcore.plugin.nfcore.NfcoreNotificationUtils.imNotification(summaryParams, hookUrl)
     }
 
     /**
@@ -138,7 +136,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
-        return ReferencesUtils.getReferencesFile(referencesList, param, attribute, basepath)
+        return nfcore.plugin.references.ReferencesUtils.getReferencesFile(referencesList, param, attribute, basepath)
     }
 
     /**
@@ -150,7 +148,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     List getReferencesValue(List<List> referencesList, String param, String attribute) {
-        return ReferencesUtils.getReferencesValue(referencesList, param, attribute)
+        return nfcore.plugin.references.ReferencesUtils.getReferencesValue(referencesList, param, attribute)
     }
 
     // --- Methods from NextflowPipelineExtension ---
@@ -174,7 +172,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     void dumpParametersToJSON(String outdir, Map params) {
         if (outdir == null) return
         java.nio.file.Path outdirPath = java.nio.file.Paths.get(outdir)
-        NextflowPipelineUtils.dumpParametersToJSON(outdirPath, params)
+        nfcore.plugin.nextflow.NextflowPipelineUtils.dumpParametersToJSON(outdirPath, params)
     }
 
     /**
@@ -183,7 +181,80 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     boolean checkCondaChannels() {
-        return NextflowPipelineUtils.checkCondaChannels()
+        return nfcore.plugin.nextflow.NextflowPipelineUtils.checkCondaChannels()
+    }
+
+    // --- Enhanced Version Utilities ---
+    /**
+     * Process versions from both topic channels and legacy files
+     * Supports progressive migration from versions.yml files to topic channels
+     * 
+     * @param topicVersions List of [process, name, version] from 'versions' topic
+     * @param versionsFiles List of file paths from 'versions_file' topic
+     * @return Combined YAML string with all versions
+     */
+    @Function
+    String processMixedVersionSources(List<List> topicVersions, List<String> versionsFiles) {
+        return NfcoreVersionUtils.processMixedVersionSources(topicVersions, versionsFiles, this.session)
+    }
+
+    /**
+     * Convert legacy YAML string to new eval syntax format
+     * Transforms old versions.yml content to [process, name, version] tuples
+     * 
+     * @param yamlContent The YAML content as string
+     * @param processName The process name to use (defaults to 'LEGACY')
+     * @return List of [process, name, version] tuples
+     */
+    @Function
+    List<List> convertLegacyYamlToEvalSyntax(String yamlContent, String processName = 'LEGACY') {
+        return NfcoreVersionUtils.convertLegacyYamlToEvalSyntax(yamlContent, processName)
+    }
+
+    /**
+     * Generate YAML output from eval syntax data
+     * Converts [process, name, version] tuples back to YAML format for reporting
+     * 
+     * @param evalData List of [process, name, version] tuples
+     * @param includeWorkflow Whether to include workflow version info
+     * @return YAML string suitable for MultiQC and reporting
+     */
+    @Function
+    String generateYamlFromEvalSyntax(List<List> evalData, boolean includeWorkflow = true) {
+        return NfcoreVersionUtils.generateYamlFromEvalSyntax(evalData, this.session, includeWorkflow)
+    }
+
+    /**
+     * Process versions from topic channel format (new eval syntax)
+     * 
+     * @param topicData List containing [process, name, version] tuples
+     * @return YAML string with processed versions
+     */
+    @Function
+    String processVersionsFromTopic(List<List> topicData) {
+        return NfcoreVersionUtils.processVersionsFromTopic(topicData)
+    }
+
+    /**
+     * Process versions from file paths (legacy format)
+     * 
+     * @param versionsFiles List of file paths to versions.yml files
+     * @return YAML string with processed versions
+     */
+    @Function
+    String processVersionsFromFile(List<String> versionsFiles) {
+        return NfcoreVersionUtils.processVersionsFromFile(versionsFiles)
+    }
+
+    /**
+     * Get workflow version information as topic channel data
+     * For use with topic channels
+     * 
+     * @return List of [process, name, version] tuples for workflow info
+     */
+    @Function
+    List<List> workflowVersionToChannel() {
+        return NfcoreVersionUtils.workflowVersionToChannel(this.session)
     }
 
 }
