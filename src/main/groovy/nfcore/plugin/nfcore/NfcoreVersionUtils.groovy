@@ -104,13 +104,54 @@ class NfcoreVersionUtils {
     }
 
     /**
+     * Process version information from versions_file topic (legacy YAML files)
+     * Handles the old versions.yml path output style
+     * 
+     * @param versionsFileData List containing file paths to versions.yml files
+     * @return YAML string with processed versions
+     */
+    static String processVersionsFromFile(List<String> versionsFileData) {
+        def allVersions = [:]
+        versionsFileData.each { filePath ->
+            try {
+                def file = new File(filePath)
+                if (file.exists()) {
+                    def yamlContent = file.text
+                    def processedYaml = processVersionsFromYAML(yamlContent)
+                    if (processedYaml) {
+                        def yaml = new Yaml()
+                        def parsed = yaml.load(processedYaml)
+                        if (parsed instanceof Map) {
+                            allVersions.putAll(parsed)
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Log warning but continue processing other files
+                System.err.println("Warning: Could not process versions file ${filePath}: ${e.message}")
+            }
+        }
+        
+        def yaml = new Yaml()
+        return yaml.dumpAsMap(allVersions).trim()
+    }
+
+    /**
      * Get workflow version for pipeline as channel data
      * For use with topic channels
+     * 
+     * @param session The Nextflow session
+     * @return List of [process, name, version] tuples for workflow info
      */
-    def workflowVersionToChannel() {
+    static List<List> workflowVersionToChannel(Session session) {
+        def manifest = session.getManifest()
+        def workflowName = manifest?.getName() ?: 'Workflow'
+        def workflowVersion = getWorkflowVersion(session)
+        def nextflowVersion = (session.config instanceof Map && session.config.nextflow instanceof Map && session.config.nextflow['version']) ? session.config.nextflow['version'] : 'unknown'
+        
         return [
-            ['Workflow', workflow.manifest.name, getWorkflowVersion()],
-            ['Workflow', 'Nextflow', workflow.nextflow.version]
+            ['Workflow', workflowName, workflowVersion],
+            ['Workflow', 'Nextflow', nextflowVersion]
         ]
     }
 
@@ -202,33 +243,156 @@ class NfcoreVersionUtils {
         return combinedVersions.unique().join("\n").trim()
     }
 
-    //
-    // Get channel of software versions used in pipeline in YAML format
-    // This method supports the new topic channel approach
-    //
-    def softwareVersionsChannelToYAML() {
-        return Channel.topic('versions')
-                .unique()
-                .mix(workflowVersionToChannel())
-                .map { process, name, version ->
-                    [
+    /**
+     * Get channel of software versions used in pipeline in YAML format
+     * This method supports the new topic channel approach
+     * 
+     * @param session The Nextflow session
+     * @return Map of YAML-formatted version data
+     */
+    static Map softwareVersionsChannelToYAML(Session session) {
+        // This would be called from within a Nextflow workflow context
+        // where Channel.topic() is available
+        return [
+            process: { ->
+                Channel.topic('versions')
+                    .unique()
+                    .mix(Channel.from(workflowVersionToChannel(session)))
+                    .map { process, name, version ->
+                        [
                             (process.tokenize(':').last()): [
-                                    (name): version
+                                (name): version
                             ]
-                    ]
-                }
+                        ]
+                    }
+            }
+        ]
     }
 
     /**
      * Get channel of software versions from topic channels
      * Supports both 'versions' and 'versions_file' topics for backward compatibility
+     * 
+     * @param session The Nextflow session
+     * @return Map describing how to collect from both topics
      */
-    def getAllVersionsFromTopics() {
-        def versionsChannel = Channel.topic('versions').ifEmpty([])
-        def versionsFileChannel = Channel.topic('versions_file').ifEmpty([])
+    static Map getAllVersionsFromTopics(Session session) {
+        // This would be called from within a Nextflow workflow context
+        return [
+            process: { ->
+                def versionsChannel = Channel.topic('versions').ifEmpty([])
+                def versionsFileChannel = Channel.topic('versions_file').ifEmpty([])
+                
+                return versionsChannel
+                    .mix(versionsFileChannel)
+                    .mix(Channel.from(workflowVersionToChannel(session)))
+            }
+        ]
+    }
+
+    /**
+     * Process mixed topic channels and file-based versions
+     * Combines data from both 'versions' and 'versions_file' topics
+     * 
+     * @param topicVersions List of [process, name, version] from 'versions' topic
+     * @param versionsFiles List of file paths from 'versions_file' topic
+     * @param session The Nextflow session
+     * @return Combined YAML string with all versions
+     */
+    static String processMixedVersionSources(List<List> topicVersions, List<String> versionsFiles, Session session) {
+        def combinedVersions = []
         
-        return versionsChannel
-            .mix(versionsFileChannel)
-            .mix(workflowVersionToChannel())
+        // Process new topic format
+        if (topicVersions) {
+            def topicYaml = processVersionsFromTopic(topicVersions)
+            if (topicYaml && topicYaml != '{}') {
+                combinedVersions.add(topicYaml)
+            }
+        }
+        
+        // Process legacy file format
+        if (versionsFiles) {
+            def fileYaml = processVersionsFromFile(versionsFiles)
+            if (fileYaml && fileYaml != '{}') {
+                combinedVersions.add(fileYaml)
+            }
+        }
+        
+        // Add workflow version info
+        def workflowYaml = workflowVersionToYAML(session)
+        combinedVersions.add(workflowYaml)
+        
+        return combinedVersions.unique().join("\n").trim()
+    }
+
+    /**
+     * Convert legacy YAML string to new eval syntax format
+     * Transforms old versions.yml content to [process, name, version] tuples
+     * 
+     * @param yamlContent The YAML content as string
+     * @param processName The process name to use (defaults to 'LEGACY')
+     * @return List of [process, name, version] tuples
+     */
+    static List<List> convertLegacyYamlToEvalSyntax(String yamlContent, String processName = 'LEGACY') {
+        try {
+            def yaml = new Yaml()
+            def parsed = yaml.load(yamlContent)
+            def result = []
+            
+            if (parsed instanceof Map) {
+                parsed.each { key, value ->
+                    // Handle nested maps (like tool:foo: version)
+                    if (key instanceof String && key.contains(':')) {
+                        def toolName = key.tokenize(':').last()
+                        result.add([processName, toolName, value?.toString()])
+                    } else {
+                        result.add([processName, key?.toString(), value?.toString()])
+                    }
+                }
+            }
+            
+            return result
+        } catch (Exception e) {
+            System.err.println("Warning: Could not convert legacy YAML to eval syntax: ${e.message}")
+            return []
+        }
+    }
+
+    /**
+     * Generate YAML output from eval syntax data
+     * Converts [process, name, version] tuples back to YAML format for reporting
+     * 
+     * @param evalData List of [process, name, version] tuples
+     * @param session The Nextflow session
+     * @param includeWorkflow Whether to include workflow version info
+     * @return YAML string suitable for MultiQC and reporting
+     */
+    static String generateYamlFromEvalSyntax(List<List> evalData, Session session, boolean includeWorkflow = true) {
+        def versions = [:]
+        
+        // Process eval syntax data
+        evalData.each { tuple ->
+            if (tuple.size() >= 3) {
+                def process = tuple[0]
+                def name = tuple[1]
+                def version = tuple[2]
+                versions[name] = version
+            }
+        }
+        
+        def yamlParts = []
+        
+        // Add software versions
+        if (versions) {
+            def yaml = new Yaml()
+            yamlParts.add(yaml.dumpAsMap(versions).trim())
+        }
+        
+        // Add workflow info if requested
+        if (includeWorkflow) {
+            yamlParts.add(workflowVersionToYAML(session))
+        }
+        
+        return yamlParts.join("\n").trim()
     }
 }
