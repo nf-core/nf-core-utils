@@ -10,13 +10,16 @@ Import functions in your Nextflow DSL2 script as follows:
 
 ```nextflow
 include { checkConfigProvided; completionEmail; logColours; paramsSummaryMultiqc;
-          completionSummary; imNotification; getWorkflowVersion } from 'plugin/nf-core-utils'
+          completionSummary; imNotification; getWorkflowVersion;
+          generateModuleToolCitation; toolCitationText; toolBibliographyText;
+          generateComprehensiveReport } from 'plugin/nf-core-utils'
 ```
 
 ---
 
 ## Quick Reference Table
 
+### Core Functions
 | Function             | Purpose                                      | Typical Usage Example                       |
 | -------------------- | -------------------------------------------- | ------------------------------------------- |
 | checkConfigProvided  | Warn if no custom config/profile is provided | `checkConfigProvided()`                     |
@@ -30,6 +33,17 @@ include { checkConfigProvided; completionEmail; logColours; paramsSummaryMultiqc
 | completionEmail      | Send completion email                        | `completionEmail(...)`                      |
 | imNotification       | Send Slack/Teams notification                | `imNotification(..., hook_url)`             |
 | getSingleReport      | Get a single report from Path/List           | `getSingleReport(multiqc_report)`           |
+
+### Citation Functions
+| Function                        | Purpose                                           | Typical Usage Example                                    |
+| ------------------------------- | ------------------------------------------------- | -------------------------------------------------------- |
+| generateModuleToolCitation      | Extract citations from meta.yml file             | `generateModuleToolCitation('meta.yml')`               |
+| toolCitationText                | Generate citation text from collected citations  | `toolCitationText(citationsMap)`                       |
+| toolBibliographyText            | Generate bibliography HTML from citations        | `toolBibliographyText(citationsMap)`                   |
+| collectCitationsFromFiles       | Collect citations from multiple meta.yml files   | `collectCitationsFromFiles(metaFilePaths)`             |
+| processCitationsFromTopic       | Process citations from topic channels             | `processCitationsFromTopic(topicData)`                 |
+| processMixedCitationSources     | Combine topic and file-based citations           | `processMixedCitationSources(topics, files)`          |
+| convertMetaYamlToTopicFormat    | Convert meta.yml to topic channel format         | `convertMetaYamlToTopicFormat(metaPath, moduleName)`  |
 
 ---
 
@@ -80,6 +94,92 @@ println report.versions_yaml
 println report.tool_citations
 println report.tool_bibliography
 println report.methods_description
+```
+
+### Topic Channel Migration Strategy
+
+The citation system supports progressive migration from file-based meta.yml citations to topic channels, similar to the version system:
+
+#### Migration Path
+1. **Legacy Stage**: Use file-based meta.yml citations
+2. **Transition Stage**: Mix both file-based and topic channel citations
+3. **Modern Stage**: Use only topic channel citations
+
+#### Topic Channel Formats
+- **`citations`** topic: New eval syntax `[module, tool, citation_data]`
+- **`citations_file`** topic: Legacy file paths to meta.yml files
+
+#### Example Migration
+
+```groovy
+// Stage 1: Legacy file-based approach
+def legacyCitations = collectCitationsFromFiles(metaFilePaths)
+
+// Stage 2: Mixed approach during migration
+def mixedCitations = processMixedCitationSources(
+    topicCitations,  // New format from some modules
+    citationFiles    // Legacy files from other modules
+)
+
+// Stage 3: Pure topic channel approach
+def modernCitations = processCitationsFromTopic(topicCitations)
+```
+
+---
+
+## Citation Management Examples
+
+### Basic Citation Extraction
+
+```nextflow
+include { generateModuleToolCitation; toolCitationText; toolBibliographyText } from 'plugin/nf-core-utils'
+
+// Extract citations from a single module
+def fastqcCitations = generateModuleToolCitation('modules/nf-core/fastqc/meta.yml')
+
+// Generate citation text and bibliography
+def citationText = toolCitationText(fastqcCitations)
+def bibliography = toolBibliographyText(fastqcCitations)
+
+println "Citations: ${citationText}"
+println "Bibliography: ${bibliography}"
+```
+
+### Topic Channel Citation Processing
+
+```nextflow
+include { processCitationsFromTopic; processMixedCitationSources } from 'plugin/nf-core-utils'
+
+// Process citations from new topic channel format
+def topicCitations = [
+    ['NFCORE_FASTQC', 'fastqc', [doi: '10.1093/bioinformatics/btv033', author: 'Andrews S']],
+    ['NFCORE_SAMTOOLS', 'samtools', [description: 'SAM/BAM processing utilities']]
+]
+def citationsFromTopic = processCitationsFromTopic(topicCitations)
+
+// Combine with legacy file-based citations
+def legacyFiles = ['modules/local/custom/meta.yml']
+def allCitations = processMixedCitationSources(topicCitations, legacyFiles)
+```
+
+### Comprehensive Reporting with Citations
+
+```nextflow
+include { generateComprehensiveReport } from 'plugin/nf-core-utils'
+
+// Generate complete report with versions and citations
+def report = generateComprehensiveReport(
+    topicVersions,      // Version data from topic channels
+    legacyVersions,     // Legacy version YAML strings
+    metaFilePaths,      // Paths to meta.yml files for citations
+    'multiqc_methods.yml' // MultiQC methods template
+)
+
+// Access different parts of the report
+println "Versions: ${report.versions_yaml}"
+println "Citations: ${report.tool_citations}"
+println "Bibliography: ${report.tool_bibliography}"
+println "Methods: ${report.methods_description}"
 ```
 
 ---
@@ -150,6 +250,88 @@ workflow.onComplete {
     }
 }
 ```
+
+---
+
+## Citation Function Details
+
+### Citation Extraction and Processing
+
+#### `generateModuleToolCitation(metaFilePath)`
+
+**Description:**  
+Extracts citation information from a module's meta.yml file.
+
+**Parameters:**
+- `metaFilePath` (String|File): Path to the meta.yml file
+
+**Returns:**
+- `Map`: Citations map with tool names as keys and citation/bibliography data as values
+
+**Example:**
+```nextflow
+def citations = generateModuleToolCitation('modules/nf-core/fastqc/meta.yml')
+// Returns: [fastqc: [citation: 'fastqc (DOI: ...)', bibliography: '<li>...</li>']]
+```
+
+#### `toolCitationText(collectedCitations)`
+
+**Description:**  
+Generates formatted citation text from collected citations map.
+
+**Parameters:**
+- `collectedCitations` (Map): Map of tool citations
+
+**Returns:**
+- `String`: Formatted citation text for use in methods descriptions
+
+**Example:**
+```nextflow
+def citationText = toolCitationText(citations)
+// Returns: "Tools used in the workflow included: fastqc (DOI: ...), samtools (DOI: ...)."
+```
+
+#### `toolBibliographyText(collectedCitations)`
+
+**Description:**  
+Generates HTML bibliography from collected citations.
+
+**Parameters:**
+- `collectedCitations` (Map): Map of tool citations
+
+**Returns:**
+- `String`: HTML bibliography for MultiQC reports
+
+#### `processCitationsFromTopic(topicData)`
+
+**Description:**  
+Processes citations from topic channel format (new eval syntax).
+
+**Parameters:**
+- `topicData` (List<List>): List of [module, tool, citation_data] tuples
+
+**Returns:**
+- `Map`: Processed citations map
+
+**Example:**
+```nextflow
+def topicCitations = [
+    ['NFCORE_FASTQC', 'fastqc', [doi: '10.1093/...', author: 'Andrews S']]
+]
+def citations = processCitationsFromTopic(topicCitations)
+```
+
+#### `processMixedCitationSources(topicCitations, citationFiles)`
+
+**Description:**  
+Combines citations from both topic channels and legacy files for progressive migration.
+
+**Parameters:**
+- `topicCitations` (List<List>): Topic channel citation data
+- `citationFiles` (List<String>): List of meta.yml file paths
+
+**Returns:**
+- `Map`: Combined citations from both sources
 
 ---
 
@@ -419,9 +601,18 @@ The plugin organizes functionality into several internal utility classes, now lo
 - **NfcoreConfigValidator:** Validates pipeline configurations and profiles.
 - **NfcoreNotificationUtils:** Handles notifications, emails, and terminal output formatting.
 - **NfcoreReportingUtils:** Manages reporting functions for MultiQC and pipeline summaries.
-- **NfcoreVersionUtils:** Provides version-related utility functions.
-- **NfcoreCitationUtils:** Handles citation-related functionalities (e.g., generating software citation information).
+- **NfcoreVersionUtils:** Provides version-related utility functions with topic channel support.
+- **NfcoreCitationUtils:** Handles citation extraction, processing, and topic channel support.
 - **NfcoreReportingOrchestrator:** Orchestrates version and citation utilities for comprehensive reporting (versions, citations, bibliography, methods).
+
+### Citation System Architecture
+
+The citation system follows the same progressive migration pattern as the version system:
+
+- **Topic Channel Support**: Both `citations` and `citations_file` topics
+- **Format Conversion**: Utilities to convert between legacy and modern formats
+- **Mixed Processing**: Handle both formats simultaneously during migration
+- **Comprehensive Integration**: Seamless integration with version reporting
 
 For advanced usage or troubleshooting, see the source code in `src/main/groovy/nfcore/plugin/nfcore/`.
 

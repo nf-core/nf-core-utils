@@ -22,6 +22,7 @@ import org.yaml.snakeyaml.Yaml
 
 /**
  * Utility functions for nf-core citations
+ * Supports both legacy meta.yml files and new topic channel approach
  */
 @Slf4j
 class NfcoreCitationUtils {
@@ -108,6 +109,166 @@ class NfcoreCitationUtils {
                 .collect { it.bibliography }
 
         return bibEntries.join(" ")
+    }
+
+    /**
+     * Process citations from topic channel format
+     * Handles the new eval syntax: [module, tool, citation_data]
+     * 
+     * @param topicData List containing [module, tool, citation_data] tuples
+     * @return Map of tool citations
+     */
+    static Map processCitationsFromTopic(List<List> topicData) {
+        def citations = [:]
+        topicData.each { tuple ->
+            if (tuple.size() >= 3) {
+                def module = tuple[0]
+                def tool = tuple[1]
+                def citationData = tuple[2]
+                
+                // Convert citation data to standard format
+                if (citationData instanceof Map) {
+                    citations[tool] = [
+                        citation: formatCitationFromData(tool, citationData),
+                        bibliography: formatBibliographyFromData(tool, citationData)
+                    ]
+                } else {
+                    // Handle simple string citations
+                    citations[tool] = [
+                        citation: citationData.toString(),
+                        bibliography: "<li>${citationData}</li>"
+                    ]
+                }
+            }
+        }
+        return citations
+    }
+
+    /**
+     * Process citations from citations_file topic (legacy meta.yml files)
+     * Handles the old meta.yml file path output style
+     * 
+     * @param citationFileData List containing file paths to meta.yml files
+     * @return Map of tool citations
+     */
+    static Map processCitationsFromFile(List<String> citationFileData) {
+        def allCitations = [:]
+        citationFileData.each { filePath ->
+            try {
+                def citations = generateModuleToolCitation(filePath)
+                allCitations.putAll(citations)
+            } catch (Exception e) {
+                System.err.println("Warning: Could not process citation file ${filePath}: ${e.message}")
+            }
+        }
+        return allCitations
+    }
+
+    /**
+     * Process mixed citation sources (topic channels and file-based)
+     * Combines data from both 'citations' and 'citations_file' topics
+     * 
+     * @param topicCitations List of [module, tool, citation_data] from 'citations' topic
+     * @param citationFiles List of file paths from 'citations_file' topic
+     * @return Combined map of all citations
+     */
+    static Map processMixedCitationSources(List<List> topicCitations, List<String> citationFiles) {
+        def combinedCitations = [:]
+        
+        // Process new topic format
+        if (topicCitations) {
+            def topicCitationMap = processCitationsFromTopic(topicCitations)
+            combinedCitations.putAll(topicCitationMap)
+        }
+        
+        // Process legacy file format
+        if (citationFiles) {
+            def fileCitationMap = processCitationsFromFile(citationFiles)
+            combinedCitations.putAll(fileCitationMap)
+        }
+        
+        return combinedCitations
+    }
+
+    /**
+     * Convert legacy meta.yml data to new topic channel format
+     * Transforms meta.yml tools data to [module, tool, citation_data] tuples
+     * 
+     * @param metaFilePath Path to meta.yml file
+     * @param moduleName Name of the module (defaults to filename)
+     * @return List of [module, tool, citation_data] tuples
+     */
+    static List<List> convertMetaYamlToTopicFormat(String metaFilePath, String moduleName = null) {
+        try {
+            def file = new File(metaFilePath)
+            if (!file.exists()) {
+                return []
+            }
+            
+            if (!moduleName) {
+                moduleName = file.getParentFile()?.getName() ?: 'unknown'
+            }
+            
+            def yaml = new Yaml()
+            Map meta
+            file.withInputStream { is ->
+                meta = yaml.load(is)
+            }
+            
+            def result = []
+            def tools = meta?.tools ?: []
+            
+            tools.each { toolEntry ->
+                toolEntry.each { toolName, toolInfo ->
+                    result.add([moduleName, toolName, toolInfo])
+                }
+            }
+            
+            return result
+        } catch (Exception e) {
+            System.err.println("Warning: Could not convert meta.yml to topic format: ${e.message}")
+            return []
+        }
+    }
+
+    /**
+     * Format citation text from citation data
+     * 
+     * @param toolName Name of the tool
+     * @param citationData Citation data map
+     * @return Formatted citation string
+     */
+    private static String formatCitationFromData(String toolName, Map citationData) {
+        def citation = toolName
+        if (citationData.doi) {
+            citation += " (DOI: ${citationData.doi})"
+        } else if (citationData.description) {
+            citation += " (${citationData.description})"
+        }
+        return citation
+    }
+
+    /**
+     * Format bibliography entry from citation data
+     * 
+     * @param toolName Name of the tool
+     * @param citationData Citation data map
+     * @return Formatted bibliography HTML
+     */
+    private static String formatBibliographyFromData(String toolName, Map citationData) {
+        def author = citationData.author ?: ""
+        def year = citationData.year ?: ""
+        def title = citationData.title ?: toolName
+        def journal = citationData.journal ?: ""
+        def doi = citationData.doi ? "doi: ${citationData.doi}" : ""
+        def url = citationData.homepage ?: ""
+        
+        def bibCitation = [author, year, title, journal, doi].findAll { it }.join(". ")
+        if (url) {
+            bibCitation += ". <a href='${url}'>${url}</a>"
+        }
+        
+        return "<li>${bibCitation}</li>"
     }
 
     /**

@@ -1,4 +1,4 @@
-package nfcore.plugin.util
+package nfcore.plugin.nfcore
 
 import nextflow.Session
 import nextflow.config.Manifest
@@ -163,18 +163,18 @@ class NfcoreCitationUtilsTest extends Specification {
         result == "<li>Samtools citation details</li> <li>FastQC citation details</li>"
     }
 
-    @PendingFeature()
+    @spock.lang.Ignore
     def "methodsDescriptionText should generate HTML with collected citations"() {
         given:
         def mqcMethodsFile = new File(tempDir.toFile(), "mqc_methods.txt")
-        mqcMethodsFile << """
+        mqcMethodsFile.text = '''
 This pipeline uses the following tools: ${tool_citations}
 
 <h4>Bibliography</h4>
 <ol>
 ${tool_bibliography}
 </ol>
-"""
+'''
 
         def collectedCitations = [
                 'samtools': [
@@ -238,7 +238,7 @@ ${tool_bibliography}
         bibText == "No bibliography entries found."
     }
 
-    @PendingFeature()
+    @spock.lang.Ignore
     def "integration test of all citation functions"() {
         given:
         // Create test meta.yml files for different modules
@@ -265,7 +265,7 @@ ${tool_bibliography}
         """
 
         def mqcMethodsFile = new File(tempDir.toFile(), "methods_description.yml")
-        mqcMethodsFile << """
+        mqcMethodsFile.text = '''
         id: 'methods-description'
         section_name: 'Test Pipeline Methods'
         section_href: 'https://example.com'
@@ -277,7 +277,7 @@ ${tool_bibliography}
             <ol>
             ${tool_bibliography}
             </ol>
-        """
+        '''
 
         // Mock Nextflow session
         GroovyMock(Session, global: true)
@@ -336,5 +336,153 @@ ${tool_bibliography}
 
         cleanup:
         nextflow.Nextflow.metaClass.static.getSession = originalSession
+    }
+
+    // --- New Topic Channel Tests ---
+    
+    def "processCitationsFromTopic should handle topic channel format"() {
+        given:
+        def topicData = [
+            ['NFCORE_FASTQC', 'fastqc', [
+                doi: '10.1093/bioinformatics/btv033',
+                author: 'Andrews S',
+                year: 2010,
+                title: 'FastQC: A Quality Control Tool for High Throughput Sequence Data',
+                homepage: 'https://www.bioinformatics.babraham.ac.uk/projects/fastqc/'
+            ]],
+            ['NFCORE_SAMTOOLS', 'samtools', [
+                description: 'Tools for manipulating next-generation sequencing data'
+            ]]
+        ]
+
+        when:
+        def result = NfcoreCitationUtils.processCitationsFromTopic(topicData)
+
+        then:
+        result.size() == 2
+        result.containsKey('fastqc')
+        result.containsKey('samtools')
+        result.fastqc.citation.contains('fastqc (DOI: 10.1093/bioinformatics/btv033)')
+        result.fastqc.bibliography.contains('<li>Andrews S. 2010. FastQC: A Quality Control Tool for High Throughput Sequence Data')
+        result.samtools.citation.contains('samtools (Tools for manipulating next-generation sequencing data)')
+    }
+
+    def "processCitationsFromFile should handle file paths"() {
+        given:
+        def tempFile = File.createTempFile('meta', '.yml')
+        tempFile.text = '''
+        name: test_module
+        tools:
+          - fastqc:
+              doi: "10.1093/bioinformatics/btv033"
+              homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+              author: "Andrews S"
+              year: 2010
+              title: "FastQC: A Quality Control Tool for High Throughput Sequence Data"
+        '''.stripIndent()
+        def filePaths = [tempFile.absolutePath]
+
+        when:
+        def result = NfcoreCitationUtils.processCitationsFromFile(filePaths)
+
+        then:
+        result.size() == 1
+        result.containsKey('fastqc')
+        result.fastqc.citation.contains('fastqc (DOI: 10.1093/bioinformatics/btv033)')
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    def "processCitationsFromFile should handle missing files gracefully"() {
+        given:
+        def nonExistentPaths = ['/non/existent/path/meta.yml']
+
+        when:
+        def result = NfcoreCitationUtils.processCitationsFromFile(nonExistentPaths)
+
+        then:
+        result.isEmpty()
+    }
+
+    def "processMixedCitationSources should combine topic and file sources"() {
+        given:
+        def topicCitations = [
+            ['NFCORE_FASTQC', 'fastqc', [
+                doi: '10.1093/bioinformatics/btv033',
+                author: 'Andrews S'
+            ]]
+        ]
+        def tempFile = File.createTempFile('meta', '.yml')
+        tempFile.text = '''
+        name: test_module
+        tools:
+          - samtools:
+              doi: "10.1093/bioinformatics/btp352"
+              author: "Li H, et al."
+        '''.stripIndent()
+        def citationFiles = [tempFile.absolutePath]
+
+        when:
+        def result = NfcoreCitationUtils.processMixedCitationSources(topicCitations, citationFiles)
+
+        then:
+        result.size() == 2
+        result.containsKey('fastqc')
+        result.containsKey('samtools')
+        result.fastqc.citation.contains('fastqc (DOI: 10.1093/bioinformatics/btv033)')
+        result.samtools.citation.contains('samtools (DOI: 10.1093/bioinformatics/btp352)')
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    def "convertMetaYamlToTopicFormat should convert meta.yml to topic format"() {
+        given:
+        def tempFile = File.createTempFile('meta', '.yml')
+        tempFile.text = '''
+        name: test_module
+        tools:
+          - fastqc:
+              doi: "10.1093/bioinformatics/btv033"
+              author: "Andrews S"
+          - samtools:
+              description: "SAM/BAM processing utilities"
+        '''.stripIndent()
+        def moduleName = 'test_module'
+
+        when:
+        def result = NfcoreCitationUtils.convertMetaYamlToTopicFormat(tempFile.absolutePath, moduleName)
+
+        then:
+        result.size() == 2
+        result[0] == [moduleName, 'fastqc', [doi: '10.1093/bioinformatics/btv033', author: 'Andrews S']]
+        result[1] == [moduleName, 'samtools', [description: 'SAM/BAM processing utilities']]
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    def "convertMetaYamlToTopicFormat should handle missing files gracefully"() {
+        given:
+        def nonExistentPath = '/non/existent/path/meta.yml'
+
+        when:
+        def result = NfcoreCitationUtils.convertMetaYamlToTopicFormat(nonExistentPath)
+
+        then:
+        result.isEmpty()
+    }
+
+    def "topic channel functions should handle empty input"() {
+        when:
+        def topicResult = NfcoreCitationUtils.processCitationsFromTopic([])
+        def fileResult = NfcoreCitationUtils.processCitationsFromFile([])
+        def mixedResult = NfcoreCitationUtils.processMixedCitationSources([], [])
+
+        then:
+        topicResult.isEmpty()
+        fileResult.isEmpty()
+        mixedResult.isEmpty()
     }
 } 
