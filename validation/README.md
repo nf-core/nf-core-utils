@@ -1,110 +1,161 @@
-# nf-core-utils Plugin E2E Validation
+# nf-core-utils Plugin Validation Test Suite
 
-This validation test demonstrates the successful migration from local pipeline utility functions to the nf-core-utils plugin, following the architectural guidance that "channel/operator logic should stay in the pipeline."
+This directory contains end-to-end validation tests for the nf-core-utils plugin, demonstrating various migration patterns and functionality.
 
-## What This Test Validates
+## Test Structure
 
-### 1. Plugin Function Migration
-- **Local functions replaced**: `getWorkflowVersion()`, `processVersionsFromYAML()`, `workflowVersionToYAML()`, `softwareVersionsToYAML()`
-- **Plugin functions used**: `getWorkflowVersion()`, `processVersionsFromFile()`
-- **Import pattern**: `include { getWorkflowVersion; processVersionsFromFile } from 'plugin/nf-core-utils'`
+Each validation test is organized in its own subdirectory with:
+- `main.nf` - Nextflow workflow demonstrating the functionality
+- `nextflow.config` - Plugin configuration and test settings
+- `README.md` - Specific test documentation
 
-### 2. Channel Logic Preservation
-The test demonstrates that all channel orchestration remains visible in the pipeline:
-```groovy
-ch_versions
-    .unique()                                    // ✅ Channel logic in pipeline
-    .map { version_file -> 
-        processVersionsFromFile([version_file])  // ✅ Plugin utility function
-    }
-    .unique()                                    
-    .mix(                                        // ✅ Channel orchestration visible
-        Channel.of(getWorkflowVersion())         // ✅ Plugin utility function
-            .map { workflow_version -> ... }     // ✅ Transformation logic visible
-    )
-    .collectFile(...)                            // ✅ Output handling in pipeline
-```
+## Available Validation Tests
 
-### 3. Functional Equivalence
-- Same output format as original fetchngs implementation
-- Same YAML structure for MultiQC compatibility
-- Same file naming and storage location
-- Identical workflow version string generation
+### 🔄 version-topic-channels/
+**Migration Pattern: Version Utilities**
 
-### 4. Architectural Compliance
-- **Utilities in plugin**: Data transformation functions moved to plugin
-- **Orchestration in pipeline**: Channel operations, mixing, and file collection remain in pipeline
-- **Visibility maintained**: All data flow logic is transparent and modifiable
-- **Separation of concerns**: Clear boundary between utilities and workflow logic
+Demonstrates the migration from local pipeline utility functions to plugin-based utilities while preserving channel logic in the pipeline.
 
-## Running the Validation
+**Key validations:**
+- Plugin function imports (`getWorkflowVersion`, `processVersionsFromFile`)
+- Channel orchestration remaining visible (`.unique()`, `.map()`, `.mix()`, `.collectFile()`)
+- Functional equivalence to original fetchngs implementation
+- Architectural compliance with Ben's philosophy of keeping channel logic in pipelines
 
-### Prerequisites
-1. Build the plugin: `make assemble`
-2. Install locally: `make install`
-
-### Run the Test
+**Usage:**
 ```bash
-# Basic validation
-nextflow run validation/ -plugins nf-core-utils@0.2.0
+# Run individual test
+nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.2.0
 
-# With test profile (faster)
-nextflow run validation/ -plugins nf-core-utils@0.2.0 -profile test
-
-# With debug logging
-nextflow run validation/ -plugins nf-core-utils@0.2.0 -profile debug
+# Or use the old validation script
+./validation/validate.sh
 ```
 
-### Expected Output
-The test will:
-1. ✅ Load the plugin successfully
-2. ✅ Generate workflow version strings using `getWorkflowVersion()`
-3. ✅ Process mock version files using `processVersionsFromFile()`
-4. ✅ Demonstrate channel orchestration remaining in pipeline
-5. ✅ Create final versions YAML file matching fetchngs format
-6. ✅ Validate content contains expected tools and workflow info
+### 🚧 Future Validation Tests
 
-### Output Files
-- `validation_results/pipeline_info/nf_core_utils_software_mqc_versions.yml` - Final versions file
-- `validation_results/execution_*.html` - Nextflow execution reports
-- `validation_results/pipeline_dag.svg` - Workflow diagram
+Additional validation tests can be added following the same pattern:
 
-## Migration Pattern Demonstrated
+```
+validation/
+├── citation-utilities/          # Citation extraction and formatting
+├── config-validation/           # Configuration validation utilities  
+├── notification-system/         # Email, Slack, Teams notifications
+├── references-extension/        # Reference file handling
+└── reporting-orchestrator/      # Comprehensive reporting features
+```
 
-This test serves as a template for migrating other nf-core pipelines:
+## Running All Validations
 
-### Before (Local Functions)
+### Quick Validation (All Tests)
+```bash
+./validation/validate-all.sh
+```
+
+### Individual Test Execution
+```bash
+# Version utilities migration test
+nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.2.0
+
+# Future tests (when created)
+# nextflow run validation/citation-utilities/ -plugins nf-core-utils@0.2.0
+# nextflow run validation/config-validation/ -plugins nf-core-utils@0.2.0
+```
+
+### With Different Profiles
+```bash
+# Test profile (faster execution)
+nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.2.0 -profile test
+
+# Debug profile (enhanced logging)  
+nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.2.0 -profile debug
+```
+
+## Prerequisites
+
+1. **Build the plugin**: `make assemble`
+2. **Install locally**: `make install` 
+3. **Nextflow**: Ensure Nextflow >=23.04.0 is installed
+
+## Migration Guidelines
+
+These validation tests serve as templates for migrating nf-core pipelines to use the plugin:
+
+### 1. Identify Local Utility Functions
+Look for functions like:
+- `getWorkflowVersion()`
+- `processVersionsFromYAML()`
+- `softwareVersionsToYAML()`
+- Custom notification helpers
+- Configuration validators
+
+### 2. Replace with Plugin Imports
 ```groovy
-// Local utility functions in main.nf or lib/Utils.groovy
+// Before
 def getWorkflowVersion() { ... }
-def processVersionsFromYAML(yaml_file) { ... }
-def softwareVersionsToYAML(ch_versions) { ... }
 
-// Usage with hidden channel logic
-softwareVersionsToYAML(ch_versions)
-    .collectFile(...)
+// After  
+include { getWorkflowVersion } from 'plugin/nf-core-utils'
 ```
 
-### After (Plugin Migration)
+### 3. Preserve Channel Logic
+Keep all channel operations in the pipeline:
 ```groovy
-// Import plugin utilities
-include { getWorkflowVersion; processVersionsFromFile } from 'plugin/nf-core-utils'
-
-// Explicit channel orchestration with plugin utilities
+// ✅ Good - Channel logic visible
 ch_versions
     .unique()
-    .map { version_file -> processVersionsFromFile([version_file]) }
-    .unique()
+    .map { file -> processVersionsFromFile([file]) }
     .mix(Channel.of(getWorkflowVersion()).map { ... })
-    .collectFile(...)
+
+// ❌ Bad - Channel logic hidden in plugin
+// softwareVersionsChannelToYAML(ch_versions)  // This doesn't exist
 ```
 
-## Benefits Demonstrated
+### 4. Validate Migration
+Use these validation tests to ensure:
+- Plugin functions work correctly
+- Channel logic remains transparent
+- Output format is preserved
+- Performance is maintained
 
-1. **Standardization**: Consistent version handling across nf-core pipelines
-2. **Maintainability**: Centralized utility functions with shared bug fixes and improvements
-3. **Transparency**: All workflow logic remains visible and customizable
-4. **Flexibility**: Pipeline retains full control over data flow and processing
-5. **Future-ready**: Prepared for topic channel migration while maintaining backward compatibility
+## Adding New Validation Tests
 
-This validation proves the migration approach successfully balances utility standardization with workflow transparency.
+To add a new validation test:
+
+1. **Create test directory**:
+   ```bash
+   mkdir validation/your-test-name
+   ```
+
+2. **Create test files**:
+   ```
+   validation/your-test-name/
+   ├── main.nf              # Test workflow
+   ├── nextflow.config      # Plugin configuration
+   └── README.md            # Test documentation
+   ```
+
+3. **Update validation runner**:
+   Add your test to `validate-all.sh`:
+   ```bash
+   run_validation_test "Your Test Name" "your-test-name"
+   ```
+
+4. **Document the test**:
+   Update this main README with test description
+
+## Best Practices
+
+- **Focused tests**: Each validation should test specific functionality
+- **Self-contained**: Tests should not depend on external resources
+- **Clear documentation**: Explain what the test validates and why
+- **Realistic scenarios**: Mirror real pipeline usage patterns  
+- **Comprehensive validation**: Check inputs, outputs, and behavior
+- **Clean structure**: Follow the established directory organization
+
+## Benefits of Validation Tests
+
+✅ **Confidence**: Ensure plugin functions work as expected  
+✅ **Migration guidance**: Provide clear patterns for pipeline migration  
+✅ **Regression prevention**: Catch issues during plugin development  
+✅ **Documentation**: Living examples of proper plugin usage  
+✅ **Quality assurance**: Validate architectural decisions and best practices
