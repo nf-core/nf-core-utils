@@ -243,52 +243,7 @@ class NfcoreVersionUtils {
         return combinedVersions.unique().join("\n").trim()
     }
 
-    /**
-     * Get channel of software versions used in pipeline in YAML format
-     * This method supports the new topic channel approach
-     * 
-     * @param session The Nextflow session
-     * @return Map of YAML-formatted version data
-     */
-    static Map softwareVersionsChannelToYAML(Session session) {
-        // This would be called from within a Nextflow workflow context
-        // where Channel.topic() is available
-        return [
-            process: { ->
-                Channel.topic('versions')
-                    .unique()
-                    .mix(Channel.from(workflowVersionToChannel(session)))
-                    .map { process, name, version ->
-                        [
-                            (process.tokenize(':').last()): [
-                                (name): version
-                            ]
-                        ]
-                    }
-            }
-        ]
-    }
 
-    /**
-     * Get channel of software versions from topic channels
-     * Supports both 'versions' and 'versions_file' topics for backward compatibility
-     * 
-     * @param session The Nextflow session
-     * @return Map describing how to collect from both topics
-     */
-    static Map getAllVersionsFromTopics(Session session) {
-        // This would be called from within a Nextflow workflow context
-        return [
-            process: { ->
-                def versionsChannel = Channel.topic('versions').ifEmpty([])
-                def versionsFileChannel = Channel.topic('versions_file').ifEmpty([])
-                
-                return versionsChannel
-                    .mix(versionsFileChannel)
-                    .mix(Channel.from(workflowVersionToChannel(session)))
-            }
-        ]
-    }
 
     /**
      * Process mixed topic channels and file-based versions
