@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package nfcore.plugin
+package nfcore.plugin.nextflow
 
 import groovy.transform.CompileStatic
-import nextflow.Session
 import org.yaml.snakeyaml.Yaml
 
 import java.nio.file.Path
@@ -29,31 +28,42 @@ import java.nio.file.Path
 @CompileStatic
 class NextflowPipelineUtils {
 
-    private Session session
-
-    protected void init(Session session) {
-        this.session = session
-    }
 
     /**
      * Dump pipeline parameters to a JSON file
      *
      * @param outdir The output directory
      * @param params The pipeline parameters
-     * @param launchDir The launch directory
      */
     static void dumpParametersToJSON(Path outdir, Map params) {
-        if (outdir == null) return
+        if (outdir == null) {
+            System.err.println("WARN: Cannot dump parameters - output directory is null")
+            return
+        }
 
-        def timestamp = new java.util.Date().format('yyyy-MM-dd_HH-mm-ss')
-        def filename = "params_${timestamp}.json"
-        // Create a temp file in the system temp directory
-        def temp_pf = File.createTempFile("params_", ".json")
-        def jsonStr = groovy.json.JsonOutput.toJson(params)
-        temp_pf.text = groovy.json.JsonOutput.prettyPrint(jsonStr)
+        if (params == null) {
+            System.err.println("WARN: Cannot dump parameters - parameters map is null")
+            return
+        }
 
-        nextflow.extension.FilesEx.copyTo(temp_pf.toPath(), "${outdir}/pipeline_info/${filename}")
-        temp_pf.delete()
+        try {
+            def timestamp = new java.util.Date().format('yyyy-MM-dd_HH-mm-ss')
+            def filename = "params_${timestamp}.json"
+            
+            // Create a temp file in the system temp directory
+            def temp_pf = File.createTempFile("params_", ".json")
+            def jsonStr = groovy.json.JsonOutput.toJson(params ?: [:])
+            temp_pf.text = groovy.json.JsonOutput.prettyPrint(jsonStr)
+
+            // Ensure pipeline_info directory exists
+            def pipeline_info_dir = outdir.resolve("pipeline_info")
+            java.nio.file.Files.createDirectories(pipeline_info_dir)
+
+            nextflow.extension.FilesEx.copyTo(temp_pf.toPath(), pipeline_info_dir.resolve(filename))
+            temp_pf.delete()
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to dump parameters to JSON: ${e.message}")
+        }
     }
 
     /**
@@ -64,49 +74,68 @@ class NextflowPipelineUtils {
     static boolean checkCondaChannels() {
         def parser = new Yaml()
         def channels = [] as List
+        
         try {
-            def result = "conda config --show channels".execute()?.text
-            if (result) {
+            def process = "conda config --show channels".execute()
+            process.waitFor()
+            
+            // Check if conda command was successful
+            if (process.exitValue() != 0) {
+                System.err.println("WARN: Conda command failed - conda may not be installed or available in PATH")
+                return true  // Return true to not block pipeline if conda is not available
+            }
+            
+            def result = process.text?.trim()
+            if (result && result != "null") {
                 def config = parser.load(result)
                 if (config && config instanceof Map && config.containsKey('channels')) {
-                    channels = config['channels'] as List ?: []
+                    def rawChannels = config['channels']
+                    if (rawChannels instanceof List) {
+                        channels = rawChannels as List
+                    } else if (rawChannels != null) {
+                        channels = [rawChannels] as List
+                    }
                 }
             }
         }
         catch (Exception e) {
             System.err.println("WARN: Could not verify conda channel configuration: ${e.message}")
-            return true
+            return true  // Return true to not block pipeline on conda config check failures
         }
 
-        // If channels is null or empty, return true to avoid NPE
+        // If channels is null or empty, return true to avoid blocking
         if (channels == null || channels.isEmpty()) {
+            System.err.println("WARN: No conda channels found - conda configuration may not be set up")
             return true
         }
 
         // Check that all channels are present
         // This channel list is ordered by required channel priority.
         def required_channels_in_order = ['conda-forge', 'bioconda']
-        def channels_as_set = channels as Set ?: [] as Set
+        def channels_as_set = (channels ?: []) as Set
         def required_as_set = required_channels_in_order as Set
 
-        def channels_missing = !required_as_set.every { ch -> channels_as_set.contains(ch) }
+        def channels_missing = !required_as_set.every { ch -> 
+            channels_as_set.contains(ch)
+        }
 
         // Check that they are in the right order
-        def channel_subset = channels.findAll { ch -> ch in required_channels_in_order } ?: []
+        def channel_subset = channels.findAll { ch -> 
+            ch != null && ch in required_channels_in_order 
+        } ?: []
         def channel_priority_violation = !channel_subset.equals(required_channels_in_order)
 
-        if (channels_missing | channel_priority_violation) {
+        if (channels_missing || channel_priority_violation) {
             System.err.println("""\
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 There is a problem with your Conda configuration!
                 You will need to set-up the conda-forge and bioconda channels correctly.
                 Please refer to https://bioconda.github.io/
                 The observed channel order is
-                ${channels}
+                ${channels ?: 'None'}
                 but the following channel order is required:
                 ${required_channels_in_order}
-            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-            """.stripIndent(true))
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~""".stripIndent(true))
             return false
         }
 

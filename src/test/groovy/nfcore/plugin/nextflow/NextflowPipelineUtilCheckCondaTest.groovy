@@ -1,5 +1,6 @@
-package nfcore.plugin
+package nfcore.plugin.nextflow
 
+import nfcore.plugin.nextflow.NextflowPipelineUtils
 import org.yaml.snakeyaml.Yaml
 import spock.lang.Specification
 
