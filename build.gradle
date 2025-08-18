@@ -11,7 +11,7 @@ nextflowPlugin {
     className = 'nfcore.plugin.NfUtilsPlugin'
     extensionPoints = [
         'nfcore.plugin.NfUtilsExtension',
-        'nfcore.plugin.NfUtilsFactory',
+        'nfcore.plugin.NfcorePipelineObserverFactory',
     ]
 
     publishing {

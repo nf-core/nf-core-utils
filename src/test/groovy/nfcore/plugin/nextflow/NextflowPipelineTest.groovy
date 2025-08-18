@@ -1,6 +1,7 @@
-package nfcore.plugin
+package nfcore.plugin.nextflow
 
 import groovy.json.JsonSlurper
+import nfcore.plugin.nextflow.NextflowPipelineUtils
 import spock.lang.Ignore
 import spock.lang.Specification
 import spock.lang.TempDir
