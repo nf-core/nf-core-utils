@@ -139,23 +139,33 @@ class NfcoreNotificationUtils {
                                 boolean plaintext_email, String outdir,
                                 boolean monochrome_logs = true, def multiqc_report = null) {
         def session = (Session) nextflow.Nextflow.session
+        if (session == null) {
+            System.err.println("ERROR: Cannot send completion email - Nextflow session is null")
+            return
+        }
+        
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def config = session.config
 
         // Set up the e-mail variables
-        def subject = "[${workflowName}] Successful: ${session.runName}"
-        if (!session.success) {
-            subject = "[${workflowName}] FAILED: ${session.runName}"
+        def subject = "[${workflowName}] Successful: ${session.runName ?: 'unknown'}"
+        if (session.success == false) {
+            subject = "[${workflowName}] FAILED: ${session.runName ?: 'unknown'}"
         }
 
         def summary = [:]
-        summary_params
-                .keySet()
-                .sort()
-                .each { group ->
-                    summary << summary_params[group]
-                }
+        if (summary_params != null && summary_params instanceof Map) {
+            summary_params
+                    .keySet()
+                    .sort()
+                    .each { group ->
+                        def groupData = summary_params[group]
+                        if (groupData instanceof Map) {
+                            summary << groupData
+                        }
+                    }
+        }
 
         def misc_fields = [:]
         misc_fields['Date Started'] = session.start
@@ -198,22 +208,56 @@ class NfcoreNotificationUtils {
         }
 
         // Render the TXT template
-        def engine = new groovy.text.GStringTemplateEngine()
-        def tf = new File("${session.projectDir}/assets/email_template.txt")
-        def txt_template = engine.createTemplate(tf).make(email_fields)
-        def email_txt = txt_template.toString()
+        def email_txt = "Default email content"
+        def email_html = "<html><body>Default email content</body></html>"
+        
+        try {
+            def engine = new groovy.text.GStringTemplateEngine()
+            def tf = new File("${session.projectDir}/assets/email_template.txt")
+            if (tf.exists()) {
+                def txt_template = engine.createTemplate(tf).make(email_fields)
+                email_txt = txt_template.toString()
+            } else {
+                log.warn("Email template not found: ${tf.absolutePath}")
+            }
 
-        // Render the HTML template
-        def hf = new File("${session.projectDir}/assets/email_template.html")
-        def html_template = engine.createTemplate(hf).make(email_fields)
-        def email_html = html_template.toString()
+            // Render the HTML template
+            def hf = new File("${session.projectDir}/assets/email_template.html")
+            if (hf.exists()) {
+                def html_template = engine.createTemplate(hf).make(email_fields)
+                email_html = html_template.toString()
+            } else {
+                log.warn("HTML email template not found: ${hf.absolutePath}")
+            }
+        } catch (Exception e) {
+            log.warn("Failed to render email templates: ${e.message}")
+        }
 
         // Render the sendmail template
-        def max_multiqc_email_size = (config.params?.containsKey('max_multiqc_email_size') ? config.params.max_multiqc_email_size : 0) as nextflow.util.MemoryUnit
-        def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${session.projectDir}", mqcFile: mqc_report, mqcMaxSize: max_multiqc_email_size.toBytes()]
-        def sf = new File("${session.projectDir}/assets/sendmail_template.txt")
-        def sendmail_template = engine.createTemplate(sf).make(smail_fields)
-        def sendmail_html = sendmail_template.toString()
+        def max_multiqc_email_size = 0
+        if (config?.params?.containsKey('max_multiqc_email_size')) {
+            try {
+                max_multiqc_email_size = (config.params.max_multiqc_email_size as nextflow.util.MemoryUnit).toBytes()
+            } catch (Exception e) {
+                log.warn("Failed to parse max_multiqc_email_size: ${e.message}")
+            }
+        }
+        
+        def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${session.projectDir}", mqcFile: mqc_report, mqcMaxSize: max_multiqc_email_size]
+        def sendmail_html = email_html  // Fallback content
+        
+        try {
+            def engine = new groovy.text.GStringTemplateEngine()
+            def sf = new File("${session.projectDir}/assets/sendmail_template.txt")
+            if (sf.exists()) {
+                def sendmail_template = engine.createTemplate(sf).make(smail_fields)
+                sendmail_html = sendmail_template.toString()
+            } else {
+                log.warn("Sendmail template not found: ${sf.absolutePath}")
+            }
+        } catch (Exception e) {
+            log.warn("Failed to render sendmail template: ${e.message}")
+        }
 
         // Send the HTML e-mail
         def colors = logColours(monochrome_logs) as Map
@@ -239,16 +283,29 @@ class NfcoreNotificationUtils {
         }
 
         // Write summary e-mail HTML to a file
-        def output_hf = new File(session.launchDir.toString(), ".pipeline_report.html")
-        output_hf.withWriter { w -> w << email_html }
-        FilesEx.copyTo(output_hf.toPath(), "${outdir}/pipeline_info/pipeline_report.html")
-        output_hf.delete()
+        if (outdir != null) {
+            try {
+                def output_hf = new File(session.launchDir.toString(), ".pipeline_report.html")
+                output_hf.withWriter { w -> w << email_html }
+                
+                // Ensure pipeline_info directory exists
+                def pipeline_info_dir = new File("${outdir}/pipeline_info")
+                pipeline_info_dir.mkdirs()
+                
+                FilesEx.copyTo(output_hf.toPath(), "${outdir}/pipeline_info/pipeline_report.html")
+                output_hf.delete()
 
-        // Write summary e-mail TXT to a file
-        def output_tf = new File(session.launchDir.toString(), ".pipeline_report.txt")
-        output_tf.withWriter { w -> w << email_txt }
-        FilesEx.copyTo(output_tf.toPath(), "${outdir}/pipeline_info/pipeline_report.txt")
-        output_tf.delete()
+                // Write summary e-mail TXT to a file
+                def output_tf = new File(session.launchDir.toString(), ".pipeline_report.txt")
+                output_tf.withWriter { w -> w << email_txt }
+                FilesEx.copyTo(output_tf.toPath(), "${outdir}/pipeline_info/pipeline_report.txt")
+                output_tf.delete()
+            } catch (Exception e) {
+                log.warn("Failed to write email report files: ${e.message}")
+            }
+        } else {
+            log.warn("Cannot write email reports - output directory is null")
+        }
     }
 
     /**
@@ -281,14 +338,28 @@ class NfcoreNotificationUtils {
      */
     static void imNotification(Map summary_params, String hook_url) {
         def session = (Session) nextflow.Nextflow.session
+        if (session == null) {
+            System.err.println("ERROR: Cannot send IM notification - Nextflow session is null")
+            return
+        }
+        
+        if (hook_url == null || hook_url.trim().isEmpty()) {
+            log.warn("Cannot send IM notification - hook URL is null or empty")
+            return
+        }
 
         def summary = [:]
-        summary_params
-                .keySet()
-                .sort()
-                .each { group ->
-                    summary << summary_params[group]
-                }
+        if (summary_params != null && summary_params instanceof Map) {
+            summary_params
+                    .keySet()
+                    .sort()
+                    .each { group ->
+                        def groupData = summary_params[group]
+                        if (groupData instanceof Map) {
+                            summary << groupData
+                        }
+                    }
+        }
 
         def misc_fields = [:]
         misc_fields['start'] = session.start
@@ -322,23 +393,50 @@ class NfcoreNotificationUtils {
         msg_fields['summary'] = summary << misc_fields
 
         // Render the JSON template
-        def engine = new groovy.text.GStringTemplateEngine()
-        // Different JSON depending on the service provider
-        // Defaults to "Adaptive Cards" (https://adaptivecards.io), except Slack which has its own format
-        def json_path = hook_url.contains("hooks.slack.com") ? "slackreport.json" : "adaptivecard.json"
-        def hf = new File("${session.projectDir}/assets/${json_path}")
-        def json_template = engine.createTemplate(hf).make(msg_fields)
-        def json_message = json_template.toString()
+        def json_message = ""
+        try {
+            def engine = new groovy.text.GStringTemplateEngine()
+            // Different JSON depending on the service provider
+            // Defaults to "Adaptive Cards" (https://adaptivecards.io), except Slack which has its own format
+            def json_path = hook_url.contains("hooks.slack.com") ? "slackreport.json" : "adaptivecard.json"
+            def hf = new File("${session.projectDir}/assets/${json_path}")
+            
+            if (hf.exists()) {
+                def json_template = engine.createTemplate(hf).make(msg_fields)
+                json_message = json_template.toString()
+            } else {
+                log.warn("IM notification template not found: ${hf.absolutePath}")
+                // Create a basic JSON message as fallback
+                json_message = groovy.json.JsonOutput.toJson([
+                    text: "Pipeline ${msg_fields.runName ?: 'unknown'} ${msg_fields.success ? 'completed successfully' : 'failed'}"
+                ])
+            }
+        } catch (Exception e) {
+            log.warn("Failed to render IM notification template: ${e.message}")
+            return
+        }
 
         // POST
-        def post = new URL(hook_url).openConnection()
-        post.setRequestMethod("POST")
-        post.setDoOutput(true)
-        post.setRequestProperty("Content-Type", "application/json")
-        post.getOutputStream().write(json_message.getBytes("UTF-8"))
-        def postRC = post.getResponseCode()
-        if (!postRC.equals(200)) {
-            log.warn(post.getErrorStream().getText())
+        try {
+            def post = new URL(hook_url).openConnection()
+            post.setRequestMethod("POST")
+            post.setDoOutput(true)
+            post.setRequestProperty("Content-Type", "application/json")
+            post.getOutputStream().write(json_message.getBytes("UTF-8"))
+            def postRC = post.getResponseCode()
+            if (postRC != 200) {
+                def errorText = ""
+                try {
+                    errorText = post.getErrorStream()?.getText() ?: "Unknown error"
+                } catch (Exception ignored) {
+                    errorText = "Could not read error stream"
+                }
+                log.warn("IM notification failed with response code ${postRC}: ${errorText}")
+            } else {
+                log.info("IM notification sent successfully to ${hook_url}")
+            }
+        } catch (Exception e) {
+            log.warn("Failed to send IM notification: ${e.message}")
         }
     }
 }
