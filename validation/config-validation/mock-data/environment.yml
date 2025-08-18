@@ -1,0 +1,9 @@
+# Mock conda environment file for testing conda channel validation
+name: nf-core-fetchngs
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.9
+  - nextflow>=23.04.0
