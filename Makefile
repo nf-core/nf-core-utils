@@ -1,3 +1,5 @@
+.PHONY: assemble clean test install release validate validate-all
+
 # Build the plugin
 assemble:
 	./gradlew assemble
