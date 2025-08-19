@@ -1,4 +1,4 @@
-.PHONY: assemble clean test install release validate validate-all
+.PHONY: assemble clean test install release validate validate-all validate-citations
 
 # Build the plugin
 assemble:
@@ -60,9 +60,17 @@ validate:
 		exit 1; \
 	fi
 
+# Run citation management validation test
+validate-citations: install
+	@cd validation/citation-management && nextflow run . -plugins nf-core-utils@0.2.0
+	@test -f validation/citation-management/work/pipeline_info/citation_report.yml
+	@test -f validation/citation-management/work/pipeline_info/methods_description.txt
+	@test -f validation/citation-management/work/pipeline_info/bibliography.txt
+
 # Run all validation tests
 validate-all:
 	@echo "============================================"
 	@echo "nf-core-utils Plugin Full Validation Suite"
 	@echo "============================================"
 	@$(MAKE) validate
+	@$(MAKE) validate-citations

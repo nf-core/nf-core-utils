@@ -1,0 +1,22 @@
+name: "fastqc"
+description: "Run FastQC on sequenced reads"
+keywords:
+  - "quality control"
+  - "qc"
+  - "fastq"
+tools:
+  - "fastqc":
+      description: "A quality control tool for high throughput sequence data."
+      homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+      documentation: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/"
+      tool_dev_url: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+      doi: "10.1093/bioinformatics/btw354"
+      licence: "GPL v3"
+authors:
+  - "@grst"
+  - "@ewels"
+  - "@FelixKrueger"
+maintainers:
+  - "@grst"
+  - "@ewels"
+  - "@FelixKrueger"
