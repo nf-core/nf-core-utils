@@ -31,11 +31,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Install Nextflow
-        run: |
-          curl -s https://get.nextflow.io | bash
-          sudo mv nextflow /usr/local/bin/
-          chmod +x /usr/local/bin/nextflow
-          nextflow -version
+        uses: nf-core/setup-nextflow@v2
 
       - name: Clean workspace
         run: make clean
