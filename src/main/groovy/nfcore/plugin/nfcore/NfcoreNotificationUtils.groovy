@@ -28,6 +28,30 @@ import java.nio.file.Path
 @Slf4j
 class NfcoreNotificationUtils {
 
+    // Reusable template engine instance to avoid creating multiple instances
+    private static final groovy.text.GStringTemplateEngine TEMPLATE_ENGINE = new groovy.text.GStringTemplateEngine()
+
+    /**
+     * Process summary parameters from a Map, extracting nested group data
+     * @param summary_params Map of summary parameters with nested groups
+     * @return Processed summary map with flattened group data
+     */
+    private static Map processSummaryParams(Map summary_params) {
+        def summary = [:]
+        if (summary_params != null && summary_params instanceof Map) {
+            summary_params
+                    .keySet()
+                    .sort()
+                    .each { group ->
+                        def groupData = summary_params[group]
+                        if (groupData instanceof Map) {
+                            summary << groupData
+                        }
+                    }
+        }
+        return summary
+    }
+
     /**
      * ANSII colour codes used for terminal logging
      * @param monochrome_logs Boolean indicating whether to use monochrome logs
@@ -150,22 +174,11 @@ class NfcoreNotificationUtils {
 
         // Set up the e-mail variables
         def subject = "[${workflowName}] Successful: ${session.runName ?: 'unknown'}"
-        if (session.success == false) {
+        if (!session.success) {
             subject = "[${workflowName}] FAILED: ${session.runName ?: 'unknown'}"
         }
 
-        def summary = [:]
-        if (summary_params != null && summary_params instanceof Map) {
-            summary_params
-                    .keySet()
-                    .sort()
-                    .each { group ->
-                        def groupData = summary_params[group]
-                        if (groupData instanceof Map) {
-                            summary << groupData
-                        }
-                    }
-        }
+        def summary = processSummaryParams(summary_params)
 
         def misc_fields = [:]
         misc_fields['Date Started'] = session.start
@@ -212,10 +225,9 @@ class NfcoreNotificationUtils {
         def email_html = "<html><body>Default email content</body></html>"
         
         try {
-            def engine = new groovy.text.GStringTemplateEngine()
             def tf = new File("${session.projectDir}/assets/email_template.txt")
             if (tf.exists()) {
-                def txt_template = engine.createTemplate(tf).make(email_fields)
+                def txt_template = TEMPLATE_ENGINE.createTemplate(tf).make(email_fields)
                 email_txt = txt_template.toString()
             } else {
                 log.warn("Email template not found: ${tf.absolutePath}")
@@ -224,7 +236,7 @@ class NfcoreNotificationUtils {
             // Render the HTML template
             def hf = new File("${session.projectDir}/assets/email_template.html")
             if (hf.exists()) {
-                def html_template = engine.createTemplate(hf).make(email_fields)
+                def html_template = TEMPLATE_ENGINE.createTemplate(hf).make(email_fields)
                 email_html = html_template.toString()
             } else {
                 log.warn("HTML email template not found: ${hf.absolutePath}")
@@ -247,10 +259,9 @@ class NfcoreNotificationUtils {
         def sendmail_html = email_html  // Fallback content
         
         try {
-            def engine = new groovy.text.GStringTemplateEngine()
             def sf = new File("${session.projectDir}/assets/sendmail_template.txt")
             if (sf.exists()) {
-                def sendmail_template = engine.createTemplate(sf).make(smail_fields)
+                def sendmail_template = TEMPLATE_ENGINE.createTemplate(sf).make(smail_fields)
                 sendmail_html = sendmail_template.toString()
             } else {
                 log.warn("Sendmail template not found: ${sf.absolutePath}")
@@ -348,18 +359,7 @@ class NfcoreNotificationUtils {
             return
         }
 
-        def summary = [:]
-        if (summary_params != null && summary_params instanceof Map) {
-            summary_params
-                    .keySet()
-                    .sort()
-                    .each { group ->
-                        def groupData = summary_params[group]
-                        if (groupData instanceof Map) {
-                            summary << groupData
-                        }
-                    }
-        }
+        def summary = processSummaryParams(summary_params)
 
         def misc_fields = [:]
         misc_fields['start'] = session.start
@@ -395,14 +395,13 @@ class NfcoreNotificationUtils {
         // Render the JSON template
         def json_message = ""
         try {
-            def engine = new groovy.text.GStringTemplateEngine()
             // Different JSON depending on the service provider
             // Defaults to "Adaptive Cards" (https://adaptivecards.io), except Slack which has its own format
             def json_path = hook_url.contains("hooks.slack.com") ? "slackreport.json" : "adaptivecard.json"
             def hf = new File("${session.projectDir}/assets/${json_path}")
             
             if (hf.exists()) {
-                def json_template = engine.createTemplate(hf).make(msg_fields)
+                def json_template = TEMPLATE_ENGINE.createTemplate(hf).make(msg_fields)
                 json_message = json_template.toString()
             } else {
                 log.warn("IM notification template not found: ${hf.absolutePath}")
@@ -424,7 +423,7 @@ class NfcoreNotificationUtils {
             post.setRequestProperty("Content-Type", "application/json")
             post.getOutputStream().write(json_message.getBytes("UTF-8"))
             def postRC = post.getResponseCode()
-            if (postRC != 200) {
+            if (postRC < 200 || postRC >= 300) {
                 def errorText = ""
                 try {
                     errorText = post.getErrorStream()?.getText() ?: "Unknown error"
