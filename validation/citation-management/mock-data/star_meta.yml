@@ -1,0 +1,23 @@
+name: "star_align"
+description: "Align reads to a reference genome using STAR"
+keywords:
+  - "alignment"
+  - "map"
+  - "fastq"
+  - "genome"
+  - "reference"
+tools:
+  - "star":
+      description: "STAR is a fast RNA-seq read mapper, with support for splice-junction and fusion read detection"
+      homepage: "https://github.com/alexdobin/STAR"
+      documentation: "https://physiology.med.cornell.edu/faculty/skrabanek/lab/angsd/lecture_notes/STARmanual.pdf"
+      tool_dev_url: "https://github.com/alexdobin/STAR"
+      doi: "10.1093/bioinformatics/bts635"
+      licence: "MIT"
+authors:
+  - "@astarkov"
+  - "@drpatelh"
+  - "@kevinmenden"
+maintainers:
+  - "@astarkov"
+  - "@drpatelh"

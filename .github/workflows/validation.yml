@@ -37,7 +37,7 @@ jobs:
         run: make clean
 
       - name: Build and validate plugin
-        run: make validate
+        run: make validate-all
 
       - name: Upload validation artifacts
         if: always()
