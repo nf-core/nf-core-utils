@@ -15,74 +15,13 @@ include {
     autoToolBibliographyText;
 } from 'plugin/nf-core-utils'
 
+// Import local modules
+include { FASTQC } from './modules/local/fastqc/main'
+include { MULTIQC } from './modules/local/multiqc/main'
+include { SAMTOOLS_VIEW } from './modules/local/samtools/view/main'
+include { STAR_ALIGN } from './modules/local/star/align/main'
+
 nextflow.enable.dsl = 2
-
-// Mock processes that simulate nf-core modules with topic channel citation emission
-process FASTQC {
-    input:
-    val sample_id
-    
-    output:
-    path "*.html", emit: html
-    path "*.zip", emit: zip
-    val citation_data, topic: citation
-    
-    script:
-    citation_data = getCitation("${projectDir}/mock-data/fastqc_meta.yml")
-    """
-    echo "<html>FastQC Report for ${sample_id}</html>" > ${sample_id}_fastqc.html
-    echo "FastQC zip data" > ${sample_id}_fastqc.zip
-    """
-}
-
-process MULTIQC {
-    input:
-    path fastqc_files
-    
-    output:
-    path "*.html", emit: report
-    val citation_data, topic: citation
-    
-    script:
-    citation_data = getCitation("${projectDir}/mock-data/multiqc_meta.yml")
-    """
-    echo "<html>MultiQC Report</html>" > multiqc_report.html
-    """
-}
-
-process SAMTOOLS_VIEW {
-    input:
-    val sample_id
-    
-    output:
-    path "*.sam", emit: sam
-    val citation_data, topic: citation
-    
-    script:
-    citation_data = getCitation("${projectDir}/mock-data/samtools_meta.yml")
-    """
-    echo "SAM data for ${sample_id}" > ${sample_id}.sam
-    """
-}
-
-// Optional process that may or may not run based on parameters
-process OPTIONAL_TOOL {
-    when:
-    params.run_optional == true
-    
-    input:
-    val sample_id
-    
-    output:
-    path "*.txt", emit: result
-    val citation_data, topic: citation
-    
-    script:
-    citation_data = getCitation("${projectDir}/mock-data/star_meta.yml")
-    """
-    echo "Optional tool output for ${sample_id}" > ${sample_id}_optional.txt
-    """
-}
 
 workflow {
     
@@ -109,7 +48,7 @@ workflow {
     multiqc_out = MULTIQC(fastqc_out.html.collect())
     
     // Optional tool runs only if parameter is set
-    optional_out = OPTIONAL_TOOL(samples.first())
+    star_out = STAR_ALIGN(samples.first())
     
     // Collect all citations from topic channel automatically
     ch_citations = channel.topic('citation')
