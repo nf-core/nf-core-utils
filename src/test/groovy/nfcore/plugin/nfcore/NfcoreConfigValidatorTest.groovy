@@ -55,7 +55,7 @@ class NfcoreConfigValidatorTest extends Specification {
         def thrownException = null
         try {
             // Join nextflowCliArgs into a string, as checkProfileProvided expects a command line string
-            validator.checkProfileProvided(profile, nextflowCliArgs instanceof List ? nextflowCliArgs.join(' ') : nextflowCliArgs)
+            validator.checkProfileProvided(profile, nextflowCliArgs instanceof List ? nextflowCliArgs.join(' ') : nextflowCliArgs, true)
         } catch (Exception e) {
             thrownException = e
         }
@@ -84,5 +84,47 @@ class NfcoreConfigValidatorTest extends Specification {
         'test'  | []              || false       | false
         null    | ['bar']         || false       | true
         null    | []              || false       | false
+    }
+
+    def 'should add colors to profile error message when monochrome is disabled'() {
+        given:
+        def validator = new NfcoreConfigValidator()
+
+        when:
+        def thrownException = null
+        try {
+            validator.checkProfileProvided('test,', '', false)  // monochrome_logs = false
+        } catch (Exception e) {
+            thrownException = e
+        }
+
+        then:
+        assert thrownException instanceof IllegalArgumentException
+        def message = thrownException.message
+        assert message.contains('\033[0;31m')  // red color code
+        assert message.contains('\033[0;33m')  // yellow color code
+        assert message.contains('\033[0m')     // reset color code
+        assert message.contains('ERROR')
+        assert message.contains('HINT')
+    }
+
+    def 'should not add colors to profile error message when monochrome is enabled'() {
+        given:
+        def validator = new NfcoreConfigValidator()
+
+        when:
+        def thrownException = null
+        try {
+            validator.checkProfileProvided('test,', '', true)  // monochrome_logs = true
+        } catch (Exception e) {
+            thrownException = e
+        }
+
+        then:
+        assert thrownException instanceof IllegalArgumentException
+        def message = thrownException.message
+        assert !message.contains('\033[')  // no color codes
+        assert message.contains('ERROR')
+        assert message.contains('HINT')
     }
 } 
