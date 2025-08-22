@@ -25,7 +25,7 @@ class NfcorePipelineObserverTest extends Specification {
 
         then:
         1 * validator.checkConfigProvided('test-pipeline', { it.profile == 'standard' && it.configFiles == ['main.config'] })
-        1 * validator.checkProfileProvided('standard', '--foo bar')
+        1 * validator.checkProfileProvided('standard', '--foo bar', true)
     }
 
     def 'onFlowCreate should print the start message'() {
@@ -87,6 +87,6 @@ class NfcorePipelineObserverTest extends Specification {
 
         then:
         1 * validator.checkConfigProvided(null, { it.profile == 'standard' && it.configFiles == [] })
-        1 * validator.checkProfileProvided('standard', '')
+        1 * validator.checkProfileProvided('standard', '', true)
     }
 } 
