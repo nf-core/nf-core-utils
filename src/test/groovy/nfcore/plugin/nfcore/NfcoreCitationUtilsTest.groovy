@@ -485,4 +485,98 @@ ${tool_bibliography}
         fileResult.isEmpty()
         mixedResult.isEmpty()
     }
+
+    def "should handle malformed YAML gracefully"() {
+        given:
+        def malformedFile = File.createTempFile('malformed', '.yml')
+        malformedFile.text = '''
+        name: test_module
+        tools:
+          - fastqc
+            doi: "invalid yaml structure
+        '''
+
+        when:
+        def result = NfcoreCitationUtils.generateModuleToolCitation(malformedFile)
+
+        then:
+        // Should handle YAML parsing exceptions gracefully
+        thrown(Exception)
+
+        cleanup:
+        malformedFile.delete()
+    }
+
+    def "should handle missing tools section in meta.yml"() {
+        given:
+        def noToolsFile = File.createTempFile('no_tools', '.yml')
+        noToolsFile.text = '''
+        name: test_module
+        description: A module without tools section
+        '''
+
+        when:
+        def result = NfcoreCitationUtils.generateModuleToolCitation(noToolsFile)
+
+        then:
+        result.isEmpty()
+
+        cleanup:
+        noToolsFile.delete()
+    }
+
+    def "should handle null and empty parameters in topic processing"() {
+        when:
+        def nullResult = NfcoreCitationUtils.processCitationsFromTopic(null)
+        def nullFileResult = NfcoreCitationUtils.processCitationsFromFile(null)
+        def mixedNullResult = NfcoreCitationUtils.processMixedCitationSources(null, null)
+
+        then:
+        nullResult.isEmpty()
+        nullFileResult.isEmpty()
+        mixedNullResult.isEmpty()
+    }
+
+    def "should handle topic entries with missing citation data"() {
+        given:
+        def topicDataWithMissing = [
+            ['MODULE_A', 'tool_a', [:]],  // Empty citation data
+            ['MODULE_B', 'tool_b', null], // Null citation data
+            ['MODULE_C', 'tool_c', [description: 'Valid tool']] // Partial data
+        ]
+
+        when:
+        def result = NfcoreCitationUtils.processCitationsFromTopic(topicDataWithMissing)
+
+        then:
+        result.size() == 3
+        result.containsKey('tool_a')
+        result.containsKey('tool_b') 
+        result.containsKey('tool_c')
+        result.tool_c.citation.contains('Valid tool')
+    }
+
+    def "citation text should handle special characters in tool names"() {
+        given:
+        def citationsWithSpecialChars = [
+            'tool-with-dashes': [
+                citation: 'tool-with-dashes (Some description)',
+                bibliography: '<li>Tool with dashes citation</li>'
+            ],
+            'tool_with_underscores': [
+                citation: 'tool_with_underscores (DOI: 10.1000/test)',
+                bibliography: '<li>Tool with underscores citation</li>'
+            ]
+        ]
+
+        when:
+        def citationText = NfcoreCitationUtils.toolCitationText(citationsWithSpecialChars)
+        def bibText = NfcoreCitationUtils.toolBibliographyText(citationsWithSpecialChars)
+
+        then:
+        citationText.contains('tool-with-dashes')
+        citationText.contains('tool_with_underscores')
+        bibText.contains('Tool with dashes citation')
+        bibText.contains('Tool with underscores citation')
+    }
 } 
