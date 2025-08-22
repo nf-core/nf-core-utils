@@ -5,12 +5,10 @@
                 "    There is a problem with your Conda configuration!",
                 "    You will need to set-up the conda-forge and bioconda channels correctly.",
                 "    Please refer to https://bioconda.github.io/",
-                "    [conda-forge]",
                 "    [conda-forge, bioconda]",
                 "    There is a problem with your Conda configuration!",
                 "    You will need to set-up the conda-forge and bioconda channels correctly.",
                 "    Please refer to https://bioconda.github.io/",
-                "    [conda-forge]",
                 "    [conda-forge, bioconda]"
             ]
         ],
@@ -21,10 +19,7 @@
         "timestamp": "2025-08-22T11:57:18.168675"
     },
     "successful_completion": {
-        "content": [
-            true,
-            0
-        ],
+        "content": [true, 0],
         "meta": {
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
