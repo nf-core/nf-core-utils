@@ -1,0 +1,75 @@
+nextflow_pipeline {
+
+    name "Test nf-core-utils notification system"
+    script "../notification-system/main.nf"
+
+    test("Should execute notification functions successfully") {
+        
+        when {
+            params {
+                // Use test parameters for notification system
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert workflow.exitStatus == 0
+            
+            // Verify basic pipeline execution markers (stdout is a list)
+            assert workflow.stdout.any { it.contains("Pipeline is starting") }
+            assert workflow.stdout.any { it.contains("Pipeline complete") }
+            
+            // Snapshot core notification system outputs
+            assert snapshot(
+                workflow.stdout,
+                workflow.exitStatus,
+                workflow.success
+            ).match("notification_system_success")
+        }
+    }
+
+    test("Should handle notification testing scenarios") {
+        
+        when {
+            params {
+                // Notification testing scenarios
+            }
+        }
+
+        then {
+            assert workflow.success
+            
+            // Verify workflow completed successfully
+            assert workflow.stdout.any { it.contains("Pipeline complete") }
+            
+            // Snapshot notification testing results
+            assert snapshot(
+                workflow.success,
+                workflow.exitStatus
+            ).match("notification_testing_complete")
+        }
+    }
+
+    test("Should complete notification validation without errors") {
+        
+        when {
+            params {
+                // Validation completion test
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert workflow.exitStatus == 0
+            
+            // Pipeline should complete successfully
+            assert workflow.stdout.any { it.contains("Pipeline complete") }
+            
+            // Snapshot successful execution
+            assert snapshot(
+                workflow.success,
+                workflow.exitStatus
+            ).match("notification_validation_success")
+        }
+    }
+}

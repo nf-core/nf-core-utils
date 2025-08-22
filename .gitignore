@@ -8,3 +8,8 @@
 build
 work
 bin/
+
+# Ignore nf-test artifacts
+.nf-test/
+.nf-test.log
+validation_results/
