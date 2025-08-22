@@ -45,7 +45,7 @@ include { checkConfigProvided; completionEmail; getWorkflowVersion;
 | Function             | Purpose                                      | Usage Context | Typical Usage Example                       |
 | -------------------- | -------------------------------------------- | ------------- | ------------------------------------------- |
 | checkConfigProvided  | Warn if no custom config/profile is provided | Main workflow | `checkConfigProvided()`                     |
-| checkProfileProvided | Validate profile argument                    | Main workflow | `checkProfileProvided(args)`                |
+| checkProfileProvided | Validate profile argument                    | Main workflow | `checkProfileProvided(args, monochrome_logs)` |
 | getWorkflowVersion   | Get workflow version string                  | Anywhere      | `getWorkflowVersion()`                      |
 | paramsSummaryMultiqc | Generate MultiQC summary YAML                | Main workflow/Process | `paramsSummaryMultiqc([Summary: ...])`      |
 | workflowSummaryMQC   | Create MultiQC summary template              | Main workflow/Process | `workflowSummaryMQC(...)`                   |
@@ -258,7 +258,7 @@ println "Methods: ${report.methods_description}"
 
 include { checkConfigProvided; checkProfileProvided } from 'plugin/nf-core-utils'
 checkConfigProvided()
-checkProfileProvided(args)
+checkProfileProvided(args, params.monochrome_logs)
 
 include { logColours } from 'plugin/nf-core-utils'
 def colors = logColours(params.monochrome_logs)
@@ -533,19 +533,22 @@ if (!checkConfigProvided()) {
 
 ---
 
-#### `checkProfileProvided(args)`
+#### `checkProfileProvided(args, monochrome_logs=true)`
 
 **Description:**  
-Checks if the `-profile` argument is valid and warns about positional arguments.
+Checks if the `-profile` argument is valid and warns about positional arguments. Error messages include color formatting when colors are enabled.
 
 **Parameters:**
 
 - `args` (Array): Command-line arguments passed to the pipeline
+- `monochrome_logs` (Boolean, default: `true`): If true, disables color codes in error messages
 
 **Example:**
 
 ```nextflow
 checkProfileProvided(args)
+// or with colors enabled
+checkProfileProvided(args, params.monochrome_logs)
 ```
 
 ---
