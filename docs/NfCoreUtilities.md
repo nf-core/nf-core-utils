@@ -12,6 +12,7 @@ Import functions in your Nextflow DSL2 script as follows:
 include { checkConfigProvided; completionEmail; logColours; paramsSummaryMultiqc;
           completionSummary; imNotification; getWorkflowVersion;
           generateModuleToolCitation; toolCitationText; toolBibliographyText;
+          getCitation; autoToolCitationText; autoToolBibliographyText;
           generateComprehensiveReport } from 'plugin/nf-core-utils'
 ```
 
@@ -37,6 +38,9 @@ include { checkConfigProvided; completionEmail; logColours; paramsSummaryMultiqc
 ### Citation Functions
 | Function                        | Purpose                                           | Typical Usage Example                                    |
 | ------------------------------- | ------------------------------------------------- | -------------------------------------------------------- |
+| getCitation                     | Extract citation for topic channel emission      | `getCitation("${moduleDir}/meta.yml")`                 |
+| autoToolCitationText            | Generate citation text from topic channels       | `autoToolCitationText(citationTopics)`                 |
+| autoToolBibliographyText        | Generate bibliography HTML from topic channels   | `autoToolBibliographyText(citationTopics)`             |
 | generateModuleToolCitation      | Extract citations from meta.yml file             | `generateModuleToolCitation('meta.yml')`               |
 | toolCitationText                | Generate citation text from collected citations  | `toolCitationText(citationsMap)`                       |
 | toolBibliographyText            | Generate bibliography HTML from citations        | `toolBibliographyText(citationsMap)`                   |
@@ -129,7 +133,45 @@ def modernCitations = processCitationsFromTopic(topicCitations)
 
 ## Citation Management Examples
 
-### Basic Citation Extraction
+### Automatic Topic Channel Citations (Recommended)
+
+```nextflow
+include { getCitation; autoToolCitationText; autoToolBibliographyText } from 'plugin/nf-core-utils'
+
+// In your process definitions
+process FASTQC {
+    input:
+    val sample_id
+    
+    output:
+    path "*.html", emit: html
+    val citation_data, topic: citation
+    
+    script:
+    citation_data = getCitation("${moduleDir}/meta.yml")
+    """
+    fastqc ${sample_id}
+    """
+}
+
+// In your workflow
+workflow {
+    FASTQC(samples)
+    
+    // Collect all citations automatically
+    citation_ch = FASTQC.out.citation.collect()
+    
+    // Generate citation text and bibliography
+    citation_ch.view { citations ->
+        def citationText = autoToolCitationText(citations)
+        def bibliography = autoToolBibliographyText(citations)
+        println "Citations: ${citationText}"
+        println "Bibliography: ${bibliography}"
+    }
+}
+```
+
+### Basic Citation Extraction (Legacy)
 
 ```nextflow
 include { generateModuleToolCitation; toolCitationText; toolBibliographyText } from 'plugin/nf-core-utils'
@@ -257,7 +299,66 @@ workflow.onComplete {
 
 ### Citation Extraction and Processing
 
-#### `generateModuleToolCitation(metaFilePath)`
+#### `getCitation(metaFilePath)` ⭐ Recommended
+
+**Description:**  
+Extracts citation information from a module's meta.yml file for topic channel emission. This is the modern approach for automatic citation collection that only includes citations for tools that actually execute.
+
+**Parameters:**
+- `metaFilePath` (String): Path to the meta.yml file, typically `"${moduleDir}/meta.yml"`
+
+**Returns:**
+- `List`: Citation data formatted for topic channel emission `[module, tool, citation_data]`
+
+**Usage in Process:**
+```nextflow
+process FASTQC {
+    output:
+    val citation_data, topic: citation
+    
+    script:
+    citation_data = getCitation("${moduleDir}/meta.yml")
+    """
+    # Process script here
+    """
+}
+```
+
+#### `autoToolCitationText(citationTopics)`
+
+**Description:**  
+Generates formatted citation text from topic channel citation data. Processes the automatic citation collection from executed processes.
+
+**Parameters:**
+- `citationTopics` (List<List>): Citation data from topic channels
+
+**Returns:**
+- `String`: Formatted citation text for methods descriptions
+
+**Example:**
+```nextflow
+def citationText = autoToolCitationText(citation_ch.collect())
+// Returns: "Tools used in the workflow included: fastqc (DOI: ...), samtools (DOI: ...)."
+```
+
+#### `autoToolBibliographyText(citationTopics)`
+
+**Description:**  
+Generates HTML bibliography from topic channel citation data. Creates bibliography entries for tools that were actually executed.
+
+**Parameters:**
+- `citationTopics` (List<List>): Citation data from topic channels
+
+**Returns:**
+- `String`: HTML bibliography for MultiQC reports
+
+**Example:**
+```nextflow
+def bibliography = autoToolBibliographyText(citation_ch.collect())
+// Returns HTML list items for bibliography
+```
+
+#### `generateModuleToolCitation(metaFilePath)` (Legacy)
 
 **Description:**  
 Extracts citation information from a module's meta.yml file.
