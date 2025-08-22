@@ -424,4 +424,40 @@ class NfUtilsExtension extends PluginExtensionPoint {
         return NfcoreCitationUtils.convertMetaYamlToTopicFormat(metaFilePath, moduleName)
     }
 
+    /**
+     * Extract citation from meta.yml for topic channel emission
+     * Use in process outputs: val(getCitation("${moduleDir}/meta.yml")), topic: citation
+     *
+     * @param metaYmlPath Path to the module's meta.yml file
+     * @return List in topic channel format ready for emission
+     */
+    @Function
+    List getCitation(String metaYmlPath) {
+        return NfcoreCitationUtils.getCitation(metaYmlPath)
+    }
+
+    /**
+     * Automatically generate citation text from topic channel data
+     * Use after collecting from topic: channel.topic('citation').collect()
+     *
+     * @param topicCitations Citation data collected from topic channel
+     * @return Formatted citation text ready for reports
+     */
+    @Function
+    String autoToolCitationText(List topicCitations = []) {
+        return NfcoreCitationUtils.autoToolCitationText(topicCitations)
+    }
+
+    /**
+     * Automatically generate bibliography from topic channel data
+     * Use after collecting from topic: channel.topic('citation').collect()
+     *
+     * @param topicCitations Citation data collected from topic channel
+     * @return Formatted bibliography HTML ready for reports
+     */
+    @Function
+    String autoToolBibliographyText(List topicCitations = []) {
+        return NfcoreCitationUtils.autoToolBibliographyText(topicCitations)
+    }
+
 }

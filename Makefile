@@ -60,12 +60,11 @@ validate:
 		exit 1; \
 	fi
 
-# Run citation management validation test
+# Run topic channel citation management validation test
 validate-citations: install
-	@cd validation/citation-management && nextflow run . -plugins nf-core-utils@0.2.0
-	@test -f validation/citation-management/work/pipeline_info/citation_report.yml
-	@test -f validation/citation-management/work/pipeline_info/methods_description.txt
-	@test -f validation/citation-management/work/pipeline_info/bibliography.txt
+	@cd validation/topic-channel-citations && nextflow run . -plugins nf-core-utils@0.2.0
+	@test -f validation/topic-channel-citations/work/pipeline_info/auto_citations.txt
+	@test -f validation/topic-channel-citations/work/pipeline_info/auto_bibliography.html
 
 # Run all validation tests
 validate-all:
