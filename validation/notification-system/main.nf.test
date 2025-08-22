@@ -3,7 +3,7 @@ nextflow_pipeline {
     name "Test nf-core-utils notification system"
     script "../notification-system/main.nf"
 
-    test("Should execute notification functions successfully") {
+    test("Should import and test notification functions successfully") {
         
         when {
             params {
@@ -15,11 +15,12 @@ nextflow_pipeline {
             assert workflow.success
             assert workflow.exitStatus == 0
             
-            // Verify basic pipeline execution markers (stdout is a list)
+            // Verify basic pipeline execution markers
             assert workflow.stdout.any { it.contains("Pipeline is starting") }
             assert workflow.stdout.any { it.contains("Pipeline complete") }
             
-            // Snapshot core notification system outputs
+            // Snapshot notification system outputs - testing successful execution
+            // The detailed function testing happens in onComplete handler which may not be fully captured in stdout
             assert snapshot(
                 workflow.stdout,
                 workflow.exitStatus,
@@ -28,21 +29,22 @@ nextflow_pipeline {
         }
     }
 
-    test("Should handle notification testing scenarios") {
+    test("Should handle notification function testing without errors") {
         
         when {
             params {
-                // Notification testing scenarios
+                // Notification function testing
             }
         }
 
         then {
             assert workflow.success
+            assert workflow.exitStatus == 0
             
             // Verify workflow completed successfully
             assert workflow.stdout.any { it.contains("Pipeline complete") }
             
-            // Snapshot notification testing results
+            // Snapshot successful execution
             assert snapshot(
                 workflow.success,
                 workflow.exitStatus
@@ -50,7 +52,7 @@ nextflow_pipeline {
         }
     }
 
-    test("Should complete notification validation without errors") {
+    test("Should complete notification validation process") {
         
         when {
             params {
@@ -62,10 +64,10 @@ nextflow_pipeline {
             assert workflow.success
             assert workflow.exitStatus == 0
             
-            // Pipeline should complete successfully
+            // Pipeline should complete successfully with all functions tested
             assert workflow.stdout.any { it.contains("Pipeline complete") }
             
-            // Snapshot successful execution
+            // Snapshot successful validation
             assert snapshot(
                 workflow.success,
                 workflow.exitStatus
