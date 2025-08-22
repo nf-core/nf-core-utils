@@ -43,7 +43,7 @@ class NfcorePipelineObserver implements TraceObserver {
             projectName = meta.projectName
         }
         configValidator.checkConfigProvided(projectName, config)
-        configValidator.checkProfileProvided(session.profile, session.commandLine)
+        configValidator.checkProfileProvided(session.profile, session.commandLine, true)
         println "Pipeline is starting! 🚀"
     }
 

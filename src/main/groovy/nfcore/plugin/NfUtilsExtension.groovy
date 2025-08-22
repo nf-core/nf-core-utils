@@ -98,9 +98,10 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Check if the profile string is valid and warn about positional arguments
      * @param args The command line arguments (as List)
+     * @param monochromeLogs Whether to use monochrome logs (default: true)
      */
     @Function
-    void checkProfileProvided(List args) {
+    void checkProfileProvided(List args, boolean monochromeLogs = true) {
         String profile = null
         for (int i = 0; i < args.size(); i++) {
             if (args[i] == '-profile' && i + 1 < args.size()) {
@@ -109,7 +110,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
             }
         }
         String commandLine = args.join(' ')
-        NfcoreConfigValidator.checkProfileProvided(profile, commandLine)
+        NfcoreConfigValidator.checkProfileProvided(profile, commandLine, monochromeLogs)
     }
 
     /**
