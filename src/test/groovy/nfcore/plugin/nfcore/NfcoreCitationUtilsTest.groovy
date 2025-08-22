@@ -579,4 +579,260 @@ ${tool_bibliography}
         bibText.contains('Tool with dashes citation')
         bibText.contains('Tool with underscores citation')
     }
+
+    // --- New Auto-Citation and Topic Channel Tests ---
+
+    def "getCitation should extract citation data from meta.yml file"() {
+        given:
+        def tempFile = File.createTempFile('fastqc_meta', '.yml')
+        tempFile.text = '''
+        name: fastqc
+        tools:
+          - fastqc:
+              doi: "10.1093/bioinformatics/btv033"
+              homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+              author: "Andrews S"
+              year: 2010
+              title: "FastQC: A Quality Control Tool for High Throughput Sequence Data"
+        '''.stripIndent()
+
+        when:
+        def result = NfcoreCitationUtils.getCitation(tempFile.absolutePath)
+
+        then:
+        result.size() == 1
+        result[0].size() == 3  // [module_name, tool_name, citation_data]
+        result[0][1] == 'fastqc'  // tool name
+        result[0][2].doi == '10.1093/bioinformatics/btv033'
+        result[0][2].author == 'Andrews S'
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    def "getCitation should handle missing meta.yml file gracefully"() {
+        given:
+        def nonExistentPath = '/non/existent/path/meta.yml'
+
+        when:
+        def result = NfcoreCitationUtils.getCitation(nonExistentPath)
+
+        then:
+        result.isEmpty()
+    }
+
+    def "getCitation should extract module name from path"() {
+        given:
+        def tempDir = File.createTempDir('test-module')
+        def metaFile = new File(tempDir, 'meta.yml')
+        metaFile.text = '''
+        name: test_tool
+        tools:
+          - samtools:
+              doi: "10.1093/bioinformatics/btp352"
+        '''.stripIndent()
+
+        when:
+        def result = NfcoreCitationUtils.getCitation(metaFile.absolutePath)
+
+        then:
+        result.size() == 1
+        result[0][0].contains('TEST-MODULE')  // Module name extracted from directory
+
+        cleanup:
+        tempDir.deleteDir()
+    }
+
+    def "getCitation should handle multiple tools in one meta.yml"() {
+        given:
+        def tempFile = File.createTempFile('multi_meta', '.yml')
+        tempFile.text = '''
+        name: multi_tool_module
+        tools:
+          - samtools:
+              doi: "10.1093/bioinformatics/btp352"
+              author: "Li H, et al."
+          - bcftools:
+              doi: "10.1093/gigascience/giab008"
+              author: "Danecek P, et al."
+        '''.stripIndent()
+
+        when:
+        def result = NfcoreCitationUtils.getCitation(tempFile.absolutePath)
+
+        then:
+        result.size() == 2
+        result.find { it[1] == 'samtools' } != null
+        result.find { it[1] == 'bcftools' } != null
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    def "autoToolCitationText should process topic channel data"() {
+        given:
+        def topicCitations = [
+            ['FASTQC', 'fastqc', [doi: '10.1093/bioinformatics/btv033', description: 'Quality control tool']],
+            ['MULTIQC', 'multiqc', [doi: '10.1093/bioinformatics/btw354', description: 'Report aggregator']]
+        ]
+
+        when:
+        def result = NfcoreCitationUtils.autoToolCitationText(topicCitations)
+
+        then:
+        result.contains('Tools used in the workflow included:')
+        result.contains('fastqc')
+        result.contains('multiqc')
+        result.contains('DOI: 10.1093/bioinformatics/btv033')
+        result.contains('DOI: 10.1093/bioinformatics/btw354')
+    }
+
+    def "autoToolBibliographyText should process topic channel data"() {
+        given:
+        def topicCitations = [
+            ['FASTQC', 'fastqc', [
+                doi: '10.1093/bioinformatics/btv033', 
+                author: 'Andrews S',
+                year: 2010,
+                title: 'FastQC: Quality Control Tool',
+                homepage: 'https://example.com'
+            ]]
+        ]
+
+        when:
+        def result = NfcoreCitationUtils.autoToolBibliographyText(topicCitations)
+
+        then:
+        result.contains('<li>')
+        result.contains('Andrews S')
+        result.contains('2010')
+        result.contains('FastQC: Quality Control Tool')
+        result.contains('10.1093/bioinformatics/btv033')
+    }
+
+    def "autoToolCitationText should handle empty topic data"() {
+        when:
+        def result = NfcoreCitationUtils.autoToolCitationText([])
+
+        then:
+        result == "No tools used in the workflow."
+    }
+
+    def "autoToolBibliographyText should handle empty topic data"() {
+        when:
+        def result = NfcoreCitationUtils.autoToolBibliographyText([])
+
+        then:
+        result == "No bibliography entries found."
+    }
+
+    def "autoToolCitationText should handle nested list structures from topic channel"() {
+        given:
+        // Simulate how topic channel data might be nested when collected
+        def nestedTopicData = [
+            [
+                ['MODULE_A', 'tool_a', [description: 'Tool A description']],
+                ['MODULE_B', 'tool_b', [doi: '10.1000/test']]
+            ],
+            [
+                ['MODULE_C', 'tool_c', [description: 'Tool C description']]
+            ]
+        ]
+
+        when:
+        def result = NfcoreCitationUtils.autoToolCitationText(nestedTopicData)
+
+        then:
+        result.contains('Tools used in the workflow included:')
+        result.contains('tool_a')
+        result.contains('tool_b') 
+        result.contains('tool_c')
+    }
+
+    def "getCitation should handle malformed meta.yml gracefully"() {
+        given:
+        def tempFile = File.createTempFile('malformed_meta', '.yml')
+        tempFile.text = '''
+        name: test
+        tools:
+          - invalid yaml structure without proper nesting
+        '''
+
+        when:
+        def result = NfcoreCitationUtils.getCitation(tempFile.absolutePath)
+
+        then:
+        // Should handle gracefully and return empty or partial results
+        notThrown(Exception)
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    def "auto citation functions should work with real-world topic channel simulation"() {
+        given:
+        // Simulate a realistic workflow with multiple processes emitting citations
+        def processACitations = NfcoreCitationUtils.getCitation(createMockMetaYml('fastqc'))
+        def processBCitations = NfcoreCitationUtils.getCitation(createMockMetaYml('multiqc'))
+        def processCCitations = NfcoreCitationUtils.getCitation(createMockMetaYml('samtools'))
+        
+        // Combine as would happen in topic channel collection
+        def allTopicCitations = []
+        allTopicCitations.addAll(processACitations)
+        allTopicCitations.addAll(processBCitations) 
+        allTopicCitations.addAll(processCCitations)
+
+        when:
+        def citationText = NfcoreCitationUtils.autoToolCitationText(allTopicCitations)
+        def bibliography = NfcoreCitationUtils.autoToolBibliographyText(allTopicCitations)
+
+        then:
+        citationText.contains('Tools used in the workflow included:')
+        citationText.contains('fastqc')
+        citationText.contains('multiqc')
+        citationText.contains('samtools')
+        
+        bibliography.contains('<li>')
+        bibliography.split('<li>').size() > 3  // Should have multiple bibliography entries
+    }
+
+    // Helper method to create mock meta.yml files for testing
+    private String createMockMetaYml(String toolName) {
+        def tempFile = File.createTempFile("${toolName}_meta", '.yml')
+        def content = ""
+        switch (toolName) {
+            case 'fastqc':
+                content = '''
+                name: fastqc
+                tools:
+                  - fastqc:
+                      doi: "10.1093/bioinformatics/btv033"
+                      homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+                      description: "Quality control tool"
+                '''.stripIndent()
+                break
+            case 'multiqc':
+                content = '''
+                name: multiqc
+                tools:
+                  - multiqc:
+                      doi: "10.1093/bioinformatics/btw354"
+                      homepage: "https://multiqc.info/"
+                      description: "Report aggregator"
+                '''.stripIndent()
+                break
+            case 'samtools':
+                content = '''
+                name: samtools
+                tools:
+                  - samtools:
+                      doi: "10.1093/bioinformatics/btp352"
+                      homepage: "http://www.htslib.org/"
+                      description: "SAM/BAM processing"
+                '''.stripIndent()
+                break
+        }
+        tempFile.text = content
+        return tempFile.absolutePath
+    }
 } 

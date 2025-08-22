@@ -311,4 +311,147 @@ class NfcoreCitationUtils {
         def description_html = engine.createTemplate(mqc_methods_yaml.text).make(meta)
         return description_html.toString()
     }
+
+    /**
+     * Extract citation from meta.yml file for topic channel emission
+     * Used by processes to emit citation data at runtime
+     * 
+     * @param metaYmlPath Path to the module's meta.yml file (typically "${moduleDir}/meta.yml")
+     * @return List in topic channel format [module_name, tool_name, citation_data] or empty list if error
+     */
+    static List getCitation(String metaYmlPath) {
+        try {
+            File metaFile = new File(metaYmlPath)
+            if (!metaFile.exists()) {
+                System.err.println("Warning: meta.yml not found at ${metaYmlPath}")
+                return []
+            }
+            
+            // Extract module name from path (e.g., "modules/nf-core/fastqc/meta.yml" -> "FASTQC")
+            def moduleName = extractModuleNameFromPath(metaYmlPath)
+            
+            // Parse meta.yml and extract tools
+            def yaml = new Yaml()
+            Map meta
+            metaFile.withInputStream { is ->
+                meta = yaml.load(is)
+            }
+            
+            def tools = meta?.tools ?: []
+            def citations = []
+            
+            // Convert each tool to topic channel format
+            tools.each { toolEntry ->
+                toolEntry.each { toolName, toolInfo ->
+                    if (toolInfo instanceof Map) {
+                        citations << [moduleName, toolName, toolInfo]
+                    }
+                }
+            }
+            
+            return citations
+            
+        } catch (Exception e) {
+            System.err.println("Warning: Failed to extract citation from ${metaYmlPath}: ${e.message}")
+            return []
+        }
+    }
+
+    /**
+     * Extract module name from meta.yml file path
+     * Handles various path patterns commonly used in nf-core
+     * 
+     * @param metaYmlPath Path to meta.yml file
+     * @return Module name in uppercase format
+     */
+    private static String extractModuleNameFromPath(String metaYmlPath) {
+        try {
+            def pathParts = metaYmlPath.split('/')
+            def metaIndex = pathParts.findLastIndexOf { it == 'meta.yml' }
+            
+            if (metaIndex > 0) {
+                // Extract module name from parent directory
+                def moduleName = pathParts[metaIndex - 1]
+                return moduleName.toUpperCase()
+            }
+            
+            // Fallback: extract from current directory or default
+            def currentDir = new File('.').getAbsolutePath()
+            def dirName = new File(currentDir).name
+            return dirName.toUpperCase()
+            
+        } catch (Exception e) {
+            return "UNKNOWN_MODULE"
+        }
+    }
+
+    /**
+     * Automatically collect citations from the 'citation' topic channel and generate citation text
+     * This function works with the topic channel pattern where processes emit citations
+     * 
+     * @param topicCitations List of citation data from topic channel (typically collected via channel.topic('citation').collect())
+     * @return Formatted citation text ready for use in reports
+     */
+    static String autoToolCitationText(List topicCitations = []) {
+        if (!topicCitations || topicCitations.isEmpty()) {
+            return "No tools used in the workflow."
+        }
+        
+        // Flatten and process topic citations - handle nested structures
+        def allCitations = []
+        topicCitations.each { item ->
+            if (item instanceof List) {
+                if (item.size() == 3) {
+                    // This is already a [module, tool, data] tuple
+                    allCitations.add(item)
+                } else {
+                    // This might be a list of tuples, flatten it
+                    item.each { subItem ->
+                        if (subItem instanceof List && subItem.size() == 3) {
+                            allCitations.add(subItem)
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Process using existing logic
+        def processedCitations = processCitationsFromTopic(allCitations)
+        return toolCitationText(processedCitations)
+    }
+
+    /**
+     * Automatically collect citations from the 'citation' topic channel and generate bibliography
+     * This function works with the topic channel pattern where processes emit citations
+     * 
+     * @param topicCitations List of citation data from topic channel (typically collected via channel.topic('citation').collect())
+     * @return Formatted bibliography HTML ready for use in reports
+     */
+    static String autoToolBibliographyText(List topicCitations = []) {
+        if (!topicCitations || topicCitations.isEmpty()) {
+            return "No bibliography entries found."
+        }
+        
+        // Flatten and process topic citations - handle nested structures
+        def allCitations = []
+        topicCitations.each { item ->
+            if (item instanceof List) {
+                if (item.size() == 3) {
+                    // This is already a [module, tool, data] tuple
+                    allCitations.add(item)
+                } else {
+                    // This might be a list of tuples, flatten it
+                    item.each { subItem ->
+                        if (subItem instanceof List && subItem.size() == 3) {
+                            allCitations.add(subItem)
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Process using existing logic
+        def processedCitations = processCitationsFromTopic(allCitations)
+        return toolBibliographyText(processedCitations)
+    }
 } 
