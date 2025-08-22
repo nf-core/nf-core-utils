@@ -21,19 +21,21 @@ include { checkConfigProvided; completionEmail; logColours; paramsSummaryMultiqc
 ## Quick Reference Table
 
 ### Core Functions
-| Function             | Purpose                                      | Typical Usage Example                       |
-| -------------------- | -------------------------------------------- | ------------------------------------------- |
-| checkConfigProvided  | Warn if no custom config/profile is provided | `checkConfigProvided()`                     |
-| checkProfileProvided | Validate profile argument                    | `checkProfileProvided(args)`                |
-| getWorkflowVersion   | Get workflow version string                  | `getWorkflowVersion()`                      |
-| paramsSummaryMultiqc | Generate MultiQC summary YAML                | `paramsSummaryMultiqc([Summary: ...])`      |
-| workflowSummaryMQC   | Create MultiQC summary template              | `workflowSummaryMQC(...)`                   |
-| sectionLogs          | Generate colored section logs                | `sectionLogs(sections, monochrome)`         |
-| logColours           | Get ANSI color codes for logs                | `logColours(params.monochrome_logs)`        |
-| completionSummary    | Print summary at pipeline completion         | `completionSummary(params.monochrome_logs)` |
-| completionEmail      | Send completion email                        | `completionEmail(...)`                      |
-| imNotification       | Send Slack/Teams notification                | `imNotification(..., hook_url)`             |
-| getSingleReport      | Get a single report from Path/List           | `getSingleReport(multiqc_report)`           |
+| Function             | Purpose                                      | Usage Context | Typical Usage Example                       |
+| -------------------- | -------------------------------------------- | ------------- | ------------------------------------------- |
+| checkConfigProvided  | Warn if no custom config/profile is provided | Main workflow | `checkConfigProvided()`                     |
+| checkProfileProvided | Validate profile argument                    | Main workflow | `checkProfileProvided(args)`                |
+| getWorkflowVersion   | Get workflow version string                  | Anywhere      | `getWorkflowVersion()`                      |
+| paramsSummaryMultiqc | Generate MultiQC summary YAML                | Main workflow/Process | `paramsSummaryMultiqc([Summary: ...])`      |
+| workflowSummaryMQC   | Create MultiQC summary template              | Main workflow/Process | `workflowSummaryMQC(...)`                   |
+| sectionLogs          | Generate colored section logs                | Anywhere      | `sectionLogs(sections, monochrome)`         |
+| logColours           | Get ANSI color codes for logs                | Anywhere      | `logColours(params.monochrome_logs)`        |
+| **completionSummary**    | **Print summary at pipeline completion**         | **⚠️ onComplete/onError only** | `completionSummary(params.monochrome_logs)` |
+| **completionEmail**      | **Send completion email**                        | **⚠️ onComplete/onError only** | `completionEmail(summary_params, ...)`                      |
+| **imNotification**       | **Send Slack/Teams notification**                | **⚠️ onComplete/onError only** | `imNotification(summary_params, hook_url)`             |
+| getSingleReport      | Get a single report from Path/List           | Anywhere      | `getSingleReport(multiqc_report)`           |
+
+**⚠️ Important**: Functions marked with **⚠️ onComplete/onError only** require Nextflow session context and must be called from `workflow.onComplete` or `workflow.onError` handlers, not from the main workflow block.
 
 ### Citation Functions
 | Function                        | Purpose                                           | Typical Usage Example                                    |
@@ -267,16 +269,34 @@ process MULTIQC {
 
 ### At Pipeline Completion
 
+**⚠️ IMPORTANT**: Notification functions (`completionSummary`, `completionEmail`, `imNotification`) must be called from within `workflow.onComplete` or `workflow.onError` handlers, not from the main workflow block. They require the Nextflow session context which is only available in completion handlers.
+
 ```nextflow
 include { completionSummary; completionEmail; imNotification } from 'plugin/nf-core-utils'
 
 workflow.onComplete {
+    // Always call completionSummary to show pipeline completion status
     completionSummary(params.monochrome_logs)
 
+    // Send completion email if configured
     if (params.email || params.email_on_fail) {
-        def summary = [Run_Name: workflow.runName]
+        // Prepare summary parameters - group related parameters together
+        def summary_params = [
+            'Core Nextflow options': [
+                'revision': workflow.revision ?: 'N/A',
+                'runName': workflow.runName,
+                'containerEngine': workflow.containerEngine,
+                'profile': workflow.profile
+            ],
+            'Input/output options': [
+                'input': params.input ?: 'N/A',
+                'outdir': params.outdir ?: 'N/A',
+                'email': params.email ?: 'N/A'
+            ]
+        ]
+        
         completionEmail(
-            [Summary: summary],
+            summary_params,
             params.email,
             params.email_on_fail,
             params.plaintext_email,
@@ -286,9 +306,39 @@ workflow.onComplete {
         )
     }
 
+    // Send Slack/Teams notification if webhook URL is provided
     if (params.hook_url) {
-        def summary = [Run_name: workflow.runName]
-        imNotification([Summary: summary], params.hook_url)
+        def summary_params = [
+            'Pipeline Info': [
+                'runName': workflow.runName,
+                'success': workflow.success,
+                'duration': workflow.duration
+            ]
+        ]
+        imNotification(summary_params, params.hook_url)
+    }
+}
+
+workflow.onError {
+    // Send error notifications
+    if (params.email_on_fail) {
+        def summary_params = [
+            'Error Info': [
+                'runName': workflow.runName,
+                'errorMessage': workflow.errorMessage ?: 'Unknown error',
+                'exitStatus': workflow.exitStatus
+            ]
+        ]
+        
+        completionEmail(
+            summary_params,
+            null,  // No regular email
+            params.email_on_fail,  // Only send to error email
+            params.plaintext_email,
+            params.outdir,
+            params.monochrome_logs,
+            null  // No MultiQC report on error
+        )
     }
 }
 ```
@@ -603,16 +653,27 @@ log.info "${colors.purple}Pipeline started${colors.reset}"
 #### `completionSummary(monochrome_logs=true)`
 
 **Description:**  
-Prints a summary of the pipeline run at completion.
+Prints a colored summary of the pipeline run at completion, showing success/failure status and any ignored processes.
 
 **Parameters:**
 
 - `monochrome_logs` (Boolean, default: `true`): If true, disables color codes
 
+**⚠️ Usage Requirements:**
+- Must be called from `workflow.onComplete` or `workflow.onError` handlers only
+- Requires Nextflow session context (manifest, stats, success status)
+- Do not call from main workflow block
+
 **Example:**
 
 ```nextflow
 workflow.onComplete {
+    // Show completion summary with colors (if enabled)
+    completionSummary(params.monochrome_logs)
+}
+
+workflow.onError {
+    // Show error summary
     completionSummary(params.monochrome_logs)
 }
 ```
@@ -622,32 +683,74 @@ workflow.onComplete {
 #### `completionEmail(summary_params, email, email_on_fail, plaintext_email, outdir, monochrome_logs=true, multiqc_report=null)`
 
 **Description:**  
-Constructs and sends a completion email with pipeline summary and optional MultiQC report.
+Constructs and sends a completion email with pipeline summary, workflow metadata, and optional MultiQC report attachments.
 
 **Parameters:**
 
-- `summary_params` (Map): Summary parameters
-- `email` (String): Email address to notify
-- `email_on_fail` (String): Email for failures only
-- `plaintext_email` (Boolean): Send plaintext email if true
-- `outdir` (String): Output directory for reports
-- `monochrome_logs` (Boolean, default: `true`): Use monochrome logs
-- `multiqc_report` (Path|List, optional): MultiQC report file(s)
+- `summary_params` (Map): Map of grouped summary parameters (see structure below)  
+- `email` (String): Primary email address to notify on success
+- `email_on_fail` (String): Email address to notify on failure (can be same or different)
+- `plaintext_email` (Boolean): If true, sends plain text email instead of HTML
+- `outdir` (String): Output directory path for locating reports
+- `monochrome_logs` (Boolean, default: `true`): Use monochrome logs in email content
+- `multiqc_report` (Path|List, optional): MultiQC report file(s) to attach
+
+**⚠️ Usage Requirements:**
+- Must be called from `workflow.onComplete` or `workflow.onError` handlers only
+- Requires Nextflow session context (workflow metadata, success status, etc.)
+- Do not call from main workflow block
+
+**Summary Parameters Structure:**
+```nextflow
+def summary_params = [
+    'Core Nextflow options': [
+        'revision': workflow.revision,
+        'runName': workflow.runName,
+        'containerEngine': workflow.containerEngine,
+        // ... other core options
+    ],
+    'Input/output options': [
+        'input': params.input,
+        'outdir': params.outdir,
+        // ... other I/O options  
+    ],
+    'Reference genome options': [
+        'genome': params.genome,
+        // ... other genome options
+    ]
+    // ... other parameter groups
+]
+```
 
 **Example:**
 
 ```nextflow
 workflow.onComplete {
-    def summary = [Run_Name: workflow.runName]
-    completionEmail(
-        [Summary: summary],
-        params.email,
-        params.email_on_fail,
-        params.plaintext_email,
-        params.outdir,
-        params.monochrome_logs,
-        multiqc_report
-    )
+    if (params.email || params.email_on_fail) {
+        // Group parameters logically for better email formatting
+        def summary_params = [
+            'Core Nextflow options': [
+                'revision': workflow.revision ?: 'N/A',
+                'runName': workflow.runName,
+                'containerEngine': workflow.containerEngine,
+                'profile': workflow.profile
+            ],
+            'Input/output options': [
+                'input': params.input ?: 'N/A',
+                'outdir': params.outdir ?: 'N/A'
+            ]
+        ]
+        
+        completionEmail(
+            summary_params,
+            params.email,
+            params.email_on_fail,
+            params.plaintext_email,
+            params.outdir,
+            params.monochrome_logs,
+            multiqc_report
+        )
+    }
 }
 ```
 
@@ -656,19 +759,59 @@ workflow.onComplete {
 #### `imNotification(summary_params, hook_url)`
 
 **Description:**  
-Sends a notification to a webhook (e.g., Slack, Teams) with pipeline summary.
+Sends a JSON notification to instant messenger webhooks (e.g., Slack, Microsoft Teams) with pipeline summary and workflow metadata.
 
 **Parameters:**
 
-- `summary_params` (Map): Summary parameters
-- `hook_url` (String): Webhook URL
+- `summary_params` (Map): Map of grouped summary parameters (same structure as `completionEmail`)
+- `hook_url` (String): Webhook URL for Slack, Teams, or other compatible service
+
+**⚠️ Usage Requirements:**
+- Must be called from `workflow.onComplete` or `workflow.onError` handlers only
+- Requires Nextflow session context (workflow metadata, timing, success status)
+- Do not call from main workflow block
+- Function handles null/empty hook_url gracefully (logs warning and returns)
+
+**Supported Webhook Types:**
+- **Slack**: `https://hooks.slack.com/services/...`
+- **Microsoft Teams**: `https://outlook.office.com/webhook/...`
+- **Generic webhooks**: Any endpoint accepting JSON POST requests
 
 **Example:**
 
 ```nextflow
-if (params.hook_url) {
-    def summary = [Run_Name: workflow.runName]
-    imNotification([Summary: summary], params.hook_url)
+workflow.onComplete {
+    if (params.hook_url) {
+        def summary_params = [
+            'Pipeline Info': [
+                'runName': workflow.runName,
+                'success': workflow.success,
+                'duration': workflow.duration,
+                'exitStatus': workflow.exitStatus
+            ],
+            'Configuration': [
+                'profile': workflow.profile,
+                'container': workflow.containerEngine
+            ]
+        ]
+        
+        imNotification(summary_params, params.hook_url)
+    }
+}
+
+workflow.onError {
+    // Send error notification to Slack/Teams
+    if (params.hook_url) {
+        def summary_params = [
+            'Error Details': [
+                'runName': workflow.runName,
+                'errorMessage': workflow.errorMessage,
+                'exitStatus': workflow.exitStatus
+            ]
+        ]
+        
+        imNotification(summary_params, params.hook_url)
+    }
 }
 ```
 
@@ -691,6 +834,124 @@ Returns a single report file from a Path or List of Paths.
 
 ```nextflow
 def mqc_report = getSingleReport(multiqc_report)
+```
+
+---
+
+## Common Mistakes and Troubleshooting
+
+### ❌ Common Mistake: Calling Notification Functions in Main Workflow
+
+**Problem:**
+```nextflow
+// ❌ WRONG - This will cause null pointer exceptions
+workflow {
+    completionSummary(params.monochrome_logs)  // ERROR: session is null
+    
+    if (params.email) {
+        completionEmail(summary_params, params.email, ...)  // ERROR: session is null
+    }
+}
+```
+
+**Solution:**
+```nextflow  
+// ✅ CORRECT - Call from completion handlers
+workflow {
+    // Main workflow logic here...
+    log.info "Pipeline execution complete"
+}
+
+workflow.onComplete {
+    // Now session context is available
+    completionSummary(params.monochrome_logs)  // ✅ Works correctly
+    
+    if (params.email) {
+        completionEmail(summary_params, params.email, ...)  // ✅ Works correctly
+    }
+}
+```
+
+### ❌ Common Mistake: Incorrect Summary Parameters Format
+
+**Problem:**
+```nextflow
+// ❌ WRONG - Flat structure makes email hard to read
+def summary = [
+    runName: workflow.runName,
+    input: params.input,
+    outdir: params.outdir,
+    genome: params.genome
+]
+```
+
+**Solution:**
+```nextflow
+// ✅ CORRECT - Grouped structure for better email formatting  
+def summary_params = [
+    'Core Nextflow options': [
+        'runName': workflow.runName,
+        'profile': workflow.profile
+    ],
+    'Input/output options': [
+        'input': params.input,
+        'outdir': params.outdir
+    ],
+    'Reference genome options': [
+        'genome': params.genome
+    ]
+]
+```
+
+### 🔧 Testing Notification Functions
+
+If you need to test notification functions in a development pipeline:
+
+```nextflow
+// Create a minimal test pipeline
+workflow {
+    log.info "Testing notification functions..."
+    log.info "Functions imported successfully"
+}
+
+workflow.onComplete {
+    // Test completionSummary
+    completionSummary(false)
+    
+    // Test with mock parameters (won't actually send emails)
+    def test_params = [
+        'Test Parameters': [
+            'runName': workflow.runName,
+            'success': workflow.success
+        ]
+    ]
+    
+    // These will run but won't send actual notifications in test mode
+    completionEmail(test_params, 'test@example.com', null, true, null, false, null)
+    imNotification(test_params, 'https://hooks.slack.com/test')
+    
+    log.info "Notification functions tested successfully"
+}
+```
+
+### 🐛 Debugging Session Context Issues
+
+If you see null pointer exceptions, verify:
+
+1. **Function location**: Are you calling from `workflow.onComplete`/`onError`?
+2. **Session availability**: Is `nextflow.Nextflow.session` accessible?
+3. **Parameter structure**: Are summary parameters properly grouped?
+
+```nextflow
+workflow.onComplete {
+    // Debug session context
+    log.info "Session available: ${nextflow.Nextflow.session != null}"
+    log.info "Workflow success: ${workflow.success}"
+    log.info "Workflow runName: ${workflow.runName}"
+    
+    // Then proceed with notification functions
+    completionSummary(params.monochrome_logs)
+}
 ```
 
 ---
