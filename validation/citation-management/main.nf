@@ -140,20 +140,12 @@ workflow {
     // Create output directory
     output_dir = "${workflow.workDir}/pipeline_info"
     
-    // Write citation report
+    // Write citation report using proper YAML serialization
     Channel.of(citation_report)
         .map { report ->
-            def yaml_content = ""
-            report.each { key, value ->
-                yaml_content += "${key}:\n"
-                if (value instanceof Map) {
-                    value.each { k, v -> yaml_content += "  ${k}: ${v}\n" }
-                } else {
-                    yaml_content += "  ${value}\n"
-                }
-                yaml_content += "\n"
-            }
-            return yaml_content
+            // Use SnakeYAML for proper serialization
+            def yaml = new org.yaml.snakeyaml.Yaml()
+            return yaml.dump(report)
         }
         .collectFile(
             storeDir: output_dir,
@@ -185,14 +177,30 @@ workflow {
             // Final validation checks
             log.info "=== Final Validation Checks ==="
             
-            // Check file contents
+            // Check file contents with proper waiting mechanism
             def citation_file = new File("${output_dir}/citation_report.yml")
             def methods_file = new File("${output_dir}/methods_description.txt")
             def bib_file = new File("${output_dir}/bibliography.txt")
             
-            assert citation_file.exists() : "Citation report file not created"
-            assert methods_file.exists() : "Methods description file not created"
-            assert bib_file.exists() : "Bibliography file not created"
+            // Wait for all files to be fully written before validation
+            def filesToCheck = [citation_file, methods_file, bib_file]
+            def maxWaitSeconds = 10
+            def checkIntervalMs = 200
+            def allFilesReady = false
+            def attempts = 0
+            def maxAttempts = (maxWaitSeconds * 1000) / checkIntervalMs
+            
+            while (!allFilesReady && attempts < maxAttempts) {
+                allFilesReady = filesToCheck.every { f ->
+                    f.exists() && f.length() > 0 && f.canRead()
+                }
+                if (!allFilesReady) {
+                    sleep(checkIntervalMs)
+                    attempts++
+                }
+            }
+            
+            assert allFilesReady : "One or more output files not ready after waiting ${maxWaitSeconds} seconds"
             
             // Check content validity
             def citation_content = citation_file.text
