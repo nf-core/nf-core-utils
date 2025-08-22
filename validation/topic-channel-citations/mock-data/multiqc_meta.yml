@@ -1,0 +1,15 @@
+name: multiqc
+description: "MultiQC searches a given directory for analysis logs and compiles a HTML report"
+keywords:
+  - quality control
+  - qc
+  - report
+  - html
+tools:
+  - multiqc:
+      description: "MultiQC searches a given directory for analysis logs and compiles a HTML report."
+      homepage: "https://multiqc.info/"
+      documentation: "https://multiqc.info/docs/"
+      tool_dev_url: "https://github.com/ewels/MultiQC"
+      doi: "10.1093/bioinformatics/btw354"
+      licence: "GPL v3"
