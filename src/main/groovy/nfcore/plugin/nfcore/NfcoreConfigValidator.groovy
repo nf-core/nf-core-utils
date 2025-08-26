@@ -51,11 +51,11 @@ class NfcoreConfigValidator {
      *
      * @param profile The profile string (e.g. from workflow.profile)
      * @param commandLine The command line string
-     * @param monochrome_logs Whether to use monochrome logs (default: true)
+     * @param monochromeLogs Whether to use monochrome logs (default: true)
      */
-    static void checkProfileProvided(String profile, String commandLine, boolean monochrome_logs = true) {
+    static void checkProfileProvided(String profile, String commandLine, boolean monochromeLogs = true) {
         if (profile?.endsWith(',')) {
-            def colors = nfcore.plugin.nfcore.NfcoreNotificationUtils.logColours(monochrome_logs)
+            def colors = nfcore.plugin.nfcore.NfcoreNotificationUtils.logColours(monochromeLogs)
             throw new IllegalArgumentException(
                     "${colors.red}ERROR${colors.reset} ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!\n" +
                             "${colors.yellow}HINT${colors.reset}: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
