@@ -1,1005 +1,509 @@
-# nf-core Utility Functions
+# nf-core Utilities Guide
 
-This extension provides a DSL2-friendly wrapper for nf-core utility functions, making them easily accessible in your Nextflow pipelines. This document provides an overview of the utility functions and links to detailed documentation for each utility class.
+This comprehensive guide covers the nf-core-utils plugin, a powerful extension that brings essential nf-core functionality directly into your Nextflow pipelines. Whether you're building a new pipeline or migrating from legacy subworkflows, this guide will help you leverage these utilities effectively.
 
-## Documentation Structure
+## 1. Overview
 
-The nf-core-utils plugin is organized into focused utility classes, each with dedicated documentation:
+The nf-core-utils plugin transforms common pipeline tasks from complex subworkflows into simple function calls. It provides battle-tested utilities for configuration validation, notifications, reporting, and citation management that work seamlessly across all nf-core pipelines.
 
-### 🔧 **Configuration & Validation**
-- **[NfcoreConfigValidator](utilities/NfcoreConfigValidator.md)** - Pipeline configuration validation and profile checking
+### 1.1. Core Capabilities
 
-### 📧 **Notifications & Logging** 
-- **[NfcoreNotificationUtils](utilities/NfcoreNotificationUtils.md)** - Email notifications, Slack/Teams integration, and completion summaries
+The plugin organizes functionality into six focused areas:
 
-### 📊 **Reporting & MultiQC**
-- **[NfcoreReportingUtils](utilities/NfcoreReportingUtils.md)** - MultiQC integration and pipeline reporting utilities
+- **🔧 Configuration & Validation**: Ensure proper pipeline setup and profile usage
+- **📧 Notifications & Logging**: Send completion emails, Slack/Teams messages, and terminal summaries  
+- **📊 Reporting & MultiQC**: Generate pipeline reports and integrate with MultiQC
+- **🔖 Version Management**: Track software versions with topic channel support
+- **📚 Citation Management**: Extract and format tool citations automatically
+- **🎼 Orchestrated Reporting**: Coordinate comprehensive reporting workflows
 
-### 🔖 **Version Management**
-- **[NfcoreVersionUtils](utilities/NfcoreVersionUtils.md)** - Version tracking with topic channel support and migration utilities
+### 1.2. Documentation Structure
 
-### 📚 **Citation Management**
-- **[NfcoreCitationUtils](utilities/NfcoreCitationUtils.md)** - Citation extraction, processing, and topic channel integration
+Each utility class has dedicated documentation with examples and best practices:
 
-### 🎼 **Orchestrated Reporting**
-- **[NfcoreReportingOrchestrator](utilities/NfcoreReportingOrchestrator.md)** - Comprehensive reporting coordination for versions and citations
+| Category | Utility | Purpose |
+|----------|---------|---------|
+| 🔧 **Configuration & Validation** | **[NfcoreConfigValidator](utilities/NfcoreConfigValidator.md)** | Pipeline configuration validation and profile checking |
+| 📧 **Notifications & Logging** | **[NfcoreNotificationUtils](utilities/NfcoreNotificationUtils.md)** | Email notifications, Slack/Teams integration, and completion summaries |
+| 📊 **Reporting & MultiQC** | **[NfcoreReportingUtils](utilities/NfcoreReportingUtils.md)** | MultiQC integration and pipeline reporting utilities |
+| 🔖 **Version Management** | **[NfcoreVersionUtils](utilities/NfcoreVersionUtils.md)** | Version tracking with topic channel support and migration utilities |
+| 📚 **Citation Management** | **[NfcoreCitationUtils](utilities/NfcoreCitationUtils.md)** | Citation extraction, processing, and topic channel integration |
+| 🎼 **Orchestrated Reporting** | **[NfcoreReportingOrchestrator](utilities/NfcoreReportingOrchestrator.md)** | Comprehensive reporting coordination for versions and citations |
 
----
+!!! tip "Where to Start"
+    New to nf-core utilities? Begin with the **Configuration & Validation** section to understand pipeline setup, then explore **Notifications & Logging** for completion handling.
 
-## Quick Start
+## 2. Quick Start Tutorial
 
-### Basic Import Pattern
+This section provides a hands-on introduction to the most commonly used nf-core utilities. We'll build from basic imports to a fully-featured pipeline with comprehensive logging and reporting.
 
-Import functions in your Nextflow DSL2 script as follows:
+### 2.1. Your First nf-core Utility
 
-```nextflow
-include { checkConfigProvided; completionEmail; getWorkflowVersion;
-          getCitation; autoToolCitationText; generateComprehensiveReport } from 'plugin/nf-core-utils'
+Let's start with the simplest possible example - checking pipeline configuration:
+
+```nextflow title="minimal_example.nf"
+#!/usr/bin/env nextflow
+
+nextflow.enable.dsl = 2
+
+// Import a single utility function  
+include { checkConfigProvided } from 'plugin/nf-core-utils'
+
+// Check if custom config or profile was provided
+checkConfigProvided()
+
+workflow {
+    log.info "Pipeline started with proper validation!"
+}
 ```
 
----
+```console title="Output"
+N E X T F L O W  ~  version 25.04.0
+Launching `minimal_example.nf` [focused-turing] - revision: abc1234 [main]
 
-## Quick Reference Table
-
-### Core Functions
-| Function             | Purpose                                      | Usage Context | Typical Usage Example                       |
-| -------------------- | -------------------------------------------- | ------------- | ------------------------------------------- |
-| checkConfigProvided  | Warn if no custom config/profile is provided | Main workflow | `checkConfigProvided()`                     |
-| checkProfileProvided | Validate profile argument                    | Main workflow | `checkProfileProvided(args, monochrome_logs)` |
-| getWorkflowVersion   | Get workflow version string                  | Anywhere      | `getWorkflowVersion()`                      |
-| paramsSummaryMultiqc | Generate MultiQC summary YAML                | Main workflow/Process | `paramsSummaryMultiqc([Summary: ...])`      |
-| workflowSummaryMQC   | Create MultiQC summary template              | Main workflow/Process | `workflowSummaryMQC(...)`                   |
-| sectionLogs          | Generate colored section logs                | Anywhere      | `sectionLogs(sections, monochrome)`         |
-| logColours           | Get ANSI color codes for logs                | Anywhere      | `logColours(params.monochrome_logs)`        |
-| **completionSummary**    | **Print summary at pipeline completion**         | **⚠️ onComplete/onError only** | `completionSummary(params.monochrome_logs)` |
-| **completionEmail**      | **Send completion email**                        | **⚠️ onComplete/onError only** | `completionEmail(summary_params, ...)`                      |
-| **imNotification**       | **Send Slack/Teams notification**                | **⚠️ onComplete/onError only** | `imNotification(summary_params, hook_url)`             |
-| getSingleReport      | Get a single report from Path/List           | Anywhere      | `getSingleReport(multiqc_report)`           |
-
-**⚠️ Important**: Functions marked with **⚠️ onComplete/onError only** require Nextflow session context and must be called from `workflow.onComplete` or `workflow.onError` handlers, not from the main workflow block.
-
-### Citation Functions
-| Function                        | Purpose                                           | Typical Usage Example                                    |
-| ------------------------------- | ------------------------------------------------- | -------------------------------------------------------- |
-| getCitation                     | Extract citation for topic channel emission      | `getCitation("${moduleDir}/meta.yml")`                 |
-| autoToolCitationText            | Generate citation text from topic channels       | `autoToolCitationText(citationTopics)`                 |
-| autoToolBibliographyText        | Generate bibliography HTML from topic channels   | `autoToolBibliographyText(citationTopics)`             |
-| generateModuleToolCitation      | Extract citations from meta.yml file             | `generateModuleToolCitation('meta.yml')`               |
-| toolCitationText                | Generate citation text from collected citations  | `toolCitationText(citationsMap)`                       |
-| toolBibliographyText            | Generate bibliography HTML from citations        | `toolBibliographyText(citationsMap)`                   |
-| collectCitationsFromFiles       | Collect citations from multiple meta.yml files   | `collectCitationsFromFiles(metaFilePaths)`             |
-| processCitationsFromTopic       | Process citations from topic channels             | `processCitationsFromTopic(topicData)`                 |
-| processMixedCitationSources     | Combine topic and file-based citations           | `processMixedCitationSources(topics, files)`          |
-| convertMetaYamlToTopicFormat    | Convert meta.yml to topic channel format         | `convertMetaYamlToTopicFormat(metaPath, moduleName)`  |
-
----
-
-## Version and Citation Reporting (New Architecture)
-
-### Overview
-
-Version and citation management are now cleanly separated for maintainability and clarity. Use the following classes for advanced reporting:
-
-- **NfcoreVersionUtils**: Handles version aggregation and formatting (YAML, topic channels, etc.)
-- **NfcoreCitationUtils**: Handles citation extraction and formatting from module meta.yml files
-- **NfcoreReportingOrchestrator**: Orchestrates both for comprehensive reporting (versions, citations, bibliography, methods)
-
-### Usage Examples
-
-#### Version-only Reporting
-
-```groovy
-import nfcore.plugin.nfcore.NfcoreReportingOrchestrator
-
-def versionReport = NfcoreReportingOrchestrator.generateVersionReport(
-    topicVersions, legacyVersions, session
-)
-println versionReport.versions_yaml
+WARN: No custom Nextflow configuration detected! Please provide a custom config file or profile.
+INFO: Pipeline started with proper validation!
 ```
 
-#### Citation-only Reporting
+### 2.2. Adding Completion Notifications
 
-```groovy
-import nfcore.plugin.nfcore.NfcoreReportingOrchestrator
+Let's expand our example to include completion summaries:
 
-def citationReport = NfcoreReportingOrchestrator.generateCitationReport(
-    metaFilePaths, mqcMethodsYaml, session
-)
-println citationReport.tool_citations
-println citationReport.tool_bibliography
+```nextflow title="notification_example.nf" hl_lines="5 14-16"
+#!/usr/bin/env nextflow
+
+nextflow.enable.dsl = 2
+
+include { checkConfigProvided; completionSummary } from 'plugin/nf-core-utils'
+
+checkConfigProvided()
+
+workflow {
+    log.info "Pipeline processing samples..."
+    // Your workflow logic here
+}
+
+workflow.onComplete {
+    completionSummary(params.monochrome_logs)
+}
 ```
 
-#### Comprehensive Reporting (Versions + Citations)
+```console title="Output"  
+Pipeline completed successfully!
 
-```groovy
-import nfcore.plugin.nfcore.NfcoreReportingOrchestrator
-
-def report = NfcoreReportingOrchestrator.generateComprehensiveReport(
-    topicVersions, legacyVersions, metaFilePaths, mqcMethodsYaml, session
-)
-println report.versions_yaml
-println report.tool_citations
-println report.tool_bibliography
-println report.methods_description
+-[nf-core/example] Pipeline completed successfully-
+Completed at: 2024-01-15T10:30:45.123Z
+Duration    : 45s
+CPU hours   : 0.1
+Succeeded   : 3
 ```
 
-### Topic Channel Migration Strategy
+### 2.3. Complete Import Pattern
 
-The citation system supports progressive migration from file-based meta.yml citations to topic channels, similar to the version system:
+For production pipelines, you'll typically need multiple utilities. Here's a recommended import pattern:
 
-#### Migration Path
-1. **Legacy Stage**: Use file-based meta.yml citations
-2. **Transition Stage**: Mix both file-based and topic channel citations
-3. **Modern Stage**: Use only topic channel citations
+```nextflow title="production_imports.nf" hl_lines="4-10"
+#!/usr/bin/env nextflow
 
-#### Topic Channel Formats
-- **`citations`** topic: New eval syntax `[module, tool, citation_data]`
-- **`citations_file`** topic: Legacy file paths to meta.yml files
+nextflow.enable.dsl = 2
 
-#### Example Migration
+// Essential utilities for most pipelines
+include { 
+    checkConfigProvided; checkProfileProvided;
+    completionSummary; completionEmail; 
+    paramsSummaryMultiqc; getWorkflowVersion 
+} from 'plugin/nf-core-utils'
 
-```groovy
-// Stage 1: Legacy file-based approach
-def legacyCitations = collectCitationsFromFiles(metaFilePaths)
-
-// Stage 2: Mixed approach during migration
-def mixedCitations = processMixedCitationSources(
-    topicCitations,  // New format from some modules
-    citationFiles    // Legacy files from other modules
-)
-
-// Stage 3: Pure topic channel approach
-def modernCitations = processCitationsFromTopic(topicCitations)
+// Advanced features for comprehensive pipelines  
+include {
+    getCitation; autoToolCitationText;
+    generateComprehensiveReport
+} from 'plugin/nf-core-utils'
 ```
 
----
+!!! note "Import Strategy"
+    Start with essential utilities and add advanced features as your pipeline grows. Each function is independent and can be imported separately.
 
-## Citation Management Examples
+## 3. Function Categories and Usage
 
-### Automatic Topic Channel Citations (Recommended)
+Understanding when and how to use each function is key to building robust pipelines. Let's explore the main categories with practical examples.
 
-```nextflow
-include { getCitation; autoToolCitationText; autoToolBibliographyText } from 'plugin/nf-core-utils'
+### 3.1. Pipeline Initialization Functions
 
-// In your process definitions
-process FASTQC {
-    input:
-    val sample_id
+These functions should be called early in your pipeline to validate setup:
+
+| Function | When to Use | Example |
+|----------|-------------|---------|
+| `checkConfigProvided()` | Always, to ensure custom configuration | `checkConfigProvided()` |
+| `checkProfileProvided(args, monochrome_logs)` | Always, to validate profile arguments | `checkProfileProvided(args, params.monochrome_logs)` |
+
+```nextflow title="Initialization pattern"
+#!/usr/bin/env nextflow
+
+include { checkConfigProvided; checkProfileProvided } from 'plugin/nf-core-utils'
+
+// Validate setup before any processing
+checkConfigProvided()
+checkProfileProvided(args, params.monochrome_logs)
+
+workflow {
+    // Now proceed with confidence that setup is correct
+    log.info "Configuration validated successfully"
+}
+```
+
+### 3.2. Workflow Information Functions  
+
+These functions provide metadata and can be called anywhere in your pipeline:
+
+| Function | Purpose | Example |
+|----------|---------|---------|
+| `getWorkflowVersion()` | Get git-aware version string | `getWorkflowVersion()` |
+| `logColours(monochrome_logs)` | Get color codes for terminal output | `logColours(params.monochrome_logs)` |
+| `sectionLogs(sections, monochrome)` | Generate colored section summaries | `sectionLogs(sections, params.monochrome_logs)` |
+
+### 3.3. MultiQC Integration Functions
+
+These functions help integrate with MultiQC reporting:
+
+| Function | Purpose | Usage Context |
+|----------|---------|---------------|
+| `paramsSummaryMultiqc(summary_params)` | Generate MultiQC YAML summary | Process or main workflow |
+| `workflowSummaryMQC(summary, metadata, results)` | Create comprehensive MultiQC template | Process |
+| `getSingleReport(multiqc_reports)` | Extract single report from Path/List | Anywhere |
+
+### 3.4. Completion Handler Functions ⚠️
+
+!!! warning "Session Context Required"
+    These functions require Nextflow session context and **MUST** be called from `workflow.onComplete` or `workflow.onError` handlers only. They will fail with null pointer exceptions if called from the main workflow block.
+
+| Function | Purpose | Usage Context |
+|----------|---------|---------------|
+| `completionSummary(monochrome_logs)` | Print colored pipeline completion summary | `workflow.onComplete` or `workflow.onError` |
+| `completionEmail(summary_params, ...)` | Send detailed completion email | `workflow.onComplete` or `workflow.onError` |  
+| `imNotification(summary_params, hook_url)` | Send Slack/Teams notification | `workflow.onComplete` or `workflow.onError` |
+
+```nextflow title="Completion handler pattern"
+workflow.onComplete {
+    // ✅ CORRECT - These functions work here
+    completionSummary(params.monochrome_logs)
     
+    if (params.email) {
+        completionEmail(summary_params, params.email, ...)
+    }
+    
+    if (params.hook_url) {
+        imNotification(summary_params, params.hook_url)
+    }
+}
+
+workflow {
+    // ❌ WRONG - These functions will fail here
+    // completionSummary(params.monochrome_logs)  // Error: session is null
+}
+```
+
+### 3.5. Citation Management Functions
+
+Citation management comes in two flavors: modern topic-channel based (recommended) and legacy file-based approaches.
+
+#### Modern Topic Channel Citations (Recommended)
+
+These functions work with the new topic channel citation system:
+
+| Function | Purpose | Usage Context |
+|----------|---------|---------------|
+| `getCitation(metaFilePath)` | Extract citation for topic channel emission | Process output block |
+| `autoToolCitationText(citationTopics)` | Generate citation text from topic channels | Workflow completion |
+| `autoToolBibliographyText(citationTopics)` | Generate bibliography HTML from topic channels | Workflow completion |
+
+```nextflow title="Modern citation pattern"
+process FASTQC {
     output:
     path "*.html", emit: html
     val citation_data, topic: citation
     
     script:
+    // Extract citation for automatic collection
     citation_data = getCitation("${moduleDir}/meta.yml")
     """
-    fastqc ${sample_id}
+    fastqc sample.fastq
     """
 }
 
-// In your workflow
 workflow {
     FASTQC(samples)
     
-    // Collect all citations automatically
+    // Collect citations from all processes
     citation_ch = FASTQC.out.citation.collect()
     
-    // Generate citation text and bibliography
+    // Generate formatted citations
     citation_ch.view { citations ->
         def citationText = autoToolCitationText(citations)
         def bibliography = autoToolBibliographyText(citations)
-        println "Citations: ${citationText}"
-        println "Bibliography: ${bibliography}"
+        log.info "Citations: ${citationText}"
     }
 }
 ```
 
-### Basic Citation Extraction (Legacy)
+#### Legacy File-Based Citations
 
-```nextflow
-include { generateModuleToolCitation; toolCitationText; toolBibliographyText } from 'plugin/nf-core-utils'
+These functions support the older meta.yml file approach:
 
-// Extract citations from a single module
-def fastqcCitations = generateModuleToolCitation('modules/nf-core/fastqc/meta.yml')
+| Function | Purpose | Usage Context |
+|----------|---------|---------------|
+| `generateModuleToolCitation(metaFilePath)` | Extract citations from meta.yml file | Anywhere |
+| `toolCitationText(citationsMap)` | Generate citation text from collected citations | Anywhere |
+| `toolBibliographyText(citationsMap)` | Generate bibliography HTML from citations | Anywhere |
+| `collectCitationsFromFiles(metaFilePaths)` | Collect citations from multiple meta.yml files | Anywhere |
 
-// Generate citation text and bibliography
-def citationText = toolCitationText(fastqcCitations)
-def bibliography = toolBibliographyText(fastqcCitations)
+#### Migration and Mixed Approaches
 
-println "Citations: ${citationText}"
-println "Bibliography: ${bibliography}"
-```
+For pipelines transitioning between approaches:
 
-### Topic Channel Citation Processing
+| Function | Purpose | Usage Context |
+|----------|---------|---------------|
+| `processCitationsFromTopic(topicData)` | Process citations from topic channel format | Workflow completion |
+| `processMixedCitationSources(topics, files)` | Combine topic and file-based citations | Workflow completion |
+| `convertMetaYamlToTopicFormat(metaPath, moduleName)` | Convert meta.yml to topic channel format | Migration scripts |
 
-```nextflow
-include { processCitationsFromTopic; processMixedCitationSources } from 'plugin/nf-core-utils'
+## 4. Advanced Reporting Architecture
 
-// Process citations from new topic channel format
-def topicCitations = [
-    ['NFCORE_FASTQC', 'fastqc', [doi: '10.1093/bioinformatics/btv033', author: 'Andrews S']],
-    ['NFCORE_SAMTOOLS', 'samtools', [description: 'SAM/BAM processing utilities']]
-]
-def citationsFromTopic = processCitationsFromTopic(topicCitations)
+The nf-core-utils plugin provides a sophisticated reporting system that coordinates version tracking, citation management, and comprehensive report generation.
 
-// Combine with legacy file-based citations
-def legacyFiles = ['modules/local/custom/meta.yml']
-def allCitations = processMixedCitationSources(topicCitations, legacyFiles)
-```
+### 4.1. Reporting Components
 
-### Comprehensive Reporting with Citations
+The reporting system consists of three specialized utility classes:
 
-```nextflow
+| Component | Purpose | Use When |
+|-----------|---------|----------|
+| **NfcoreVersionUtils** | Version aggregation and formatting | Need version tracking only |
+| **NfcoreCitationUtils** | Citation extraction and processing | Need citation management only |  
+| **NfcoreReportingOrchestrator** | Coordinates comprehensive reporting | Need complete reporting solution |
+
+### 4.2. Simple Reporting Example
+
+For most pipelines, you'll want comprehensive reporting that includes versions, citations, and methods descriptions:
+
+```nextflow title="comprehensive_reporting.nf"
 include { generateComprehensiveReport } from 'plugin/nf-core-utils'
 
-// Generate complete report with versions and citations
-def report = generateComprehensiveReport(
-    topicVersions,      // Version data from topic channels
-    legacyVersions,     // Legacy version YAML strings
-    metaFilePaths,      // Paths to meta.yml files for citations
-    'multiqc_methods.yml' // MultiQC methods template
-)
+workflow {
+    // Your pipeline processes with version and citation collection...
+    
+    // Collect versions and citations
+    ch_versions = PROCESS1.out.versions.mix(PROCESS2.out.versions).collect()
+    ch_citations = PROCESS1.out.citation.mix(PROCESS2.out.citation).collect()
+}
 
-// Access different parts of the report
-println "Versions: ${report.versions_yaml}"
-println "Citations: ${report.tool_citations}"
-println "Bibliography: ${report.tool_bibliography}"
-println "Methods: ${report.methods_description}"
+workflow.onComplete {
+    // Generate comprehensive report
+    ch_versions.concat(ch_citations).collect().view { data ->
+        def report = generateComprehensiveReport(
+            data.findAll { it.topic == 'versions' },  // Topic versions
+            [],  // Legacy versions (empty for modern pipelines)
+            [],  // Meta file paths (empty for topic-based citations)
+            'multiqc_methods.yml'  // Methods template
+        )
+        
+        // Write report files
+        file("${params.outdir}/pipeline_info/software_versions.yml").text = report.versions_yaml
+        file("${params.outdir}/pipeline_info/citations.txt").text = report.tool_citations
+        file("${params.outdir}/pipeline_info/methods.txt").text = report.methods_description
+    }
+}
 ```
 
----
+### 4.3. Migration from Legacy Systems
 
-## Usage Examples
+The plugin supports a progressive migration path from legacy approaches to modern topic channels:
 
-### Pipeline Initialization
+| Stage | Description | Implementation |
+|-------|-------------|---------------|
+| **Legacy** | File-based meta.yml citations | `collectCitationsFromFiles(metaFilePaths)` |
+| **Transition** | Mixed file and topic approaches | `processMixedCitationSources(topics, files)` |
+| **Modern** | Pure topic channel approach | `processCitationsFromTopic(topicCitations)` |
 
-```nextflow
+!!! tip "Migration Strategy" 
+    Start by converting high-priority modules to topic channels while keeping legacy modules unchanged. The mixed approach allows gradual migration without breaking existing functionality.
+
+## 5. Complete Pipeline Example
+
+Let's put everything together in a comprehensive example that shows a production-ready nf-core pipeline using all major utility functions:
+
+```nextflow title="complete_nfcore_pipeline.nf" hl_lines="5-12 17-19 26-28 41-43 60-76"
 #!/usr/bin/env nextflow
 
-include { checkConfigProvided; checkProfileProvided } from 'plugin/nf-core-utils'
+nextflow.enable.dsl = 2
+
+// Import essential nf-core utilities
+include { 
+    checkConfigProvided; checkProfileProvided;
+    completionSummary; completionEmail; imNotification;
+    paramsSummaryMultiqc; getWorkflowVersion;
+    getCitation; autoToolCitationText; 
+    generateComprehensiveReport 
+} from 'plugin/nf-core-utils'
+
+params.input = null
+params.outdir = "./results"
+
+// Validate setup early
 checkConfigProvided()
 checkProfileProvided(args, params.monochrome_logs)
 
-include { logColours } from 'plugin/nf-core-utils'
-def colors = logColours(params.monochrome_logs)
-log.info "${colors.purple}Pipeline started${colors.reset}"
-```
+// Set up workflow metadata
+version_str = getWorkflowVersion(workflow.manifest.version, workflow.commitId)
 
----
-
-### In Processes
-
-<!-- TODO Idk if this will work? -->
-
-```nextflow
-include { paramsSummaryMultiqc } from 'plugin/nf-core-utils'
-
-process MULTIQC {
-    // ... process definition ...
-    script:
-    def summary = [Run_name: workflow.runName, Output_dir: params.outdir]
-    def yaml = paramsSummaryMultiqc([Summary: summary])
-    """
-    echo '$yaml' > workflow_summary_mqc.yaml
-    multiqc -f .
-    """
-}
-```
-
----
-
-### At Pipeline Completion
-
-**⚠️ IMPORTANT**: Notification functions (`completionSummary`, `completionEmail`, `imNotification`) must be called from within `workflow.onComplete` or `workflow.onError` handlers, not from the main workflow block. They require the Nextflow session context which is only available in completion handlers.
-
-```nextflow
-include { completionSummary; completionEmail; imNotification } from 'plugin/nf-core-utils'
-
-workflow.onComplete {
-    // Always call completionSummary to show pipeline completion status
-    completionSummary(params.monochrome_logs)
-
-    // Send completion email if configured
-    if (params.email || params.email_on_fail) {
-        // Prepare summary parameters - group related parameters together
-        def summary_params = [
-            'Core Nextflow options': [
-                'revision': workflow.revision ?: 'N/A',
-                'runName': workflow.runName,
-                'containerEngine': workflow.containerEngine,
-                'profile': workflow.profile
-            ],
-            'Input/output options': [
-                'input': params.input ?: 'N/A',
-                'outdir': params.outdir ?: 'N/A',
-                'email': params.email ?: 'N/A'
-            ]
-        ]
-        
-        completionEmail(
-            summary_params,
-            params.email,
-            params.email_on_fail,
-            params.plaintext_email,
-            params.outdir,
-            params.monochrome_logs,
-            multiqc_report
-        )
-    }
-
-    // Send Slack/Teams notification if webhook URL is provided
-    if (params.hook_url) {
-        def summary_params = [
-            'Pipeline Info': [
-                'runName': workflow.runName,
-                'success': workflow.success,
-                'duration': workflow.duration
-            ]
-        ]
-        imNotification(summary_params, params.hook_url)
-    }
+workflow {
+    log.info "Starting ${workflow.manifest.name} ${version_str}"
+    
+    // Your pipeline processes here...
+    Channel.fromPath(params.input)
+        | FASTQC
+        | SAMTOOLS_VIEW
+    
+    // Collect outputs
+    ch_versions = FASTQC.out.versions.mix(SAMTOOLS_VIEW.out.versions)
+    ch_citations = FASTQC.out.citation.mix(SAMTOOLS_VIEW.out.citation)
+    
+    // Generate MultiQC summary
+    def summary_params = [
+        'Input': params.input,
+        'Output': params.outdir,
+        'Version': version_str
+    ]
+    def mqc_yaml = paramsSummaryMultiqc([Pipeline: summary_params])
+    Channel.of(mqc_yaml).collectFile(name: 'workflow_summary_mqc.yaml')
 }
 
-workflow.onError {
-    // Send error notifications
-    if (params.email_on_fail) {
-        def summary_params = [
-            'Error Info': [
-                'runName': workflow.runName,
-                'errorMessage': workflow.errorMessage ?: 'Unknown error',
-                'exitStatus': workflow.exitStatus
-            ]
-        ]
-        
-        completionEmail(
-            summary_params,
-            null,  // No regular email
-            params.email_on_fail,  // Only send to error email
-            params.plaintext_email,
-            params.outdir,
-            params.monochrome_logs,
-            null  // No MultiQC report on error
-        )
-    }
-}
-```
-
----
-
-## Citation Function Details
-
-### Citation Extraction and Processing
-
-#### `getCitation(metaFilePath)` ⭐ Recommended
-
-**Description:**  
-Extracts citation information from a module's meta.yml file for topic channel emission. This is the modern approach for automatic citation collection that only includes citations for tools that actually execute.
-
-**Parameters:**
-- `metaFilePath` (String): Path to the meta.yml file, typically `"${moduleDir}/meta.yml"`
-
-**Returns:**
-- `List`: Citation data formatted for topic channel emission `[module, tool, citation_data]`
-
-**Usage in Process:**
-```nextflow
 process FASTQC {
     output:
+    path "*.html", emit: html
+    path "versions.yml", emit: versions  
     val citation_data, topic: citation
     
     script:
     citation_data = getCitation("${moduleDir}/meta.yml")
     """
-    # Process script here
+    fastqc --version > versions.yml
+    fastqc sample.fastq
     """
 }
-```
 
-#### `autoToolCitationText(citationTopics)`
-
-**Description:**  
-Generates formatted citation text from topic channel citation data. Processes the automatic citation collection from executed processes.
-
-**Parameters:**
-- `citationTopics` (List<List>): Citation data from topic channels
-
-**Returns:**
-- `String`: Formatted citation text for methods descriptions
-
-**Example:**
-```nextflow
-def citationText = autoToolCitationText(citation_ch.collect())
-// Returns: "Tools used in the workflow included: fastqc (DOI: ...), samtools (DOI: ...)."
-```
-
-#### `autoToolBibliographyText(citationTopics)`
-
-**Description:**  
-Generates HTML bibliography from topic channel citation data. Creates bibliography entries for tools that were actually executed.
-
-**Parameters:**
-- `citationTopics` (List<List>): Citation data from topic channels
-
-**Returns:**
-- `String`: HTML bibliography for MultiQC reports
-
-**Example:**
-```nextflow
-def bibliography = autoToolBibliographyText(citation_ch.collect())
-// Returns HTML list items for bibliography
-```
-
-#### `generateModuleToolCitation(metaFilePath)` (Legacy)
-
-**Description:**  
-Extracts citation information from a module's meta.yml file.
-
-**Parameters:**
-- `metaFilePath` (String|File): Path to the meta.yml file
-
-**Returns:**
-- `Map`: Citations map with tool names as keys and citation/bibliography data as values
-
-**Example:**
-```nextflow
-def citations = generateModuleToolCitation('modules/nf-core/fastqc/meta.yml')
-// Returns: [fastqc: [citation: 'fastqc (DOI: ...)', bibliography: '<li>...</li>']]
-```
-
-#### `toolCitationText(collectedCitations)`
-
-**Description:**  
-Generates formatted citation text from collected citations map.
-
-**Parameters:**
-- `collectedCitations` (Map): Map of tool citations
-
-**Returns:**
-- `String`: Formatted citation text for use in methods descriptions
-
-**Example:**
-```nextflow
-def citationText = toolCitationText(citations)
-// Returns: "Tools used in the workflow included: fastqc (DOI: ...), samtools (DOI: ...)."
-```
-
-#### `toolBibliographyText(collectedCitations)`
-
-**Description:**  
-Generates HTML bibliography from collected citations.
-
-**Parameters:**
-- `collectedCitations` (Map): Map of tool citations
-
-**Returns:**
-- `String`: HTML bibliography for MultiQC reports
-
-#### `processCitationsFromTopic(topicData)`
-
-**Description:**  
-Processes citations from topic channel format (new eval syntax).
-
-**Parameters:**
-- `topicData` (List<List>): List of [module, tool, citation_data] tuples
-
-**Returns:**
-- `Map`: Processed citations map
-
-**Example:**
-```nextflow
-def topicCitations = [
-    ['NFCORE_FASTQC', 'fastqc', [doi: '10.1093/...', author: 'Andrews S']]
-]
-def citations = processCitationsFromTopic(topicCitations)
-```
-
-#### `processMixedCitationSources(topicCitations, citationFiles)`
-
-**Description:**  
-Combines citations from both topic channels and legacy files for progressive migration.
-
-**Parameters:**
-- `topicCitations` (List<List>): Topic channel citation data
-- `citationFiles` (List<String>): List of meta.yml file paths
-
-**Returns:**
-- `Map`: Combined citations from both sources
-
----
-
-## Function Details
-
----
-
-### Configuration and Validation
-
-#### `checkConfigProvided()`
-
-**Description:**  
-Checks if a custom Nextflow config or profile has been provided. Logs a warning if not.
-
-**Returns:**
-
-- `true` if a custom config/profile is provided
-- `false` otherwise
-
-**Example:**
-
-```nextflow
-if (!checkConfigProvided()) {
-    log.warn "No custom configuration provided! Please provide a profile or custom config."
-}
-```
-
----
-
-#### `checkProfileProvided(args, monochromeLogs=true)`
-
-**Description:**  
-Checks if the `-profile` argument is valid and warns about positional arguments. Error messages include color formatting when colors are enabled.
-
-**Parameters:**
-
-- `args` (Array): Command-line arguments passed to the pipeline
-- `monochromeLogs` (Boolean, default: `true`): If true, disables color codes in error messages
-
-**Example:**
-
-```nextflow
-checkProfileProvided(args)
-// or with colors enabled
-checkProfileProvided(args, params.monochrome_logs)
-```
-
----
-
-### Workflow Information
-
-#### `getWorkflowVersion()`
-
-**Description:**  
-Returns a string representing the workflow version, including the git commit short SHA if available.
-
-**Returns:**
-
-- `String` (e.g., `v1.2.3-gabcdef1`)
-
-**Example:**
-
-```nextflow
-log.info "Pipeline version: ${getWorkflowVersion()}"
-```
-
----
-
-### Reporting and MultiQC
-
-#### `paramsSummaryMultiqc(summaryParams)`
-
-**Description:**  
-Generates a YAML-formatted string for MultiQC workflow summary.
-
-**Parameters:**
-
-- `summaryParams` (Map): Map of parameter groups and their parameters
-
-**Returns:**
-
-- `String`: YAML for MultiQC
-
-**Example:**
-
-```nextflow
-def summary = [Run_Name: workflow.runName, Output_Dir: params.outdir]
-def yaml = paramsSummaryMultiqc([Summary: summary])
-```
-
----
-
-#### `workflowSummaryMQC(summary, nfMetadataList, results)`
-
-**Description:**  
-Creates a workflow summary template for MultiQC.
-
-**Parameters:**
-
-- `summary` (Map): Map of parameters
-- `nfMetadataList` (List): List of metadata fields to include
-- `results` (Map): Map of pipeline results
-
-**Returns:**
-
-- `Map` with HTML and text summaries for MultiQC
-
-**Example:**
-
-```nextflow
-def summary = [Run_id: workflow.runName, User: workflow.userName]
-def metadata = ['version', 'start', 'complete', 'duration']
-def results = [Reads_Processed: '1,000,000', Failed_QC: '0.1%']
-def mqc_summary = workflowSummaryMQC(summary, metadata, results)
-```
-
----
-
-#### `sectionLogs(sections, monochrome=false)`
-
-**Description:**  
-Generates summary logs for each section of a pipeline, optionally with color.
-
-**Parameters:**
-
-- `sections` (Map): Section names and log messages
-- `monochrome` (Boolean, default: `false`): Use monochrome logs
-
-**Returns:**
-
-- `Map` of colored section logs
-
-**Example:**
-
-```nextflow
-def sections = [
-    FastQC: 'Processed 10 samples',
-    Alignment: 'Aligned to reference genome',
-    MultiQC: 'Report generated'
-]
-def logs = sectionLogs(sections, params.monochrome_logs)
-log.info logs.FastQC
-```
-
----
-
-### Notification and Logging
-
-#### `logColours(monochrome_logs=true)`
-
-**Description:**  
-Returns a map of ANSI color codes for terminal logging.
-
-**Parameters:**
-
-- `monochrome_logs` (Boolean, default: `true`): If true, disables color codes
-
-**Returns:**
-
-- `Map<String, String>`: Color codes
-
-**Example:**
-
-```nextflow
-def colors = logColours(params.monochrome_logs)
-log.info "${colors.purple}Pipeline started${colors.reset}"
-```
-
----
-
-#### `completionSummary(monochrome_logs=true)`
-
-**Description:**  
-Prints a colored summary of the pipeline run at completion, showing success/failure status and any ignored processes.
-
-**Parameters:**
-
-- `monochrome_logs` (Boolean, default: `true`): If true, disables color codes
-
-**⚠️ Usage Requirements:**
-- Must be called from `workflow.onComplete` or `workflow.onError` handlers only
-- Requires Nextflow session context (manifest, stats, success status)
-- Do not call from main workflow block
-
-**Example:**
-
-```nextflow
 workflow.onComplete {
-    // Show completion summary with colors (if enabled)
+    // Show completion summary
     completionSummary(params.monochrome_logs)
-}
-
-workflow.onError {
-    // Show error summary
-    completionSummary(params.monochrome_logs)
-}
-```
-
----
-
-#### `completionEmail(summary_params, email, email_on_fail, plaintext_email, outdir, monochrome_logs=true, multiqc_report=null)`
-
-**Description:**  
-Constructs and sends a completion email with pipeline summary, workflow metadata, and optional MultiQC report attachments.
-
-**Parameters:**
-
-- `summary_params` (Map): Map of grouped summary parameters (see structure below)  
-- `email` (String): Primary email address to notify on success
-- `email_on_fail` (String): Email address to notify on failure (can be same or different)
-- `plaintext_email` (Boolean): If true, sends plain text email instead of HTML
-- `outdir` (String): Output directory path for locating reports
-- `monochrome_logs` (Boolean, default: `true`): Use monochrome logs in email content
-- `multiqc_report` (Path|List, optional): MultiQC report file(s) to attach
-
-**⚠️ Usage Requirements:**
-- Must be called from `workflow.onComplete` or `workflow.onError` handlers only
-- Requires Nextflow session context (workflow metadata, success status, etc.)
-- Do not call from main workflow block
-
-**Summary Parameters Structure:**
-```nextflow
-def summary_params = [
-    'Core Nextflow options': [
-        'revision': workflow.revision,
-        'runName': workflow.runName,
-        'containerEngine': workflow.containerEngine,
-        // ... other core options
-    ],
-    'Input/output options': [
-        'input': params.input,
-        'outdir': params.outdir,
-        // ... other I/O options  
-    ],
-    'Reference genome options': [
-        'genome': params.genome,
-        // ... other genome options
-    ]
-    // ... other parameter groups
-]
-```
-
-**Example:**
-
-```nextflow
-workflow.onComplete {
-    if (params.email || params.email_on_fail) {
-        // Group parameters logically for better email formatting
-        def summary_params = [
-            'Core Nextflow options': [
-                'revision': workflow.revision ?: 'N/A',
-                'runName': workflow.runName,
-                'containerEngine': workflow.containerEngine,
-                'profile': workflow.profile
-            ],
-            'Input/output options': [
-                'input': params.input ?: 'N/A',
-                'outdir': params.outdir ?: 'N/A'
-            ]
-        ]
-        
-        completionEmail(
-            summary_params,
-            params.email,
-            params.email_on_fail,
-            params.plaintext_email,
-            params.outdir,
-            params.monochrome_logs,
-            multiqc_report
-        )
-    }
-}
-```
-
----
-
-#### `imNotification(summary_params, hook_url)`
-
-**Description:**  
-Sends a JSON notification to instant messenger webhooks (e.g., Slack, Microsoft Teams) with pipeline summary and workflow metadata.
-
-**Parameters:**
-
-- `summary_params` (Map): Map of grouped summary parameters (same structure as `completionEmail`)
-- `hook_url` (String): Webhook URL for Slack, Teams, or other compatible service
-
-**⚠️ Usage Requirements:**
-- Must be called from `workflow.onComplete` or `workflow.onError` handlers only
-- Requires Nextflow session context (workflow metadata, timing, success status)
-- Do not call from main workflow block
-- Function handles null/empty hook_url gracefully (logs warning and returns)
-
-**Supported Webhook Types:**
-- **Slack**: `https://hooks.slack.com/services/...`
-- **Microsoft Teams**: `https://outlook.office.com/webhook/...`
-- **Generic webhooks**: Any endpoint accepting JSON POST requests
-
-**Example:**
-
-```nextflow
-workflow.onComplete {
-    if (params.hook_url) {
-        def summary_params = [
-            'Pipeline Info': [
-                'runName': workflow.runName,
-                'success': workflow.success,
-                'duration': workflow.duration,
-                'exitStatus': workflow.exitStatus
-            ],
-            'Configuration': [
-                'profile': workflow.profile,
-                'container': workflow.containerEngine
-            ]
-        ]
-        
-        imNotification(summary_params, params.hook_url)
-    }
-}
-
-workflow.onError {
-    // Send error notification to Slack/Teams
-    if (params.hook_url) {
-        def summary_params = [
-            'Error Details': [
-                'runName': workflow.runName,
-                'errorMessage': workflow.errorMessage,
-                'exitStatus': workflow.exitStatus
-            ]
-        ]
-        
-        imNotification(summary_params, params.hook_url)
-    }
-}
-```
-
----
-
-#### `getSingleReport(multiqc_reports)`
-
-**Description:**  
-Returns a single report file from a Path or List of Paths.
-
-**Parameters:**
-
-- `multiqc_reports` (Path or List): MultiQC report(s)
-
-**Returns:**
-
-- `Path` or `null`
-
-**Example:**
-
-```nextflow
-def mqc_report = getSingleReport(multiqc_report)
-```
-
----
-
-## Common Mistakes and Troubleshooting
-
-### ❌ Common Mistake: Calling Notification Functions in Main Workflow
-
-**Problem:**
-```nextflow
-// ❌ WRONG - This will cause null pointer exceptions
-workflow {
-    completionSummary(params.monochrome_logs)  // ERROR: session is null
     
-    if (params.email) {
-        completionEmail(summary_params, params.email, ...)  // ERROR: session is null
-    }
-}
-```
-
-**Solution:**
-```nextflow  
-// ✅ CORRECT - Call from completion handlers
-workflow {
-    // Main workflow logic here...
-    log.info "Pipeline execution complete"
-}
-
-workflow.onComplete {
-    // Now session context is available
-    completionSummary(params.monochrome_logs)  // ✅ Works correctly
-    
-    if (params.email) {
-        completionEmail(summary_params, params.email, ...)  // ✅ Works correctly
-    }
-}
-```
-
-### ❌ Common Mistake: Incorrect Summary Parameters Format
-
-**Problem:**
-```nextflow
-// ❌ WRONG - Flat structure makes email hard to read
-def summary = [
-    runName: workflow.runName,
-    input: params.input,
-    outdir: params.outdir,
-    genome: params.genome
-]
-```
-
-**Solution:**
-```nextflow
-// ✅ CORRECT - Grouped structure for better email formatting  
-def summary_params = [
-    'Core Nextflow options': [
-        'runName': workflow.runName,
-        'profile': workflow.profile
-    ],
-    'Input/output options': [
-        'input': params.input,
-        'outdir': params.outdir
-    ],
-    'Reference genome options': [
-        'genome': params.genome
-    ]
-]
-```
-
-### 🔧 Testing Notification Functions
-
-If you need to test notification functions in a development pipeline:
-
-```nextflow
-// Create a minimal test pipeline
-workflow {
-    log.info "Testing notification functions..."
-    log.info "Functions imported successfully"
-}
-
-workflow.onComplete {
-    // Test completionSummary
-    completionSummary(false)
-    
-    // Test with mock parameters (won't actually send emails)
-    def test_params = [
-        'Test Parameters': [
+    // Send notifications if configured
+    def summary_params = [
+        'Core Options': [
             'runName': workflow.runName,
+            'version': version_str,
             'success': workflow.success
         ]
     ]
     
-    // These will run but won't send actual notifications in test mode
-    completionEmail(test_params, 'test@example.com', null, true, null, false, null)
-    imNotification(test_params, 'https://hooks.slack.com/test')
+    if (params.email) {
+        completionEmail(summary_params, params.email, params.email_on_fail, 
+                       params.plaintext_email, params.outdir, params.monochrome_logs, null)
+    }
     
-    log.info "Notification functions tested successfully"
+    if (params.hook_url) {
+        imNotification(summary_params, params.hook_url)
+    }
 }
 ```
 
-### 🐛 Debugging Session Context Issues
+This example demonstrates:
+- **Configuration validation** at pipeline startup
+- **Version tracking** throughout the pipeline  
+- **Citation collection** from executed processes
+- **MultiQC integration** with parameter summaries
+- **Comprehensive notifications** on completion
 
-If you see null pointer exceptions, verify:
+## 6. Best Practices
 
-1. **Function location**: Are you calling from `workflow.onComplete`/`onError`?
-2. **Session availability**: Is `nextflow.Nextflow.session` accessible?
-3. **Parameter structure**: Are summary parameters properly grouped?
+### 6.1. Pipeline Structure
 
-```nextflow
+Follow this recommended structure for consistent nf-core pipeline development:
+
+```nextflow title="Recommended pipeline structure"
+#!/usr/bin/env nextflow
+nextflow.enable.dsl = 2
+
+// 1. Import utilities
+include { checkConfigProvided; checkProfileProvided; completionSummary } from 'plugin/nf-core-utils'
+
+// 2. Validate configuration early  
+checkConfigProvided()
+checkProfileProvided(args, params.monochrome_logs)
+
+// 3. Set up metadata
+version_str = getWorkflowVersion(workflow.manifest.version, workflow.commitId)
+
+// 4. Main workflow
+workflow { /* pipeline logic */ }
+
+// 5. Completion handlers
+workflow.onComplete { completionSummary(params.monochrome_logs) }
+```
+
+### 6.2. Function Usage Guidelines
+
+| Do | Don't | Why |
+|----|-------|-----|
+| Call validation functions early | Skip configuration checks | Early validation prevents runtime failures |
+| Use completion handlers for notifications | Call notification functions in main workflow | Session context required for metadata access |
+| Group summary parameters logically | Use flat parameter structure | Grouped parameters create better email formatting |
+| Handle null values in parameters | Assume parameters always exist | Defensive programming prevents null pointer exceptions |
+
+### 6.3. Error Handling
+
+!!! warning "Common Pitfall: Session Context"
+    The most common error is calling notification functions outside completion handlers. Always use `workflow.onComplete` or `workflow.onError` for these functions.
+
+## 7. Troubleshooting
+
+### 7.1. Common Issues
+
+| Issue | Symptom | Solution |
+|-------|---------|----------|
+| **Session null error** | `NullPointerException` on notification functions | Move functions to `workflow.onComplete` |
+| **Email not sending** | No completion email received | Check SMTP configuration in nextflow.config |
+| **Webhook failing** | No Slack/Teams notification | Verify webhook URL format and network access |
+| **Parameter summary empty** | Empty parameter sections in notifications | Use grouped parameter structure |
+
+### 7.2. Quick Debug Steps
+
+```nextflow title="Debug template"
 workflow.onComplete {
-    // Debug session context
-    log.info "Session available: ${nextflow.Nextflow.session != null}"
-    log.info "Workflow success: ${workflow.success}"
-    log.info "Workflow runName: ${workflow.runName}"
+    // Debug session availability
+    log.info "Session: ${nextflow.Nextflow.session != null}"
+    log.info "Success: ${workflow.success}"
     
-    // Then proceed with notification functions
-    completionSummary(params.monochrome_logs)
+    // Test basic functions first
+    completionSummary(false)  // Force colors off for testing
+    
+    log.info "Basic functions working correctly"
 }
 ```
 
----
+## 8. Takeaway
 
-## Internal Helper Classes
+The nf-core-utils plugin provides a comprehensive toolkit for building robust, production-ready pipelines:
 
-The plugin organizes functionality into several internal utility classes, now located in `src/main/groovy/nfcore/plugin/nfcore/`:
+1. **Start with validation**: Use `checkConfigProvided()` and `checkProfileProvided()` early
+2. **Add notifications**: Implement `completionSummary()`, `completionEmail()`, and `imNotification()` in completion handlers
+3. **Integrate reporting**: Use `paramsSummaryMultiqc()` and citation functions for comprehensive documentation
+4. **Follow best practices**: Group parameters, handle null values, and use completion handlers correctly
 
-- **NfcoreConfigValidator:** Validates pipeline configurations and profiles.
-- **NfcoreNotificationUtils:** Handles notifications, emails, and terminal output formatting.
-- **NfcoreReportingUtils:** Manages reporting functions for MultiQC and pipeline summaries.
-- **NfcoreVersionUtils:** Provides version-related utility functions with topic channel support.
-- **NfcoreCitationUtils:** Handles citation extraction, processing, and topic channel support.
-- **NfcoreReportingOrchestrator:** Orchestrates version and citation utilities for comprehensive reporting (versions, citations, bibliography, methods).
+## 9. What's Next?
 
-### Citation System Architecture
+Explore specialized utilities for specific use cases:
 
-The citation system follows the same progressive migration pattern as the version system:
-
-- **Topic Channel Support**: Both `citations` and `citations_file` topics
-- **Format Conversion**: Utilities to convert between legacy and modern formats
-- **Mixed Processing**: Handle both formats simultaneously during migration
-- **Comprehensive Integration**: Seamless integration with version reporting
-
-For advanced usage or troubleshooting, see the source code in `src/main/groovy/nfcore/plugin/nfcore/`.
-
----
+- **[NfcoreConfigValidator](utilities/NfcoreConfigValidator.md)**: Deep dive into configuration validation
+- **[NfcoreNotificationUtils](utilities/NfcoreNotificationUtils.md)**: Master email and messaging integrations
+- **[NfcoreReportingUtils](utilities/NfcoreReportingUtils.md)**: Advanced MultiQC integration patterns
+- **[NextflowPipelineExtension](NextflowPipelineExtension.md)**: Core pipeline utilities for version and parameter management
+- **[ReferencesExtension](ReferencesExtension.md)**: Handle genome references and igenomes integration
