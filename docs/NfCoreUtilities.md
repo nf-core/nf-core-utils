@@ -1,19 +1,40 @@
 # nf-core Utility Functions
 
-This extension provides a DSL2-friendly wrapper for nf-core utility functions, making them easily accessible in your Nextflow pipelines. This document describes these utility functions provided by the nf-core-utils plugin for nf-core pipelines.
+This extension provides a DSL2-friendly wrapper for nf-core utility functions, making them easily accessible in your Nextflow pipelines. This document provides an overview of the utility functions and links to detailed documentation for each utility class.
+
+## Documentation Structure
+
+The nf-core-utils plugin is organized into focused utility classes, each with dedicated documentation:
+
+### 🔧 **Configuration & Validation**
+- **[NfcoreConfigValidator](utilities/NfcoreConfigValidator.md)** - Pipeline configuration validation and profile checking
+
+### 📧 **Notifications & Logging** 
+- **[NfcoreNotificationUtils](utilities/NfcoreNotificationUtils.md)** - Email notifications, Slack/Teams integration, and completion summaries
+
+### 📊 **Reporting & MultiQC**
+- **[NfcoreReportingUtils](utilities/NfcoreReportingUtils.md)** - MultiQC integration and pipeline reporting utilities
+
+### 🔖 **Version Management**
+- **[NfcoreVersionUtils](utilities/NfcoreVersionUtils.md)** - Version tracking with topic channel support and migration utilities
+
+### 📚 **Citation Management**
+- **[NfcoreCitationUtils](utilities/NfcoreCitationUtils.md)** - Citation extraction, processing, and topic channel integration
+
+### 🎼 **Orchestrated Reporting**
+- **[NfcoreReportingOrchestrator](utilities/NfcoreReportingOrchestrator.md)** - Comprehensive reporting coordination for versions and citations
 
 ---
 
-## Importing Functions
+## Quick Start
+
+### Basic Import Pattern
 
 Import functions in your Nextflow DSL2 script as follows:
 
 ```nextflow
-include { checkConfigProvided; completionEmail; logColours; paramsSummaryMultiqc;
-          completionSummary; imNotification; getWorkflowVersion;
-          generateModuleToolCitation; toolCitationText; toolBibliographyText;
-          getCitation; autoToolCitationText; autoToolBibliographyText;
-          generateComprehensiveReport } from 'plugin/nf-core-utils'
+include { checkConfigProvided; completionEmail; getWorkflowVersion;
+          getCitation; autoToolCitationText; generateComprehensiveReport } from 'plugin/nf-core-utils'
 ```
 
 ---
