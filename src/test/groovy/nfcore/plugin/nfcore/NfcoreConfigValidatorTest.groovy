@@ -93,7 +93,7 @@ class NfcoreConfigValidatorTest extends Specification {
         when:
         def thrownException = null
         try {
-            validator.checkProfileProvided('test,', '', false)  // monochrome_logs = false
+            validator.checkProfileProvided('test,', '', false)  // monochromeLogs = false
         } catch (Exception e) {
             thrownException = e
         }
@@ -115,7 +115,7 @@ class NfcoreConfigValidatorTest extends Specification {
         when:
         def thrownException = null
         try {
-            validator.checkProfileProvided('test,', '', true)  // monochrome_logs = true
+            validator.checkProfileProvided('test,', '', true)  // monochromeLogs = true
         } catch (Exception e) {
             thrownException = e
         }

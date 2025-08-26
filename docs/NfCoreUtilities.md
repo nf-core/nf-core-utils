@@ -533,7 +533,7 @@ if (!checkConfigProvided()) {
 
 ---
 
-#### `checkProfileProvided(args, monochrome_logs=true)`
+#### `checkProfileProvided(args, monochromeLogs=true)`
 
 **Description:**  
 Checks if the `-profile` argument is valid and warns about positional arguments. Error messages include color formatting when colors are enabled.
@@ -541,7 +541,7 @@ Checks if the `-profile` argument is valid and warns about positional arguments.
 **Parameters:**
 
 - `args` (Array): Command-line arguments passed to the pipeline
-- `monochrome_logs` (Boolean, default: `true`): If true, disables color codes in error messages
+- `monochromeLogs` (Boolean, default: `true`): If true, disables color codes in error messages
 
 **Example:**
 
