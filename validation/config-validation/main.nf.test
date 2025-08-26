@@ -74,4 +74,52 @@ nextflow_pipeline {
             ).match("successful_completion")
         }
     }
+
+    test("Should run successfully with monochrome_logs parameter enabled") {
+        
+        when {
+            params {
+                monochrome_logs = true
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert workflow.exitStatus == 0
+            
+            // Should complete successfully (the detailed logs are not captured in workflow.stdout by nf-test)
+            assert workflow.stdout.any { it.contains("Pipeline is starting") }
+            assert workflow.stdout.any { it.contains("Pipeline complete") }
+            
+            // Snapshot basic successful execution
+            assert snapshot(
+                workflow.stdout,
+                workflow.exitStatus
+            ).match("color_functionality_test")
+        }
+    }
+
+    test("Should run successfully with monochrome_logs parameter disabled") {
+        
+        when {
+            params {
+                monochrome_logs = false
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert workflow.exitStatus == 0
+            
+            // Should complete successfully
+            assert workflow.stdout.any { it.contains("Pipeline is starting") }
+            assert workflow.stdout.any { it.contains("Pipeline complete") }
+            
+            // Snapshot integration scenario success
+            assert snapshot(
+                workflow.stdout,
+                workflow.exitStatus
+            ).match("color_integration_test")
+        }
+    }
 }
