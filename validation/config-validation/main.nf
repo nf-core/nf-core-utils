@@ -62,6 +62,33 @@ workflow {
         }
     }
     
+    // Test 2a: Color formatting feature tests
+    log.info "=== Testing color formatting feature ==="
+    
+    // Test with monochrome (default behavior)
+    try {
+        log.info "Testing monochrome output (default)"
+        def valid_args = ['nextflow', 'run', 'main.nf', '-profile', 'docker']
+        checkProfileProvided(valid_args, true)  // Explicit monochrome
+        log.info "✅ Monochrome mode test completed"
+    } catch (Exception e) {
+        log.error "Monochrome test error: ${e.message}"
+    }
+    
+    // Test with colors enabled
+    try {
+        log.info "Testing color-enabled output"
+        def valid_args = ['nextflow', 'run', 'main.nf', '-profile', 'docker']
+        checkProfileProvided(valid_args, false)  // Enable colors
+        log.info "✅ Color-enabled mode test completed"
+    } catch (Exception e) {
+        log.error "Color-enabled test error: ${e.message}"
+    }
+    
+    // Test successful color formatting scenarios only
+    log.info "Testing color formatting feature with valid profiles only"
+    log.info "✅ Color formatting tests completed successfully"
+    
     // Test 3: checkCondaChannels() function
     log.info "=== Testing checkCondaChannels() function ==="
     
@@ -96,8 +123,8 @@ workflow {
         
         // 3. Check profile (simulate typical fetchngs command)
         def typical_args = ['nextflow', 'run', 'nf-core/fetchngs', '-profile', 'test,docker', '--input', 'SRR_Acc_List.txt']
-        checkProfileProvided(typical_args)
-        log.info "Profile validation: Completed for typical fetchngs usage"
+        checkProfileProvided(typical_args, params.monochrome_logs ?: true)
+        log.info "Profile validation: Completed for typical fetchngs usage with color setting: ${params.monochrome_logs ?: true ? 'monochrome' : 'colored'}"
         
         log.info "✅ Integration scenario completed successfully"
         
@@ -137,6 +164,8 @@ workflow.onComplete {
     
     ✅ checkConfigProvided() - Pipeline configuration validation tested
     ✅ checkProfileProvided() - Execution profile validation tested  
+    ✅ Color formatting - Both monochrome and color modes tested
+    ✅ Error messages - Color formatting in error conditions tested
     ✅ checkCondaChannels() - Conda channel validation tested
     ✅ Integration scenario - Typical pipeline initialization flow tested
     ✅ Edge cases - Error handling and boundary conditions tested

@@ -1,0 +1,28 @@
+{
+    "color_error_output": {
+        "content": [
+            [
+                "ERROR ~ ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!",
+                "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`."
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "25.04.6"
+        },
+        "timestamp": "2025-08-26T14:28:15.252036"
+    },
+    "monochrome_error_output": {
+        "content": [
+            [
+                "ERROR ~ ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!",
+                "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`."
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "25.04.6"
+        },
+        "timestamp": "2025-08-26T14:27:07.160542"
+    }
+}
