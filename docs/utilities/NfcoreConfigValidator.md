@@ -52,7 +52,7 @@ include { checkConfigProvided; checkProfileProvided } from 'plugin/nf-core-utils
 
 // Validate configuration and profile setup
 checkConfigProvided()
-checkProfileProvided(args)
+checkProfileProvided(args, params.monochrome_logs)
 
 // Continue with pipeline initialization
 include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_pipeline'
@@ -60,32 +60,77 @@ include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_pipe
 
 ---
 
-### `checkProfileProvided(List args)`
+### `checkProfileProvided(List args, boolean monochromeLogs = true)`
 
 **Description:**  
-Validates command-line arguments for proper profile usage and warns about common mistakes like positional arguments or trailing commas in profile specifications.
+Validates command-line arguments for proper profile usage and warns about common mistakes like positional arguments or trailing commas in profile specifications. Error messages include color formatting when colors are enabled.
 
 **Function Signature:**
 ```nextflow
-void checkProfileProvided(List args)
+void checkProfileProvided(List args, boolean monochromeLogs = true)
 ```
 
 **Parameters:**
 - `args` (List): Command-line arguments passed to the pipeline (typically the built-in `args` variable)
+- `monochromeLogs` (Boolean, default: `true`): If true, disables color codes in error messages
 
-**Usage Example:**
+**Usage Examples:**
+
+**Basic Usage (monochrome output):**
 ```nextflow
 #!/usr/bin/env nextflow
 
 include { checkProfileProvided } from 'plugin/nf-core-utils'
 
-// Validate profile arguments
+// Validate profile arguments with default monochrome output
 checkProfileProvided(args)
 
 workflow {
     // Pipeline logic here
 }
 ```
+
+**Color-enabled Usage:**
+```nextflow
+#!/usr/bin/env nextflow
+
+include { checkProfileProvided } from 'plugin/nf-core-utils'
+
+// Enable colors in error messages
+checkProfileProvided(args, params.monochrome_logs)
+
+// Or explicitly enable colors
+checkProfileProvided(args, false)
+
+workflow {
+    // Pipeline logic here
+}
+```
+
+---
+
+## Color Formatting
+
+As of version 0.2.0, profile validation error messages support color formatting to improve user experience:
+
+**With Colors Disabled (default):**
+```
+ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!
+HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.
+```
+
+**With Colors Enabled:**
+```
+[31mERROR[0m ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!
+[33mHINT[0m: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.
+```
+
+**Configuration:**
+- Colors are **disabled by default** (`monochromeLogs = true`) for backward compatibility
+- Enable colors by setting `monochromeLogs = false` or using `params.monochrome_logs = false`
+- Colors respect the existing `NfcoreNotificationUtils.logColours()` utility
+
+---
 
 **Common Validation Scenarios:**
 
@@ -109,14 +154,35 @@ nextflow run pipeline.nf some-positional-arg --input samples.csv
 nextflow run pipeline.nf -profile test, positional-arg
 ```
 
-**Error Handling Example:**
+**Error Handling Examples:**
+
+**Basic Error Handling:**
 ```nextflow
 include { checkProfileProvided } from 'plugin/nf-core-utils'
 
 try {
-    checkProfileProvided(args)
+    checkProfileProvided(args, params.monochrome_logs)
 } catch (Exception e) {
     log.error "Profile validation failed: ${e.message}"
+    System.exit(1)
+}
+```
+
+**Advanced Error Handling with Color Context:**
+```nextflow
+include { checkProfileProvided } from 'plugin/nf-core-utils'
+
+try {
+    // Enable colors for better error visibility in CI/CD
+    def useColors = !params.monochrome_logs && System.getenv('CI') == null
+    checkProfileProvided(args, !useColors)
+} catch (IllegalArgumentException e) {
+    log.error """
+    Profile validation failed!
+    ${e.message}
+    
+    For help with profiles, see: https://nf-co.re/docs/usage/configuration#basic-configuration-profiles
+    """
     System.exit(1)
 }
 ```
@@ -223,6 +289,12 @@ testList.each { testCase ->
 nextflow run pipeline.nf -profile docker,
 ```
 
+**Error Message (with colors enabled):**
+```
+[31mERROR[0m ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!
+[33mHINT[0m: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.
+```
+
 **Solution:**
 Remove trailing comma:
 ```bash
@@ -258,40 +330,36 @@ nextflow run pipeline.nf -profile myInstitution
 nextflow run pipeline.nf -c custom.config -profile docker
 ```
 
----
+### Issue: Color Formatting Not Working
 
-## Testing
+**Problem:**
+Error messages appear without color formatting even when colors are expected.
 
-The validator functions can be tested using nf-test:
+**Troubleshooting:**
 
-```groovy
-// Test configuration validation
-test("Config validation with custom profile") {
-    when {
-        params {
-            config = "tests/config/custom.config"
-        }
-    }
-    
-    then {
-        assert workflow.success
-        assert workflow.stdout.contains("Custom configuration detected")
-    }
-}
+1. **Check monochrome_logs parameter:**
+```nextflow
+// Make sure you're passing the right value
+checkProfileProvided(args, false)  // Enables colors
+checkProfileProvided(args, params.monochrome_logs)  // Uses pipeline parameter
+```
 
-test("Profile validation with valid profiles") {
-    when {
-        params {
-            args = ["-profile", "test,docker"]
-        }
-    }
-    
-    then {
-        assert workflow.success
-        assert !workflow.stderr.contains("Warning")
-    }
+2. **Verify terminal support:**
+```bash
+# Test if your terminal supports colors
+echo -e "\033[31mRed Text\033[0m Normal Text"
+```
+
+3. **Check pipeline parameters:**
+```nextflow
+// In nextflow.config
+params {
+    monochrome_logs = false  // Enable colors globally
 }
 ```
+
+**Solution:**
+Ensure color parameter is correctly configured and your terminal supports ANSI colors.
 
 ---
 
