@@ -1,17 +1,25 @@
-# NfcoreReportingUtils
+# MultiQC Integration Tutorial
 
-MultiQC integration and pipeline reporting utilities for nf-core pipelines.
+MultiQC is the cornerstone of nf-core pipeline reporting, and proper integration requires structured data formatting. This tutorial teaches you how to create professional pipeline reports using the `NfcoreReportingUtils` utility.
 
-## Overview
+## 1. Overview
 
-The `NfcoreReportingUtils` utility provides specialized functions for generating MultiQC-compatible reports and pipeline summaries. These utilities handle parameter formatting, workflow metadata presentation, and terminal logging with proper formatting and color support.
+MultiQC transforms scattered log files and statistics into comprehensive, interactive HTML reports. However, it needs properly formatted input data to work effectively. The `NfcoreReportingUtils` utility bridges this gap by:
 
-### Key Features
+- Converting pipeline parameters into MultiQC-compatible YAML format
+- Creating structured workflow summaries with metadata
+- Generating color-coded terminal logs for different pipeline sections
+- Handling complex data structures for professional report presentation
 
-- **MultiQC Integration**: Generate properly formatted YAML summaries for MultiQC reports
-- **Workflow Summaries**: Create comprehensive workflow metadata summaries
-- **Section Logging**: Formatted terminal output with color support for pipeline sections
-- **Parameter Processing**: Convert pipeline parameters into MultiQC-compatible formats
+### 1.1. Why Structured Reporting Matters
+
+Raw pipeline outputs are often scattered across multiple files and formats. Users struggle to find:
+- Which parameters were used in the analysis
+- What software versions were executed  
+- How long each step took and what resources were used
+- Summary statistics and quality metrics
+
+Structured reporting solves these challenges by consolidating information into searchable, interactive dashboards.
 
 ## Available Functions
 

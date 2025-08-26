@@ -1,121 +1,412 @@
-# NfcoreNotificationUtils
+# Pipeline Notifications Tutorial
 
-Pipeline notification and logging utilities for nf-core pipelines.
+Keeping users informed about pipeline execution is crucial for building user-friendly bioinformatics workflows. This tutorial teaches you how to implement comprehensive notification systems using the `NfcoreNotificationUtils` utility, covering everything from basic terminal summaries to sophisticated email and messaging integrations.
 
-## Overview
+## 1. Overview
 
-The `NfcoreNotificationUtils` utility provides comprehensive notification and logging functionality for nf-core pipelines. These functions handle completion emails, terminal summaries, and instant messaging notifications (Slack/Teams) to keep users informed about pipeline execution status.
+Modern bioinformatics pipelines often run for hours or days, making it essential to notify users about completion status, errors, and results. Users need to know:
+- When their pipeline completes successfully or fails
+- What parameters were used and what results were generated
+- Where to find outputs and reports
+- Performance metrics and resource usage
 
-⚠️ **Critical Usage Requirement**: All notification functions require Nextflow session context and **must be called from `workflow.onComplete` or `workflow.onError` handlers only**. They cannot be called from the main workflow block.
+The `NfcoreNotificationUtils` utility provides three core notification channels:
+- **Terminal Summaries**: Immediate, color-coded status information
+- **Email Notifications**: Detailed reports with attachments and metadata
+- **Instant Messaging**: Slack/Teams integration for team collaboration
 
-## Available Functions
+### 1.1. Critical Session Context Requirement
 
-### `completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports)`
+!!! warning "Session Context Required"
+    **ALL notification functions require Nextflow session context and MUST be called from `workflow.onComplete` or `workflow.onError` handlers only.** They will fail with null pointer exceptions if called from the main workflow block.
 
-**Description:**  
-Sends detailed completion emails with pipeline summary, workflow metadata, and optional MultiQC report attachments. The email includes comprehensive information about the pipeline run, parameters, and results.
+This requirement exists because notification functions need access to workflow metadata (success status, timing, resource usage) that is only available during completion handlers.
 
-**Function Signature:**
-```nextflow
-void completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports)
+## 2. Getting Started with Notifications
+
+Let's start with the simplest possible notification - a basic completion summary.
+
+### 2.1. Your First Notification
+
+Here's a minimal example that shows when and how to add notifications:
+
+```nextflow title="basic_notification.nf"
+#!/usr/bin/env nextflow
+
+nextflow.enable.dsl = 2
+
+// Import the completion summary function
+include { completionSummary } from 'plugin/nf-core-utils'
+
+params.input = "samples.csv"
+params.outdir = "results"
+
+workflow {
+    log.info "Processing ${params.input}..."
+    
+    // Your pipeline logic here
+    log.info "Analysis complete"
+}
+
+// ✅ CORRECT - Notification in completion handler
+workflow.onComplete {
+    completionSummary(params.monochrome_logs)
+}
 ```
 
-**Parameters:**
-- `summaryParams` (Map): Nested map of grouped summary parameters (see structure below)
-- `email` (String): Primary email address to notify on success
-- `emailOnFail` (String): Email address to notify on failure (can be same or different)
-- `plaintextEmail` (boolean): If true, sends plain text email instead of HTML
-- `outdir` (String): Output directory path for locating reports
-- `monochromeLogs` (boolean): Use monochrome logs in email content
-- `multiqcReports` (List): List of MultiQC report paths to attach
+```console title="Terminal Output"
+N E X T F L O W  ~  version 25.04.0
+Launching `basic_notification.nf` [focused-darwin] - revision: abc1234
 
-**⚠️ Usage Requirements:**
-- Must be called from `workflow.onComplete` or `workflow.onError` handlers only
-- Requires Nextflow session context (workflow metadata, success status, etc.)
-- Do not call from main workflow block
+INFO [main] - Processing samples.csv...
+INFO [main] - Analysis complete
 
-**Summary Parameters Structure:**
-```nextflow
+-[nf-core/example] Pipeline completed successfully-
+Completed at: 2024-01-15T10:30:45.123Z
+Duration    : 45s
+CPU hours   : 0.1 (95.2% cached)
+Succeeded   : 3
+```
+
+### 2.2. Understanding the Session Context Problem
+
+Let's understand why notification functions must be in completion handlers:
+
+```nextflow title="session_context_demo.nf"
+#!/usr/bin/env nextflow
+
+include { completionSummary } from 'plugin/nf-core-utils'
+
+workflow {
+    log.info "Pipeline starting..."
+    
+    // ❌ WRONG - This will cause a NullPointerException
+    // completionSummary(params.monochrome_logs)  // Session is null here!
+    
+    log.info "Pipeline logic completed"
+}
+
+workflow.onComplete {
+    // ✅ CORRECT - Session context is available here
+    log.info "Session available: ${session != null}"
+    log.info "Workflow success: ${workflow.success}"
+    log.info "Workflow duration: ${workflow.duration}"
+    
+    // Now the notification function works
+    completionSummary(params.monochrome_logs)
+}
+```
+
+### 2.3. Progressive Notification Building
+
+Let's build up from basic terminal output to comprehensive notifications:
+
+```nextflow title="progressive_notifications.nf" hl_lines="15-23"
+#!/usr/bin/env nextflow
+
+include { 
+    completionSummary; 
+    completionEmail; 
+    imNotification 
+} from 'plugin/nf-core-utils'
+
+params.email = null
+params.hook_url = null
+
+workflow {
+    log.info "Starting comprehensive pipeline with notifications"
+}
+
+workflow.onComplete {
+    // Level 1: Always show terminal summary
+    completionSummary(params.monochrome_logs)
+    
+    // Level 2: Email notifications (if configured)
+    if (params.email) {
+        log.info "Sending completion email..."
+        // We'll implement this next
+    }
+    
+    // Level 3: Team notifications (if configured)
+    if (params.hook_url) {
+        log.info "Sending team notification..."
+        // We'll implement this next
+    }
+}
+```
+
+## 3. Core Notification Functions
+
+Now let's explore each notification function in detail, building from simple to complex.
+
+### 3.1. completionSummary - Terminal Status Display
+
+This function provides immediate visual feedback about pipeline completion status.
+
+#### Basic Terminal Summary
+
+The simplest notification shows essential completion information:
+
+```nextflow title="terminal_summary_example.nf"
+#!/usr/bin/env nextflow
+
+include { completionSummary } from 'plugin/nf-core-utils'
+
+workflow {
+    log.info "Running analysis pipeline..."
+    // Your pipeline processes here
+}
+
+workflow.onComplete {
+    completionSummary(params.monochrome_logs)
+}
+```
+
+#### Function Parameters
+
+```groovy title="Function signature"
+void completionSummary(boolean monochromeLogs = true)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `monochromeLogs` | Boolean | `true` | If `true`, disables color codes for plain text output |
+
+#### Color-Coded Output Examples
+
+**Success with colors enabled:**
+```console title="Successful completion (colors enabled)"
+-[nf-core/rnaseq] Pipeline completed successfully-
+Completed at: 2024-01-15T10:30:45.123Z
+Duration    : 1h 23m 45s
+CPU hours   : 45.2 (85.3% cached)
+Succeeded   : 156
+Cached      : 12
+Ignored     : 0
+```
+
+**Failure with error details:**
+```console title="Failed completion (colors enabled)"
+-[nf-core/rnaseq] Pipeline completed with errors-
+Completed at: 2024-01-15T09:15:23.456Z
+Duration    : 15m 32s
+CPU hours   : 2.1
+Succeeded   : 23
+Failed      : 1
+Ignored     : 0
+
+Exit status : 1
+Error       : Process FASTQC (1) failed
+```
+
+#### Advanced Terminal Summary Usage
+
+For pipelines that need custom completion reporting:
+
+```nextflow title="advanced_terminal_summary.nf"
+#!/usr/bin/env nextflow
+
+include { completionSummary } from 'plugin/nf-core-utils'
+
+workflow {
+    // Pipeline logic...
+}
+
+workflow.onComplete {
+    // Always show the summary
+    completionSummary(params.monochrome_logs)
+    
+    // Add custom completion information
+    if (workflow.success) {
+        log.info """
+        Analysis Summary:
+        - Samples processed: ${workflow.stats.succeedCount}
+        - Peak memory usage: ${workflow.stats.peakRss ?: 'N/A'}
+        - Results saved to: ${params.outdir}
+        """
+    } else {
+        log.error """
+        Pipeline Failed:
+        - Error: ${workflow.errorMessage ?: 'Unknown error'}
+        - Failed tasks: ${workflow.stats.failedCount}
+        - Check .nextflow.log for details
+        """
+    }
+}
+```
+
+### 3.2. completionEmail - Detailed Email Reports
+
+Email notifications provide comprehensive pipeline reports that users can refer to later.
+
+#### Understanding Email Structure
+
+Before implementing email notifications, let's understand what information needs to be organized:
+
+```nextflow title="email_structure_demo.nf"
+// The key to good emails is organizing parameters into logical groups
 def summary_params = [
     'Core Nextflow options': [
-        'revision': workflow.revision ?: 'N/A',
         'runName': workflow.runName,
-        'containerEngine': workflow.containerEngine,
-        'profile': workflow.profile
+        'profile': workflow.profile,
+        'revision': workflow.revision ?: 'N/A'
     ],
     'Input/output options': [
-        'input': params.input ?: 'N/A',
+        'input': params.input ?: 'N/A', 
         'outdir': params.outdir ?: 'N/A'
     ],
-    'Reference genome options': [
-        'genome': params.genome,
-        'fasta': params.fasta
+    'Resource usage': [
+        'max_memory': params.max_memory,
+        'max_cpus': params.max_cpus,
+        'max_time': params.max_time
     ]
 ]
 ```
 
-**Usage Example:**
-```nextflow
+#### Basic Email Implementation
+
+Let's implement a simple email notification:
+
+```nextflow title="basic_email_notification.nf"
+#!/usr/bin/env nextflow
+
 include { completionEmail } from 'plugin/nf-core-utils'
+
+params.email = null  // User provides email address
+params.email_on_fail = null  // Optional separate failure email
+params.outdir = "results"
+
+workflow {
+    log.info "Running pipeline that will send email notification..."
+    // Your pipeline processes here
+}
+
+workflow.onComplete {
+    // Only send email if user provided an email address
+    if (params.email || params.email_on_fail) {
+        
+        // Organize parameters for the email
+        def summary_params = [
+            'Pipeline Information': [
+                'runName': workflow.runName,
+                'success': workflow.success,
+                'duration': workflow.duration,
+                'workDir': workflow.workDir
+            ],
+            'User Parameters': [
+                'outdir': params.outdir,
+                'profile': workflow.profile
+            ]
+        ]
+        
+        // Send the email
+        completionEmail(
+            summary_params,           // Parameter summary
+            params.email,            // Success email address  
+            params.email_on_fail,    // Failure email address
+            false,                   // Use HTML format (not plain text)
+            params.outdir,           // Output directory
+            params.monochrome_logs,  // Color settings
+            []                       // MultiQC reports (empty for now)
+        )
+        
+        log.info "Completion email sent"
+    }
+}
+```
+
+#### Function Parameters Reference
+
+```groovy title="completionEmail signature"
+void completionEmail(
+    Map summaryParams,        // Grouped parameter summary
+    String email,            // Primary email address
+    String emailOnFail,      // Failure notification email  
+    boolean plaintextEmail,  // Use plain text instead of HTML
+    String outdir,          // Output directory path
+    boolean monochromeLogs, // Color settings for email content
+    List multiqcReports    // MultiQC report attachments
+)
+```
+
+#### Advanced Email with MultiQC Reports
+
+For production pipelines, include MultiQC reports as attachments:
+
+```nextflow title="advanced_email_notification.nf" hl_lines="25-30"
+#!/usr/bin/env nextflow
+
+include { completionEmail } from 'plugin/nf-core-utils'
+
+params.email = null
+params.outdir = "results"
+
+workflow {
+    // Your pipeline processes that generate MultiQC reports
+    MULTIQC(analysis_results)
+}
 
 workflow.onComplete {
     if (params.email || params.email_on_fail) {
         def summary_params = [
-            'Core Nextflow options': [
-                'revision': workflow.revision ?: 'N/A',
+            'Pipeline Summary': [
                 'runName': workflow.runName,
-                'containerEngine': workflow.containerEngine,
-                'profile': workflow.profile
+                'success': workflow.success,
+                'duration': workflow.duration,
+                'exitStatus': workflow.exitStatus
             ],
-            'Input/output options': [
-                'input': params.input ?: 'N/A',
-                'outdir': params.outdir ?: 'N/A'
+            'Configuration': [
+                'profile': workflow.profile,
+                'container': workflow.containerEngine,
+                'workDir': workflow.workDir
+            ],
+            'Results': [
+                'outdir': params.outdir,
+                'publishMode': params.publish_dir_mode
             ]
         ]
         
+        // Include MultiQC reports as attachments
+        def multiqc_report = file("${params.outdir}/multiqc/multiqc_report.html")
+        def mqc_reports = multiqc_report.exists() ? [multiqc_report] : []
+        
         completionEmail(
             summary_params,
-            params.email,
+            params.email, 
             params.email_on_fail,
-            params.plaintext_email,
+            params.plaintext_email ?: false,
             params.outdir,
             params.monochrome_logs,
-            multiqc_report
+            mqc_reports  // Attach MultiQC report if it exists
         )
     }
 }
 ```
 
-**Email Template Features:**
-- **HTML Template**: Rich formatting with sections, tables, and styling
-- **Plain Text Option**: Simple text format for compatibility
-- **Attachment Support**: Automatically attaches MultiQC reports
-- **Status Indication**: Clear success/failure status with appropriate styling
-- **Comprehensive Metadata**: Includes timing, resource usage, and configuration details
+### 3.3. imNotification - Instant Messaging Integration
 
----
+Team collaboration is enhanced with Slack and Microsoft Teams notifications that keep everyone informed about pipeline status.
 
-### `completionSummary(boolean monochromeLogs)`
+#### Understanding Webhook Integration
 
-**Description:**  
-Prints a colored summary of the pipeline run at completion, showing success/failure status, execution time, and any ignored processes. Provides immediate visual feedback in the terminal.
+Instant messaging notifications use webhooks to send JSON payloads to chat services:
 
-**Function Signature:**
-```nextflow
-void completionSummary(boolean monochromeLogs)
+```nextflow title="webhook_basics.nf"
+// Slack webhook URL format
+params.hook_url = "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+
+// Teams webhook URL format  
+// params.hook_url = "https://outlook.office.com/webhook/YOUR/TEAMS/WEBHOOK"
 ```
 
-**Parameters:**
-- `monochromeLogs` (boolean): If true, disables color codes for plain text output
+#### Basic Slack/Teams Notification
 
-**⚠️ Usage Requirements:**
-- Must be called from `workflow.onComplete` or `workflow.onError` handlers only
-- Requires Nextflow session context (manifest, stats, success status)
-- Do not call from main workflow block
+Let's implement basic instant messaging notifications:
 
-**Usage Example:**
-```nextflow
-include { completionSummary } from 'plugin/nf-core-utils'
+```nextflow title="basic_im_notification.nf"
+#!/usr/bin/env nextflow
+
+include { imNotification } from 'plugin/nf-core-utils'
 
 workflow.onComplete {
     // Show completion summary with colors (if enabled)
