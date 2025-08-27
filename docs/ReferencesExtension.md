@@ -393,18 +393,29 @@ workflow {
         ]
     }
     
-    // Resolve references for each genome
-    resolved_references = references.map { ref ->
-        [
-            genome: ref.genome,
-            species: ref.species,
-            fasta: getReferencesFile(Channel.of(ref), null, 'fasta', params.igenomes_base).first(),
-            gtf: getReferencesFile(Channel.of(ref), null, 'gtf', params.igenomes_base).first()
-        ]
-    }
+    // Resolve references for each genome using proper channel operations
+    resolved_references = references
+        .map { ref -> 
+            tuple(ref, 
+                getReferencesFile(Channel.of(ref), null, 'fasta', params.igenomes_base), 
+                getReferencesFile(Channel.of(ref), null, 'gtf', params.igenomes_base)
+            )
+        }
+        .flatMap { ref, fasta_ch, gtf_ch -> 
+            fasta_ch
+                .combine(gtf_ch)
+                .map { fasta, gtf -> 
+                    [
+                        genome: ref.genome,
+                        species: ref.species,
+                        fasta: fasta,
+                        gtf: gtf
+                    ]
+                }
+        }
     
     resolved_references.view { ref ->
-        "Ready: ${ref.genome} (${ref.species})"
+        "Ready: ${ref.genome} (${ref.species}) - FASTA: ${ref.fasta}, GTF: ${ref.gtf}"
     }
 }
 ```

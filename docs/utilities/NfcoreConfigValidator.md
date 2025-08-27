@@ -167,7 +167,7 @@ if (!hasCustomConfig) {
        nextflow run pipeline.nf -c my_config.config
     
     4. HPC profiles:
-       nextflow run pipeline.nf -profile slurm,docker
+       nextflow run pipeline.nf -profile test,slurm,docker
     
     See: https://nf-co.re/docs/usage/configuration
     ==========================================
@@ -199,7 +199,7 @@ nextflow run pipeline.nf -profile test docker
 nextflow run pipeline.nf samples.csv --outdir results
 
 # ✅ Correct usage
-nextflow run pipeline.nf -profile docker,test --input samples.csv --outdir results
+nextflow run pipeline.nf -profile test,docker --input samples.csv --outdir results
 ```
 
 #### Basic Profile Validation
@@ -277,7 +277,7 @@ if (!hasCustomConfig) {
     Consider using a configuration profile for better performance:
     - For Docker: -profile docker
     - For Singularity: -profile singularity  
-    - For HPC: -profile slurm,docker
+    - For HPC: -profile test,slurm,docker
     - For testing: -profile test
     """
 }
@@ -353,9 +353,9 @@ def isCloud = workflow.workDir.toString().startsWith('s3://')
 def hasCustomConfig = checkConfigProvided()
 if (!hasCustomConfig) {
     if (isHPC) {
-        log.warn "Running on HPC without custom config. Consider: -profile slurm,singularity"
+        log.warn "Running on HPC without custom config. Consider: -profile test,slurm,singularity"
     } else if (isCloud) {
-        log.warn "Running on cloud without custom config. Consider: -profile aws,docker"  
+        log.warn "Running on cloud without custom config. Consider: -profile test,aws,docker"  
     } else {
         log.warn "Consider using -profile docker or -profile singularity for local execution"
     }
