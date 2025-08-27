@@ -78,7 +78,7 @@ The plugin provides three main extension categories accessible via @Function ann
 
 ### build.gradle
 - Uses `io.nextflow.nextflow-plugin` version `0.0.1-alpha3`
-- Plugin version: `0.2.0`
+- Plugin version: `0.3.0`
 - Nextflow compatibility: `25.04.0`
 - Extension points: `NfUtilsExtension` and `NfUtilsFactory`
 - Dependencies: SnakeYAML for YAML processing

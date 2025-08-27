@@ -2,7 +2,7 @@ plugins {
     id 'io.nextflow.nextflow-plugin' version '0.0.1-alpha3'
 }
 
-version = '0.2.0'
+version = '0.3.0'
 
 nextflowPlugin {
     nextflowVersion = '25.04.0'

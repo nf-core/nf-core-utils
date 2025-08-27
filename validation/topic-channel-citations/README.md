@@ -100,10 +100,10 @@ make install
 
 # Run validation test 
 cd validation/topic-channel-citations
-nextflow run . -plugins nf-core-utils@0.2.0
+nextflow run . -plugins nf-core-utils@0.3.0
 
 # Test with optional tool enabled
-nextflow run . -plugins nf-core-utils@0.2.0 --run_optional true
+nextflow run . -plugins nf-core-utils@0.3.0 --run_optional true
 ```
 
 ## Expected Output

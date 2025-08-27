@@ -46,13 +46,13 @@ ch_versions
 ### Run the Test
 ```bash
 # Basic validation
-nextflow run validation/ -plugins nf-core-utils@0.2.0
+nextflow run validation/ -plugins nf-core-utils@0.3.0
 
 # With test profile (faster)
-nextflow run validation/ -plugins nf-core-utils@0.2.0 -profile test
+nextflow run validation/ -plugins nf-core-utils@0.3.0 -profile test
 
 # With debug logging
-nextflow run validation/ -plugins nf-core-utils@0.2.0 -profile debug
+nextflow run validation/ -plugins nf-core-utils@0.3.0 -profile debug
 ```
 
 ### Expected Output

@@ -30,7 +30,7 @@ Demonstrates the migration from local pipeline utility functions to plugin-based
 **Usage:**
 ```bash
 # Run individual test
-nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.2.0
+nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.3.0
 
 # Or use the old validation script
 ./validation/validate.sh
@@ -97,13 +97,13 @@ nf-test test --clean-snapshot
 Run tests directly with Nextflow:
 ```bash
 # Individual test execution
-nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.2.0
-nextflow run validation/config-validation/ -plugins nf-core-utils@0.2.0
-nextflow run validation/notification-system/ -plugins nf-core-utils@0.2.0
-nextflow run validation/pipeline-utilities/ -plugins nf-core-utils@0.2.0
+nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.3.0
+nextflow run validation/config-validation/ -plugins nf-core-utils@0.3.0
+nextflow run validation/notification-system/ -plugins nf-core-utils@0.3.0
+nextflow run validation/pipeline-utilities/ -plugins nf-core-utils@0.3.0
 
 # With different profiles
-nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.2.0 -profile test
+nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.3.0 -profile test
 ```
 
 ### Quick Validation (All Tests)
