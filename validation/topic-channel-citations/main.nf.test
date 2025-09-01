@@ -1,0 +1,31 @@
+nextflow_pipeline {
+
+    name "Test nf-core-utils topic channel citations functions"
+    script "../topic-channel-citations/main.nf"
+    config "../topic-channel-citations/nextflow.config"
+
+    test("Save citations outputs") {
+        
+        when {
+            params {
+                validate_params = false
+                outdir = "$outputDir"
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert workflow.exitStatus == 0
+
+            def stable_path = getAllFilesFromDir(params.outdir)
+
+            // Snapshot the basic workflow execution
+            assert snapshot(
+                // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
+                workflow.exitStatus,
+                workflow.success,
+                stable_path
+            ).match()
+        }
+    }
+}

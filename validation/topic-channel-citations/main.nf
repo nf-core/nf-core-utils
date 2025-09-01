@@ -56,10 +56,12 @@ workflow {
         .collect()
         .map { citations ->
             log.info("=== Collected ${citations.size()} citation emissions ===")
-            citations.each { citation ->
+            // Sort citations to ensure consistent ordering
+            def sortedCitations = citations.sort()
+            sortedCitations.each { citation ->
                 log.info("Citation: ${citation}")
             }
-            return citations
+            return sortedCitations
         }
 
     // Generate final citation text and bibliography automatically

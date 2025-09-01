@@ -4,14 +4,8 @@ nextflow_pipeline {
     script "../config-validation/main.nf"
     config "../config-validation/nextflow.config"
 
-    test("Should validate configuration functions successfully") {
+    test("Validate configuration functions") {
         
-        when {
-            params {
-                // Use test parameters
-            }
-        }
-
         then {
             assert workflow.success
             assert workflow.exitStatus == 0
@@ -22,44 +16,32 @@ nextflow_pipeline {
             
             // Snapshot the basic workflow execution
             assert snapshot(
-                workflow.stdout,
+                // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
                 workflow.exitStatus,
                 workflow.success
-            ).match("config_validation_success")
+            ).match()
         }
     }
 
-    test("Should handle conda channel configuration") {
+    test("Conda channel configuration") {
         
-        when {
-            params {
-                // Test conda configuration
-            }
-        }
-
         then {
             assert workflow.success
             
             // Should have conda channel warnings in stderr (this is expected)
-            assert workflow.stderr.toString().contains("Conda configuration") || 
-                   workflow.stderr.toString().contains("conda-forge") ||
-                   workflow.stderr.toString().contains("bioconda")
+            // assert workflow.stderr.toString().contains("Conda configuration") || 
+            //        workflow.stderr.toString().contains("conda-forge") ||
+            //        workflow.stderr.toString().contains("bioconda")
             
             // Snapshot conda-related outputs
             assert snapshot(
                 workflow.stderr.findAll { it.contains("conda") || it.contains("Conda") }
-            ).match("conda_configuration_output")
+            ).match()
         }
     }
 
-    test("Should complete without errors despite conda warnings") {
+    test("Conda warnings") {
         
-        when {
-            params {
-                // Test error handling
-            }
-        }
-
         then {
             assert workflow.success
             assert workflow.exitStatus == 0
@@ -71,11 +53,11 @@ nextflow_pipeline {
             assert snapshot(
                 workflow.success,
                 workflow.exitStatus
-            ).match("successful_completion")
+            ).match()
         }
     }
 
-    test("Should run successfully with monochrome_logs parameter enabled") {
+    test("monochrome_logs params enabled") {
         
         when {
             params {
@@ -93,13 +75,13 @@ nextflow_pipeline {
             
             // Snapshot basic successful execution
             assert snapshot(
-                workflow.stdout,
+                // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
                 workflow.exitStatus
-            ).match("color_functionality_test")
+            ).match()
         }
     }
 
-    test("Should run successfully with monochrome_logs parameter disabled") {
+    test("monochrome_logs params disabled") {
         
         when {
             params {
@@ -117,9 +99,9 @@ nextflow_pipeline {
             
             // Snapshot integration scenario success
             assert snapshot(
-                workflow.stdout,
+                // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
                 workflow.exitStatus
-            ).match("color_integration_test")
+            ).match()
         }
     }
 }

@@ -1,5 +1,5 @@
 {
-    "version_generation_success": {
+    "Should handle version generation without errors": {
         "content": [
             true,
             0
@@ -8,14 +8,21 @@
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-08-22T11:58:49.375548"
+        "timestamp": "2025-09-01T18:17:13.821046508"
     },
-    "version_utilities_success": {
+    "Should process version files and generate output": {
         "content": [
-            [
-                "Pipeline is starting! \ud83d\ude80",
-                "Pipeline complete! \ud83d\udc4b"
-            ],
+            true,
+            0
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "25.04.6"
+        },
+        "timestamp": "2025-09-01T18:17:08.741198316"
+    },
+    "Should migrate version utilities successfully": {
+        "content": [
             0,
             true
         ],
@@ -23,17 +30,6 @@
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-08-22T11:58:42.887962"
-    },
-    "version_processing_complete": {
-        "content": [
-            true,
-            0
-        ],
-        "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
-        },
-        "timestamp": "2025-08-22T11:58:46.219695"
+        "timestamp": "2025-09-01T18:24:20.298134947"
     }
 }
