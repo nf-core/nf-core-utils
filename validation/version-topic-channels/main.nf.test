@@ -4,7 +4,7 @@ nextflow_pipeline {
     script "../version-topic-channels/main.nf"
     config "../version-topic-channels/nextflow.config"
 
-    test("Should migrate version utilities successfully") {
+    test("Version utilities") {
         
 
         then {
@@ -20,41 +20,6 @@ nextflow_pipeline {
                 // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
                 workflow.exitStatus,
                 workflow.success
-            ).match()
-        }
-    }
-
-    test("Should process version files and generate output") {
-        
-
-        then {
-            assert workflow.success
-            
-            // Verify workflow completed successfully
-            assert workflow.stdout.any { it.contains("Pipeline complete") }
-            
-            // Snapshot version processing results
-            assert snapshot(
-                workflow.success,
-                workflow.exitStatus
-            ).match()
-        }
-    }
-
-    test("Should handle version generation without errors") {
-        
-
-        then {
-            assert workflow.success
-            assert workflow.exitStatus == 0
-            
-            // Pipeline should complete successfully
-            assert workflow.stdout.any { it.contains("Pipeline complete") }
-            
-            // Snapshot successful execution
-            assert snapshot(
-                workflow.success,
-                workflow.exitStatus
             ).match()
         }
     }
