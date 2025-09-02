@@ -52,4 +52,4 @@ class NfcorePipelineObserver implements TraceObserver {
         println "Pipeline complete! 👋"
         // TODO dumpParametersToJSON(session.params.outdir, session.params)
     }
-} 
+}

@@ -2,7 +2,7 @@
 
 /*
  * E2E validation test for nf-core-utils plugin pipeline utilities
- * 
+ *
  * This test validates the core pipeline utility functions:
  * - getWorkflowVersion(): Generate workflow version strings
  * - dumpParametersToJSON(): Save pipeline parameters to JSON file

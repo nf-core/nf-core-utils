@@ -5,12 +5,13 @@ This extension provides essential utility functions for modern Nextflow pipeline
 ## 1. Overview
 
 The Nextflow Pipeline Extension offers three core utilities designed to enhance your pipeline development experience:
+
 - **Version Management**: Generate consistent, git-aware version strings
-- **Parameter Documentation**: Export pipeline parameters for reproducibility 
+- **Parameter Documentation**: Export pipeline parameters for reproducibility
 - **Environment Validation**: Verify conda channel configurations
 
 !!! note "Migration from Legacy Subworkflows"
-    These functions replace those previously found in the `utils_nextflow_pipeline` subworkflow. The plugin-based approach provides easier imports, better maintenance, and improved reliability.
+These functions replace those previously found in the `utils_nextflow_pipeline` subworkflow. The plugin-based approach provides easier imports, better maintenance, and improved reliability.
 
 ## 2. Getting Started
 
@@ -29,7 +30,7 @@ workflow {
 ```
 
 !!! tip "Function Selection"
-    Import only the functions you need. Each function is independent and can be imported separately for lighter dependency management.
+Import only the functions you need. Each function is independent and can be imported separately for lighter dependency management.
 
 ### 2.2. Quick Start Example
 
@@ -38,10 +39,10 @@ Here's a minimal example showing all three functions in action:
 ```nextflow title="example.nf"
 #!/usr/bin/env nextflow
 
-include { 
-    getWorkflowVersion; 
-    dumpParametersToJSON; 
-    checkCondaChannels 
+include {
+    getWorkflowVersion;
+    dumpParametersToJSON;
+    checkCondaChannels
 } from 'plugin/nf-core-utils'
 
 // Generate version string
@@ -119,10 +120,10 @@ Full version: v1.0.0-gabc1234
 
 #### Function Parameters
 
-| Parameter | Type | Description | Example |
-|-----------|------|-------------|---------|
-| `manifestVersion` | String | Version from nextflow.config manifest | `"1.0.0"` or `"v1.0.0"` |
-| `commitId` | String (optional) | Full git SHA hash | `"abc1234def5678..."` |
+| Parameter         | Type              | Description                           | Example                 |
+| ----------------- | ----------------- | ------------------------------------- | ----------------------- |
+| `manifestVersion` | String            | Version from nextflow.config manifest | `"1.0.0"` or `"v1.0.0"` |
+| `commitId`        | String (optional) | Full git SHA hash                     | `"abc1234def5678..."`   |
 
 #### Version Format Rules
 
@@ -133,7 +134,7 @@ The function applies these formatting rules:
 3. **Git Prefix**: Adds 'g' prefix to git hash (`abc1234` → `gabc1234`)
 
 !!! tip "Best Practice"
-    Always use `workflow.manifest.version` and `workflow.commitId` for automatic version detection in pipelines.
+Always use `workflow.manifest.version` and `workflow.commitId` for automatic version detection in pipelines.
 
 ---
 
@@ -147,7 +148,7 @@ Before diving into usage, let's understand why parameter documentation matters:
 
 ```nextflow title="Without parameter logging"
 // Your pipeline runs successfully, but...
-// What parameters were used? 
+// What parameters were used?
 // How can you reproduce this exact run?
 // What changed between runs?
 ```
@@ -169,7 +170,7 @@ params.genome = "GRCh38"
 
 workflow {
     log.info "Processing with genome: ${params.genome}"
-    
+
     // Your workflow logic here
 }
 
@@ -202,11 +203,11 @@ results/
 
 #### Function Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `outdir` | Path/String | Yes | Output directory for parameter file |
-| `params` | Map | Yes | Pipeline parameters to document |
-| `launchDir` | Path | Yes | Temporary file creation directory |
+| Parameter   | Type        | Required | Description                         |
+| ----------- | ----------- | -------- | ----------------------------------- |
+| `outdir`    | Path/String | Yes      | Output directory for parameter file |
+| `params`    | Map         | Yes      | Pipeline parameters to document     |
+| `launchDir` | Path        | Yes      | Temporary file creation directory   |
 
 #### File Organization
 
@@ -217,7 +218,7 @@ The function follows nf-core conventions for file organization:
 - **Format**: Pretty-printed JSON for readability
 
 !!! warning "Safety Check"
-    The function safely handles null `outdir` values by returning immediately without error, preventing pipeline crashes.
+The function safely handles null `outdir` values by returning immediately without error, preventing pipeline crashes.
 
 ---
 
@@ -232,14 +233,15 @@ Conda channels have priority order that affects package resolution:
 ```bash title="Correct channel order"
 # Higher priority (searched first)
 conda-forge     # General scientific packages
-bioconda        # Bioinformatics packages  
+bioconda        # Bioinformatics packages
 defaults        # Base conda packages
 # Lower priority (searched last)
 ```
 
 Wrong channel order can lead to:
+
 - Package conflicts
-- Outdated software versions  
+- Outdated software versions
 - Failed environment creation
 
 #### Basic Channel Validation
@@ -255,7 +257,7 @@ workflow {
     // Only check channels when using conda profile
     if (workflow.profile.contains('conda')) {
         log.info "Validating conda channel configuration..."
-        
+
         if (checkCondaChannels()) {
             log.info "✓ Conda channels configured correctly"
         } else {
@@ -264,7 +266,7 @@ workflow {
             log.warn "Please run: conda config --add channels bioconda"
         }
     }
-    
+
     // Rest of your workflow...
 }
 ```
@@ -272,13 +274,15 @@ workflow {
 #### Example Output Scenarios
 
 **Correct Configuration:**
+
 ```console title="Valid channel setup"
 INFO  [main] - Validating conda channel configuration...
 INFO  [main] - ✓ Conda channels configured correctly
 ```
 
 **Incorrect Configuration:**
-```console title="Invalid channel setup"  
+
+```console title="Invalid channel setup"
 INFO  [main] - Validating conda channel configuration...
 WARN  [main] - ⚠ Conda channel configuration needs attention
 WARN  [main] - Expected channel order: [conda-forge, bioconda]
@@ -287,11 +291,11 @@ WARN  [main] - Current channel order: [bioconda, conda-forge]
 
 #### Function Return Values
 
-| Return Value | Condition | Description |
-|--------------|-----------|-------------|
-| `true` | Channels correct | conda-forge and bioconda in proper order |
-| `true` | Conda unavailable | Conda not installed or command failed (non-blocking) |
-| `false` | Channels incorrect | Required channels missing or wrong order |
+| Return Value | Condition          | Description                                          |
+| ------------ | ------------------ | ---------------------------------------------------- |
+| `true`       | Channels correct   | conda-forge and bioconda in proper order             |
+| `true`       | Conda unavailable  | Conda not installed or command failed (non-blocking) |
+| `false`      | Channels incorrect | Required channels missing or wrong order             |
 
 #### Validation Process
 
@@ -303,7 +307,7 @@ The function performs these steps:
 4. **Report**: Provides clear feedback on issues found
 
 !!! tip "Non-Blocking Design"
-    The function is designed to be non-blocking. If conda is not available or checking fails, it returns `true` to allow pipeline continuation.
+The function is designed to be non-blocking. If conda is not available or checking fails, it returns `true` to allow pipeline continuation.
 
 ---
 
@@ -318,10 +322,10 @@ Here's a comprehensive example showing all functions working together in a real 
 
 nextflow.enable.dsl = 2
 
-include { 
-    getWorkflowVersion; 
-    dumpParametersToJSON; 
-    checkCondaChannels 
+include {
+    getWorkflowVersion;
+    dumpParametersToJSON;
+    checkCondaChannels
 } from 'plugin/nf-core-utils'
 
 params.input = null
@@ -340,7 +344,7 @@ workflow {
     Profile: ${workflow.profile}
     ========================================
     """
-    
+
     // Validate environment setup
     if (workflow.profile.contains('conda')) {
         if (!checkCondaChannels()) {
@@ -348,7 +352,7 @@ workflow {
             System.exit(1)
         }
     }
-    
+
     // Your pipeline processes here...
 }
 
@@ -358,7 +362,7 @@ workflow.onComplete {
         dumpParametersToJSON(params.outdir, params, workflow.launchDir)
         log.info "Parameters saved to ${params.outdir}/pipeline_info/"
     }
-    
+
     log.info """
     Pipeline completed!
     Version: ${version_str}
@@ -378,10 +382,10 @@ For production pipelines, use this pattern for robust error handling:
 nextflow.enable.dsl = 2
 
 // Essential imports
-include { 
-    getWorkflowVersion; 
-    dumpParametersToJSON; 
-    checkCondaChannels 
+include {
+    getWorkflowVersion;
+    dumpParametersToJSON;
+    checkCondaChannels
 } from 'plugin/nf-core-utils'
 
 // Early validation
@@ -392,16 +396,16 @@ if (!params.input) {
 // Version tracking
 def version_str = getWorkflowVersion(workflow.manifest.version, workflow.commitId)
 
-// Environment validation  
+// Environment validation
 if (workflow.profile.contains('conda')) {
     if (!checkCondaChannels()) {
         log.error """
         Conda channels not configured correctly!
-        
+
         To fix, run:
             conda config --add channels conda-forge
             conda config --add channels bioconda
-        
+
         Then re-run your pipeline.
         """
         System.exit(1)
@@ -410,9 +414,9 @@ if (workflow.profile.contains('conda')) {
 
 workflow {
     log.info "Starting ${workflow.manifest.name} ${version_str}"
-    
+
     // Pipeline logic here...
-    
+
     log.info "Pipeline execution complete"
 }
 
@@ -436,24 +440,19 @@ workflow.onError {
 
 ### 5.1. Version Management
 
-!!! tip "Version String Usage"
-    - Include version in all log messages
-    - Add version to output filenames for traceability  
-    - Use consistent version format across your organization
+> [!TIP] "Version String Usage"
+>
+> - Include version in all log messages
+> - Add version to output filenames for traceability
+> - Use consistent version format across your organization
 
 ### 5.2. Parameter Documentation
 
-!!! warning "Documentation Timing"
-    - Call `dumpParametersToJSON` in `workflow.onComplete` for successful runs only
-    - Consider saving parameters on error for debugging failed runs
-    - Include the timestamp to distinguish between multiple runs
+!!! warning "Documentation Timing" - Call `dumpParametersToJSON` in `workflow.onComplete` for successful runs only - Consider saving parameters on error for debugging failed runs - Include the timestamp to distinguish between multiple runs
 
 ### 5.3. Environment Validation
 
-!!! note "Validation Strategy"
-    - Check conda channels early in pipeline execution
-    - Make validation non-fatal in development environments
-    - Provide clear fixing instructions in error messages
+!!! note "Validation Strategy" - Check conda channels early in pipeline execution - Make validation non-fatal in development environments - Provide clear fixing instructions in error messages
 
 ## 6. Migration Guide
 
@@ -462,11 +461,13 @@ workflow.onError {
 If you're migrating from the old `utils_nextflow_pipeline` subworkflow:
 
 **Before:**
+
 ```nextflow
 include { getWorkflowVersion } from '../subworkflows/local/utils_nextflow_pipeline'
 ```
 
 **After:**
+
 ```nextflow
 include { getWorkflowVersion } from 'plugin/nf-core-utils'
 ```
@@ -484,7 +485,7 @@ include { getWorkflowVersion } from 'plugin/nf-core-utils'
 The Nextflow Pipeline Extension provides three essential utilities that every pipeline should use:
 
 1. **`getWorkflowVersion`**: Creates traceable, git-aware version strings
-2. **`dumpParametersToJSON`**: Documents run parameters for reproducibility  
+2. **`dumpParametersToJSON`**: Documents run parameters for reproducibility
 3. **`checkCondaChannels`**: Validates conda environment setup
 
 These functions replace legacy subworkflows with a cleaner, plugin-based approach that's easier to maintain and more reliable.

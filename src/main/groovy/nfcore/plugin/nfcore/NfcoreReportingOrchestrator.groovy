@@ -21,7 +21,7 @@ import nextflow.Session
 /**
  * Orchestration utility that coordinates between version management and citation management
  * to provide comprehensive pipeline reporting capabilities.
- * 
+ *
  * This class follows the composition pattern, using NfcoreVersionUtils and NfcoreCitationUtils
  * as focused, single-responsibility services while providing convenient high-level methods
  * for common reporting scenarios.
@@ -30,10 +30,10 @@ class NfcoreReportingOrchestrator {
 
     /**
      * Generate comprehensive version and citation report for a pipeline
-     * 
+     *
      * This method orchestrates between version and citation utilities to provide
      * a complete report including versions, citations, bibliography, and methods description.
-     * 
+     *
      * @param topicVersions List of topic channel data [process, name, version]
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @param metaFilePaths List of paths to module meta.yml files for citations (optional)
@@ -42,8 +42,8 @@ class NfcoreReportingOrchestrator {
      * @return Map containing versions YAML, citations, bibliography, and methods description
      */
     static Map generateComprehensiveReport(
-        List<List> topicVersions, 
-        List<String> legacyVersions = [], 
+        List<List> topicVersions,
+        List<String> legacyVersions = [],
         List<String> metaFilePaths = [],
         File mqcMethodsYaml = null,
         Session session
@@ -52,23 +52,23 @@ class NfcoreReportingOrchestrator {
         def versionsYaml = NfcoreVersionUtils.processVersionsFromTopicChannels(
             topicVersions, legacyVersions, session
         )
-        
+
         // Generate citations if meta files provided using focused citation utility
         def allCitations = [:]
         if (metaFilePaths) {
             allCitations = collectCitationsFromMetaFiles(metaFilePaths)
         }
-        
+
         // Generate citation text and bibliography using citation utility
         def toolCitations = NfcoreCitationUtils.toolCitationText(allCitations)
         def toolBibliography = NfcoreCitationUtils.toolBibliographyText(allCitations)
-        
+
         // Generate methods description if template provided
         def methodsDescription = ""
         if (mqcMethodsYaml && mqcMethodsYaml.exists()) {
             methodsDescription = generateMethodsDescription(mqcMethodsYaml, allCitations, session)
         }
-        
+
         return [
             versions_yaml: versionsYaml,
             tool_citations: toolCitations,
@@ -81,21 +81,21 @@ class NfcoreReportingOrchestrator {
     /**
      * Generate a version-only report (no citations)
      * Useful when citations are not needed or handled separately
-     * 
+     *
      * @param topicVersions List of topic channel data [process, name, version]
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @param session The Nextflow session
      * @return Map containing only versions information
      */
     static Map generateVersionReport(
-        List<List> topicVersions, 
-        List<String> legacyVersions = [], 
+        List<List> topicVersions,
+        List<String> legacyVersions = [],
         Session session
     ) {
         def versionsYaml = NfcoreVersionUtils.processVersionsFromTopicChannels(
             topicVersions, legacyVersions, session
         )
-        
+
         return [
             versions_yaml: versionsYaml
         ]
@@ -104,7 +104,7 @@ class NfcoreReportingOrchestrator {
     /**
      * Generate a citation-only report (no versions)
      * Useful when versions are handled separately
-     * 
+     *
      * @param metaFilePaths List of paths to module meta.yml files for citations
      * @param mqcMethodsYaml Path to MultiQC methods description template (optional)
      * @param session The Nextflow session (optional, used for methods description)
@@ -118,12 +118,12 @@ class NfcoreReportingOrchestrator {
         def allCitations = collectCitationsFromMetaFiles(metaFilePaths)
         def toolCitations = NfcoreCitationUtils.toolCitationText(allCitations)
         def toolBibliography = NfcoreCitationUtils.toolBibliographyText(allCitations)
-        
+
         def methodsDescription = ""
         if (mqcMethodsYaml && mqcMethodsYaml.exists() && session) {
             methodsDescription = generateMethodsDescription(mqcMethodsYaml, allCitations, session)
         }
-        
+
         return [
             tool_citations: toolCitations,
             tool_bibliography: toolBibliography,
@@ -135,13 +135,13 @@ class NfcoreReportingOrchestrator {
     /**
      * Private helper method to collect citations from meta.yml files
      * Handles error cases gracefully and continues processing other files
-     * 
+     *
      * @param metaFilePaths List of paths to meta.yml files
      * @return Map of all collected citations
      */
     private static Map collectCitationsFromMetaFiles(List<String> metaFilePaths) {
         def allCitations = [:]
-        
+
         metaFilePaths.each { metaPath ->
             try {
                 def citations = NfcoreCitationUtils.generateModuleToolCitation(metaPath)
@@ -151,14 +151,14 @@ class NfcoreReportingOrchestrator {
                 println "Warning: Could not process meta.yml at ${metaPath}: ${e.message}"
             }
         }
-        
+
         return allCitations
     }
 
     /**
      * Private helper method to generate methods description
      * Handles session metadata preparation for template processing
-     * 
+     *
      * @param mqcMethodsYaml MultiQC methods template file
      * @param allCitations Map of collected citations
      * @param session Nextflow session
@@ -178,13 +178,13 @@ class NfcoreReportingOrchestrator {
     /**
      * Private helper method to prepare metadata for template processing
      * Centralizes the metadata preparation logic
-     * 
+     *
      * @param session Nextflow session
      * @return Map containing prepared metadata
      */
     private static Map prepareMetadataForTemplate(Session session) {
         def meta = [:]
-        
+
         // Add manifest information
         def manifest = session?.getManifest()
         if (manifest) {
@@ -192,7 +192,7 @@ class NfcoreReportingOrchestrator {
         } else {
             meta["manifest_map"] = [:]
         }
-        
+
         // Add workflow metadata
         try {
             if (session) {
@@ -204,7 +204,7 @@ class NfcoreReportingOrchestrator {
             // Handle case where getWorkflowMetadata() is not available
             meta.workflow = [:]
         }
-        
+
         return meta
     }
-} 
+}

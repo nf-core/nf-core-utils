@@ -114,7 +114,7 @@ class NfcoreCitationUtils {
     /**
      * Process citations from topic channel format
      * Handles the new eval syntax: [module, tool, citation_data]
-     * 
+     *
      * @param topicData List containing [module, tool, citation_data] tuples
      * @return Map of tool citations
      */
@@ -125,7 +125,7 @@ class NfcoreCitationUtils {
                 def module = tuple[0]
                 def tool = tuple[1]
                 def citationData = tuple[2]
-                
+
                 // Convert citation data to standard format
                 if (citationData instanceof Map) {
                     citations[tool] = [
@@ -147,7 +147,7 @@ class NfcoreCitationUtils {
     /**
      * Process citations from citations_file topic (legacy meta.yml files)
      * Handles the old meta.yml file path output style
-     * 
+     *
      * @param citationFileData List containing file paths to meta.yml files
      * @return Map of tool citations
      */
@@ -167,33 +167,33 @@ class NfcoreCitationUtils {
     /**
      * Process mixed citation sources (topic channels and file-based)
      * Combines data from both 'citations' and 'citations_file' topics
-     * 
+     *
      * @param topicCitations List of [module, tool, citation_data] from 'citations' topic
      * @param citationFiles List of file paths from 'citations_file' topic
      * @return Combined map of all citations
      */
     static Map processMixedCitationSources(List<List> topicCitations, List<String> citationFiles) {
         def combinedCitations = [:]
-        
+
         // Process new topic format
         if (topicCitations) {
             def topicCitationMap = processCitationsFromTopic(topicCitations)
             combinedCitations.putAll(topicCitationMap)
         }
-        
+
         // Process legacy file format
         if (citationFiles) {
             def fileCitationMap = processCitationsFromFile(citationFiles)
             combinedCitations.putAll(fileCitationMap)
         }
-        
+
         return combinedCitations
     }
 
     /**
      * Convert legacy meta.yml data to new topic channel format
      * Transforms meta.yml tools data to [module, tool, citation_data] tuples
-     * 
+     *
      * @param metaFilePath Path to meta.yml file
      * @param moduleName Name of the module (defaults to filename)
      * @return List of [module, tool, citation_data] tuples
@@ -204,26 +204,26 @@ class NfcoreCitationUtils {
             if (!file.exists()) {
                 return []
             }
-            
+
             if (!moduleName) {
                 moduleName = file.getParentFile()?.getName() ?: 'unknown'
             }
-            
+
             def yaml = new Yaml()
             Map meta
             file.withInputStream { is ->
                 meta = yaml.load(is)
             }
-            
+
             def result = []
             def tools = meta?.tools ?: []
-            
+
             tools.each { toolEntry ->
                 toolEntry.each { toolName, toolInfo ->
                     result.add([moduleName, toolName, toolInfo])
                 }
             }
-            
+
             return result
         } catch (Exception e) {
             System.err.println("Warning: Could not convert meta.yml to topic format: ${e.message}")
@@ -233,7 +233,7 @@ class NfcoreCitationUtils {
 
     /**
      * Format citation text from citation data
-     * 
+     *
      * @param toolName Name of the tool
      * @param citationData Citation data map
      * @return Formatted citation string
@@ -250,7 +250,7 @@ class NfcoreCitationUtils {
 
     /**
      * Format bibliography entry from citation data
-     * 
+     *
      * @param toolName Name of the tool
      * @param citationData Citation data map
      * @return Formatted bibliography HTML
@@ -262,12 +262,12 @@ class NfcoreCitationUtils {
         def journal = citationData.journal ?: ""
         def doi = citationData.doi ? "doi: ${citationData.doi}" : ""
         def url = citationData.homepage ?: ""
-        
+
         def bibCitation = [author, year, title, journal, doi].findAll { it }.join(". ")
         if (url) {
             bibCitation += ". <a href='${url}'>${url}</a>"
         }
-        
+
         return "<li>${bibCitation}</li>"
     }
 
@@ -315,7 +315,7 @@ class NfcoreCitationUtils {
     /**
      * Extract citation from meta.yml file for topic channel emission
      * Used by processes to emit citation data at runtime
-     * 
+     *
      * @param metaYmlPath Path to the module's meta.yml file (typically "${moduleDir}/meta.yml")
      * @return List in topic channel format [module_name, tool_name, citation_data] or empty list if error
      */
@@ -326,20 +326,20 @@ class NfcoreCitationUtils {
                 System.err.println("Warning: meta.yml not found at ${metaYmlPath}")
                 return []
             }
-            
+
             // Extract module name from path (e.g., "modules/nf-core/fastqc/meta.yml" -> "FASTQC")
             def moduleName = extractModuleNameFromPath(metaYmlPath)
-            
+
             // Parse meta.yml and extract tools
             def yaml = new Yaml()
             Map meta
             metaFile.withInputStream { is ->
                 meta = yaml.load(is)
             }
-            
+
             def tools = meta?.tools ?: []
             def citations = []
-            
+
             // Convert each tool to topic channel format
             tools.each { toolEntry ->
                 toolEntry.each { toolName, toolInfo ->
@@ -348,9 +348,9 @@ class NfcoreCitationUtils {
                     }
                 }
             }
-            
+
             return citations
-            
+
         } catch (Exception e) {
             System.err.println("Warning: Failed to extract citation from ${metaYmlPath}: ${e.message}")
             return []
@@ -360,7 +360,7 @@ class NfcoreCitationUtils {
     /**
      * Extract module name from meta.yml file path
      * Handles various path patterns commonly used in nf-core
-     * 
+     *
      * @param metaYmlPath Path to meta.yml file
      * @return Module name in uppercase format
      */
@@ -368,18 +368,18 @@ class NfcoreCitationUtils {
         try {
             def pathParts = metaYmlPath.split('/')
             def metaIndex = pathParts.findLastIndexOf { it == 'meta.yml' }
-            
+
             if (metaIndex > 0) {
                 // Extract module name from parent directory
                 def moduleName = pathParts[metaIndex - 1]
                 return moduleName.toUpperCase()
             }
-            
+
             // Fallback: extract from current directory or default
             def currentDir = new File('.').getAbsolutePath()
             def dirName = new File(currentDir).name
             return dirName.toUpperCase()
-            
+
         } catch (Exception e) {
             return "UNKNOWN_MODULE"
         }
@@ -388,7 +388,7 @@ class NfcoreCitationUtils {
     /**
      * Automatically collect citations from the 'citation' topic channel and generate citation text
      * This function works with the topic channel pattern where processes emit citations
-     * 
+     *
      * @param topicCitations List of citation data from topic channel (typically collected via channel.topic('citation').collect())
      * @return Formatted citation text ready for use in reports
      */
@@ -396,7 +396,7 @@ class NfcoreCitationUtils {
         if (!topicCitations || topicCitations.isEmpty()) {
             return "No tools used in the workflow."
         }
-        
+
         // Flatten and process topic citations - handle nested structures
         def allCitations = []
         topicCitations.each { item ->
@@ -414,7 +414,7 @@ class NfcoreCitationUtils {
                 }
             }
         }
-        
+
         // Process using existing logic
         def processedCitations = processCitationsFromTopic(allCitations)
         return toolCitationText(processedCitations)
@@ -423,7 +423,7 @@ class NfcoreCitationUtils {
     /**
      * Automatically collect citations from the 'citation' topic channel and generate bibliography
      * This function works with the topic channel pattern where processes emit citations
-     * 
+     *
      * @param topicCitations List of citation data from topic channel (typically collected via channel.topic('citation').collect())
      * @return Formatted bibliography HTML ready for use in reports
      */
@@ -431,7 +431,7 @@ class NfcoreCitationUtils {
         if (!topicCitations || topicCitations.isEmpty()) {
             return "No bibliography entries found."
         }
-        
+
         // Flatten and process topic citations - handle nested structures
         def allCitations = []
         topicCitations.each { item ->
@@ -449,9 +449,9 @@ class NfcoreCitationUtils {
                 }
             }
         }
-        
+
         // Process using existing logic
         def processedCitations = processCitationsFromTopic(allCitations)
         return toolBibliographyText(processedCitations)
     }
-} 
+}

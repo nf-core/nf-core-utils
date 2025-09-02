@@ -2,7 +2,7 @@
 
 /*
  * E2E validation test for nf-core-utils plugin topic channel citation management
- * 
+ *
  * This test demonstrates the new runtime citation collection approach using topic channels.
  * Instead of manually configuring citations, processes automatically emit citation data
  * which is collected and processed automatically.
@@ -99,7 +99,7 @@ workflow {
         // Write citation text
         new File("${output_dir}/auto_citations.txt").text = citations.citation_text
 
-        // Write bibliography  
+        // Write bibliography
         new File("${output_dir}/auto_bibliography.html").text = citations.bibliography
 
         log.info("✅ Auto-generated citations written to: ${output_dir}/")
@@ -111,7 +111,7 @@ workflow {
         log.info(
             """
             ==========================================
-            Topic Channel Citation Management Test Complete! 
+            Topic Channel Citation Management Test Complete!
             ==========================================
 
             ✅ Processes automatically emitted citations to topic channel
@@ -121,7 +121,7 @@ workflow {
 
             Key Benefits Demonstrated:
             • No manual citation configuration needed
-            • Only executed tools appear in citations  
+            • Only executed tools appear in citations
             • Automatic formatting and aggregation
             • Clean separation of concerns
             • Runtime accuracy

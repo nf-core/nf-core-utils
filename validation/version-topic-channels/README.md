@@ -5,19 +5,22 @@ This validation test demonstrates the successful migration from local pipeline u
 ## What This Test Validates
 
 ### 1. Plugin Function Migration
+
 - **Local functions replaced**: `getWorkflowVersion()`, `processVersionsFromYAML()`, `workflowVersionToYAML()`, `softwareVersionsToYAML()`
 - **Plugin functions used**: `getWorkflowVersion()`, `processVersionsFromFile()`
 - **Import pattern**: `include { getWorkflowVersion; processVersionsFromFile } from 'plugin/nf-core-utils'`
 
 ### 2. Channel Logic Preservation
+
 The test demonstrates that all channel orchestration remains visible in the pipeline:
+
 ```groovy
 ch_versions
     .unique()                                    // ✅ Channel logic in pipeline
-    .map { version_file -> 
+    .map { version_file ->
         processVersionsFromFile([version_file])  // ✅ Plugin utility function
     }
-    .unique()                                    
+    .unique()
     .mix(                                        // ✅ Channel orchestration visible
         Channel.of(getWorkflowVersion())         // ✅ Plugin utility function
             .map { workflow_version -> ... }     // ✅ Transformation logic visible
@@ -26,12 +29,14 @@ ch_versions
 ```
 
 ### 3. Functional Equivalence
+
 - Same output format as original fetchngs implementation
 - Same YAML structure for MultiQC compatibility
 - Same file naming and storage location
 - Identical workflow version string generation
 
 ### 4. Architectural Compliance
+
 - **Utilities in plugin**: Data transformation functions moved to plugin
 - **Orchestration in pipeline**: Channel operations, mixing, and file collection remain in pipeline
 - **Visibility maintained**: All data flow logic is transparent and modifiable
@@ -40,10 +45,12 @@ ch_versions
 ## Running the Validation
 
 ### Prerequisites
+
 1. Build the plugin: `make assemble`
 2. Install locally: `make install`
 
 ### Run the Test
+
 ```bash
 # Basic validation
 nextflow run validation/ -plugins nf-core-utils@0.3.0
@@ -56,7 +63,9 @@ nextflow run validation/ -plugins nf-core-utils@0.3.0 -profile debug
 ```
 
 ### Expected Output
+
 The test will:
+
 1. ✅ Load the plugin successfully
 2. ✅ Generate workflow version strings using `getWorkflowVersion()`
 3. ✅ Process mock version files using `processVersionsFromFile()`
@@ -65,6 +74,7 @@ The test will:
 6. ✅ Validate content contains expected tools and workflow info
 
 ### Output Files
+
 - `validation_results/pipeline_info/nf_core_utils_software_mqc_versions.yml` - Final versions file
 - `validation_results/execution_*.html` - Nextflow execution reports
 - `validation_results/pipeline_dag.svg` - Workflow diagram
@@ -74,6 +84,7 @@ The test will:
 This test serves as a template for migrating other nf-core pipelines:
 
 ### Before (Local Functions)
+
 ```groovy
 // Local utility functions in main.nf or lib/Utils.groovy
 def getWorkflowVersion() { ... }
@@ -86,6 +97,7 @@ softwareVersionsToYAML(ch_versions)
 ```
 
 ### After (Plugin Migration)
+
 ```groovy
 // Import plugin utilities
 include { getWorkflowVersion; processVersionsFromFile } from 'plugin/nf-core-utils'

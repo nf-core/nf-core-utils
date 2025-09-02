@@ -47,13 +47,11 @@ Follow these steps to publish the plugin to the Nextflow Plugin Registry:
 Following these step to package, upload and publish the plugin:
 
 1. In `build.gradle` make sure that:
-
    - `version` matches the desired release version,
    - `github.repository` matches the repository of the plugin,
    - `github.indexUrl` points to your fork of the plugins index repository.
 
 2. Create a file named `$HOME/.gradle/gradle.properties`, where `$HOME` is your home directory. Add the following properties:
-
    - `github_username`: The GitHub username granting access to the plugin repository.
    - `github_access_token`: The GitHub access token required to upload and commit changes to the plugin repository.
    - `github_commit_email`: The email address associated with your GitHub account.

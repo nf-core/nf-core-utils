@@ -5,7 +5,7 @@ nextflow_pipeline {
     config "../topic-channel-citations/nextflow.config"
 
     test("Save citations outputs") {
-        
+
         when {
             params {
                 validate_params = false

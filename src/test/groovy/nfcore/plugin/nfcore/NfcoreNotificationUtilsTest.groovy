@@ -12,7 +12,7 @@ class NfcoreNotificationUtilsTest extends Specification {
     def "logColours returns correct color codes"() {
         when:
         def colors = NfcoreNotificationUtils.logColours(false)
-        
+
         then:
         colors['reset'] == "\033[0m"
         colors['green'] == "\033[0;32m"
@@ -22,7 +22,7 @@ class NfcoreNotificationUtilsTest extends Specification {
     def "logColours returns empty strings for monochrome"() {
         when:
         def colors = NfcoreNotificationUtils.logColours(true)
-        
+
         then:
         colors['reset'] == ''
         colors['green'] == ''
@@ -36,13 +36,13 @@ class NfcoreNotificationUtilsTest extends Specification {
             "group1": ["param1": "value1", "param2": "value2"],
             "group2": ["param3": "value3"]
         ]
-        
+
         when:
         def result = NfcoreNotificationUtils.processSummaryParams(summaryParams)
-        
+
         then:
         result.size() == 3
-        result["param1"] == "value1" 
+        result["param1"] == "value1"
         result["param2"] == "value2"
         result["param3"] == "value3"
     }
@@ -50,7 +50,7 @@ class NfcoreNotificationUtilsTest extends Specification {
     def "processSummaryParams handles null input"() {
         when:
         def result = NfcoreNotificationUtils.processSummaryParams(null)
-        
+
         then:
         result.isEmpty()
     }
@@ -58,7 +58,7 @@ class NfcoreNotificationUtilsTest extends Specification {
     def "processSummaryParams handles empty map"() {
         when:
         def result = NfcoreNotificationUtils.processSummaryParams([:])
-        
+
         then:
         result.isEmpty()
     }
@@ -70,10 +70,10 @@ class NfcoreNotificationUtilsTest extends Specification {
             "group2": "not a map",
             "group3": ["param2": "value2"]
         ]
-        
+
         when:
         def result = NfcoreNotificationUtils.processSummaryParams(summaryParams)
-        
+
         then:
         result.size() == 2
         result["param1"] == "value1"

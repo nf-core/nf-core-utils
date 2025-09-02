@@ -511,4 +511,4 @@ class NfcoreVersionUtilsTest extends Specification {
         result[0] == ['Workflow', 'testpipeline', 'v1.0.0']
         result[1] == ['Workflow', 'Nextflow', '23.04.1']
     }
-} 
+}

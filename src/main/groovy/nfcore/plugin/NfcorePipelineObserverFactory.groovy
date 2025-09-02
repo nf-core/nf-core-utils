@@ -33,4 +33,4 @@ class NfcorePipelineObserverFactory implements TraceObserverFactory {
         return List.<TraceObserver> of(new NfcorePipelineObserver())
     }
 
-} 
+}

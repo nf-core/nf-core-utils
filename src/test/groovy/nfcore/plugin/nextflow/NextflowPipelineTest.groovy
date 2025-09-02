@@ -105,4 +105,4 @@ channels:
         cleanup:
         GroovySystem.metaClassRegistry.removeMetaClass(String)
     }
-} 
+}

@@ -24,18 +24,22 @@ This migration strategy ensures backward compatibility while enabling pipelines 
 Generates a formatted version string for the workflow, combining version information with git commit details when available. This is the primary function for getting workflow version information.
 
 **Function Signature:**
+
 ```nextflow
 String getWorkflowVersion(String version = null, String commitId = null)
 ```
 
 **Parameters:**
+
 - `version` (String, optional): Explicit version string to use (defaults to workflow.manifest.version)
 - `commitId` (String, optional): Explicit commit ID to use (defaults to workflow.commitId)
 
 **Returns:**
+
 - `String`: Formatted version string (e.g., `v1.2.3-gabcdef1`)
 
 **Usage Example:**
+
 ```nextflow
 include { getWorkflowVersion } from 'plugin/nf-core-utils'
 
@@ -49,11 +53,12 @@ log.info "Custom version: ${customVersion}"
 ```
 
 **Integration in Pipeline:**
+
 ```nextflow
 workflow {
     // Use in logging
     log.info "Starting ${workflow.manifest.name} ${getWorkflowVersion()}"
-    
+
     // Include in MultiQC reports
     def version_info = [
         'Workflow': getWorkflowVersion(),
@@ -70,18 +75,22 @@ workflow {
 Processes version information from both topic channels (modern approach) and traditional files (legacy approach). This is the key function for migration scenarios where both formats coexist.
 
 **Function Signature:**
+
 ```nextflow
 String processMixedVersionSources(List<List> topicVersions, List<String> versionsFiles)
 ```
 
 **Parameters:**
+
 - `topicVersions` (List<List>): Topic channel data in `[process, name, version]` format
 - `versionsFiles` (List<String>): List of paths to legacy `versions.yml` files
 
 **Returns:**
+
 - `String`: Combined YAML string with all version information
 
 **Usage Example:**
+
 ```nextflow
 include { processMixedVersionSources } from 'plugin/nf-core-utils'
 
@@ -89,32 +98,33 @@ workflow {
     // Collect from both sources during migration
     def topicVersions = PROCESS_A.out.versions.collect()
     def legacyFiles = ['process_b/versions.yml', 'process_c/versions.yml']
-    
+
     def allVersions = processMixedVersionSources(topicVersions, legacyFiles)
-    
+
     // Use in MultiQC
     file("${params.outdir}/pipeline_info/software_versions.yml").text = allVersions
 }
 ```
 
 **Migration Scenario:**
+
 ```nextflow
 // Stage 2: Mixed approach during pipeline migration
 workflow {
     // Modern processes using topic channels
     FASTQC(samples)
     MULTIQC(reports.collect())
-    
+
     // Legacy processes still using files (being gradually updated)
     LEGACY_PROCESS(data)
-    
+
     // Combine both approaches seamlessly
     def modernVersions = FASTQC.out.versions
         .mix(MULTIQC.out.versions)
         .collect()
-        
+
     def legacyFiles = LEGACY_PROCESS.out.versions.collect()
-    
+
     def combinedVersions = processMixedVersionSources(modernVersions, legacyFiles)
 }
 ```
@@ -127,18 +137,22 @@ workflow {
 Converts traditional YAML version content to the new eval syntax format for topic channels. Useful for migrating existing version data or integrating legacy systems.
 
 **Function Signature:**
+
 ```nextflow
 List<List> convertLegacyYamlToEvalSyntax(String yamlContent, String processName = 'LEGACY')
 ```
 
 **Parameters:**
+
 - `yamlContent` (String): YAML content from legacy versions.yml files
 - `processName` (String, optional): Process name to assign (defaults to 'LEGACY')
 
 **Returns:**
+
 - `List<List>`: List of `[process, name, version]` tuples ready for topic channel processing
 
 **Usage Example:**
+
 ```nextflow
 include { convertLegacyYamlToEvalSyntax } from 'plugin/nf-core-utils'
 
@@ -159,6 +173,7 @@ channel.fromList(topicData).set { converted_versions_ch }
 ```
 
 **File Migration Example:**
+
 ```nextflow
 // Migrate existing versions.yml files to topic format
 def legacyVersionsFile = file("legacy_versions.yml")
@@ -179,18 +194,22 @@ channel.fromList(migratedVersions)
 Converts topic channel eval syntax data back to YAML format for reporting and MultiQC integration. Essential for generating traditional version reports from modern topic channels.
 
 **Function Signature:**
+
 ```nextflow
 String generateYamlFromEvalSyntax(List<List> evalData, boolean includeWorkflow = true)
 ```
 
 **Parameters:**
+
 - `evalData` (List<List>): Topic channel data in `[process, name, version]` format
 - `includeWorkflow` (boolean, optional): Include workflow version information (defaults to true)
 
 **Returns:**
+
 - `String`: YAML string suitable for MultiQC and reporting
 
 **Usage Example:**
+
 ```nextflow
 include { generateYamlFromEvalSyntax } from 'plugin/nf-core-utils'
 
@@ -201,27 +220,28 @@ workflow {
         ['MULTIQC', 'multiqc', '1.12'],
         ['MULTIQC', 'python', '3.9.0']
     ]
-    
+
     // Generate YAML for reporting
     def versionsYaml = generateYamlFromEvalSyntax(topicVersions, true)
-    
+
     // Write to MultiQC-compatible file
     file("${params.outdir}/pipeline_info/software_versions.yml").text = versionsYaml
 }
 ```
 
 **MultiQC Integration:**
+
 ```nextflow
 // Generate versions file for MultiQC
 workflow {
     // Collect all topic versions
     def allVersions = ch_versions.collect()
-    
+
     allVersions.map { versions ->
         def yamlContent = generateYamlFromEvalSyntax(versions)
         return tuple('software_versions.yml', yamlContent)
     }.set { ch_versions_yaml }
-    
+
     // Use in MultiQC process
     MULTIQC(
         multiqc_files.mix(ch_versions_yaml).collect()
@@ -237,55 +257,60 @@ workflow {
 Processes version information exclusively from topic channel format. This is the pure modern approach for pipelines that have fully migrated to topic channels.
 
 **Function Signature:**
+
 ```nextflow
 String processVersionsFromTopic(List<List> topicData)
 ```
 
 **Parameters:**
+
 - `topicData` (List<List>): Topic channel data in `[process, name, version]` format
 
 **Returns:**
+
 - `String`: YAML string with processed versions including workflow metadata
 
 **Usage Example:**
+
 ```nextflow
 include { processVersionsFromTopic } from 'plugin/nf-core-utils'
 
 workflow {
     // Pure topic channel approach
     def versions_ch = channel.empty()
-    
+
     FASTQC(samples)
     MULTIQC(reports)
-    
+
     versions_ch = versions_ch.mix(FASTQC.out.versions)
     versions_ch = versions_ch.mix(MULTIQC.out.versions)
-    
+
     // Process topic versions
     def versionsYaml = processVersionsFromTopic(versions_ch.collect())
-    
+
     // Output for MultiQC
     file("${params.outdir}/pipeline_info/software_versions.yml").text = versionsYaml
 }
 ```
 
 **Modern Pipeline Pattern:**
+
 ```nextflow
 // Stage 3: Fully modern topic channel approach
 workflow {
     ch_versions = channel.empty()
-    
+
     // All processes emit to versions topic
     PROCESS_A(input_a)
     PROCESS_B(input_b)
     PROCESS_C(input_c)
-    
+
     // Collect all versions
     ch_versions = ch_versions
         .mix(PROCESS_A.out.versions)
         .mix(PROCESS_B.out.versions)
         .mix(PROCESS_C.out.versions)
-    
+
     // Generate final versions report
     ch_versions.collect().map { versions ->
         processVersionsFromTopic(versions)
@@ -301,17 +326,21 @@ workflow {
 Processes version information exclusively from traditional YAML files. This maintains support for legacy pipelines and processes that haven't yet migrated to topic channels.
 
 **Function Signature:**
+
 ```nextflow
 String processVersionsFromFile(List<String> versionsFiles)
 ```
 
 **Parameters:**
+
 - `versionsFiles` (List<String>): List of paths to `versions.yml` files
 
 **Returns:**
+
 - `String`: YAML string with processed versions including workflow metadata
 
 **Usage Example:**
+
 ```nextflow
 include { processVersionsFromFile } from 'plugin/nf-core-utils'
 
@@ -319,31 +348,32 @@ include { processVersionsFromFile } from 'plugin/nf-core-utils'
 workflow {
     LEGACY_PROCESS_A(input_a)
     LEGACY_PROCESS_B(input_b)
-    
+
     // Collect file paths
     def versionFiles = [
         'work/process_a/versions.yml',
         'work/process_b/versions.yml'
     ]
-    
+
     // Process legacy versions
     def versionsYaml = processVersionsFromFile(versionFiles)
-    
+
     file("${params.outdir}/pipeline_info/software_versions.yml").text = versionsYaml
 }
 ```
 
 **File Collection Pattern:**
+
 ```nextflow
 // Collect versions from legacy processes
 workflow {
     LEGACY_PROCESS(samples)
-    
+
     // Collect all versions.yml files
     def version_files = LEGACY_PROCESS.out.versions
         .collect()
         .map { files -> files.collect { it.toString() } }
-    
+
     version_files.map { files ->
         processVersionsFromFile(files)
     }.set { ch_versions_yaml }
@@ -358,31 +388,35 @@ workflow {
 Converts workflow metadata to topic channel format, enabling consistent version handling across all pipeline components. Useful for including workflow version in topic channel processing.
 
 **Function Signature:**
+
 ```nextflow
 List<List> workflowVersionToChannel()
 ```
 
 **Parameters:**
+
 - None (uses session context automatically)
 
 **Returns:**
+
 - `List<List>`: Workflow information in `[process, name, version]` format
 
 **Usage Example:**
+
 ```nextflow
 include { workflowVersionToChannel } from 'plugin/nf-core-utils'
 
 workflow {
     // Get workflow version in topic format
     def workflowVersions = workflowVersionToChannel()
-    
+
     // Combine with process versions
     def allVersions = ch_process_versions
         .collect()
-        .map { processVersions -> 
+        .map { processVersions ->
             processVersions + workflowVersions
         }
-    
+
     // Use in reporting
     allVersions.map { versions ->
         generateYamlFromEvalSyntax(versions)
@@ -391,21 +425,22 @@ workflow {
 ```
 
 **Complete Topic Channel Integration:**
+
 ```nextflow
 // Include workflow metadata in topic channel processing
 workflow {
     ch_versions = channel.empty()
-    
+
     // Add workflow version to versions channel
     ch_versions = ch_versions.mix(
         channel.fromList(workflowVersionToChannel())
     )
-    
+
     // Add process versions
     ch_versions = ch_versions
         .mix(PROCESS_A.out.versions)
         .mix(PROCESS_B.out.versions)
-    
+
     // Process all versions together
     ch_versions.collect().map { versions ->
         processVersionsFromTopic(versions)
@@ -426,7 +461,7 @@ Traditional approach using `versions.yml` files:
 process FASTQC {
     output:
     path "versions.yml", emit: versions
-    
+
     script:
     """
     echo 'FASTQC:' > versions.yml
@@ -436,7 +471,7 @@ process FASTQC {
 
 workflow {
     FASTQC(samples)
-    
+
     // Process legacy versions
     def versionsYaml = processVersionsFromFile(FASTQC.out.versions.collect())
 }
@@ -451,16 +486,16 @@ Gradual migration supporting both formats:
 workflow {
     // Modern processes using topic channels
     MODERN_PROCESS(input_modern)
-    
+
     // Legacy processes still using files
     LEGACY_PROCESS(input_legacy)
-    
+
     // Combine both approaches
     def topicVersions = MODERN_PROCESS.out.versions.collect()
     def legacyFiles = LEGACY_PROCESS.out.versions.collect()
-    
+
     def allVersions = processMixedVersionSources(topicVersions, legacyFiles)
-    
+
     file("${params.outdir}/pipeline_info/software_versions.yml").text = allVersions
 }
 ```
@@ -474,7 +509,7 @@ Fully migrated to topic channels:
 process FASTQC {
     output:
     tuple val('FASTQC'), val('fastqc'), val('0.11.9'), emit: versions
-    
+
     script:
     """
     fastqc --version
@@ -483,10 +518,10 @@ process FASTQC {
 
 workflow {
     ch_versions = channel.empty()
-    
+
     FASTQC(samples)
     ch_versions = ch_versions.mix(FASTQC.out.versions)
-    
+
     // Process modern versions
     def versionsYaml = processVersionsFromTopic(ch_versions.collect())
 }
@@ -505,13 +540,13 @@ Migrate modules gradually to avoid disruption:
 workflow {
     // Phase 1: Identify high-priority modules
     CRITICAL_PROCESS(input)  // Migrate first
-    
+
     // Phase 2: Convert supporting modules
     SECONDARY_PROCESS(input)  // Migrate second
-    
+
     // Phase 3: Handle legacy modules
     LEGACY_PROCESS(input)  // Migrate last
-    
+
     // Use mixed processing during transition
     def versions = processMixedVersionSources(
         modern_versions.collect(),
@@ -529,7 +564,7 @@ Ensure consistent version extraction across modules:
 process EXAMPLE {
     output:
     tuple val('EXAMPLE'), val('tool_name'), val('${task.container.split(':')[-1]}'), emit: versions
-    
+
     script:
     """
     tool_name --version | head -1
@@ -618,25 +653,25 @@ workflow {
     // Initialize version tracking
     ch_versions = channel.empty()
     log.info "Starting ${workflow.manifest.name} ${getWorkflowVersion()}"
-    
+
     // Modern processes with topic channel versions
     FASTQC(samples)
     MULTIQC(reports)
-    
+
     ch_versions = ch_versions
         .mix(FASTQC.out.versions)
         .mix(MULTIQC.out.versions)
-    
+
     // Legacy processes (during migration)
     LEGACY_TOOL(data)
-    
+
     // Combine modern and legacy versions
     def topicVersions = ch_versions.collect()
     def legacyFiles = LEGACY_TOOL.out.versions.collect()
-    
+
     // Generate comprehensive versions report
     def versionsYaml = processMixedVersionSources(topicVersions, legacyFiles)
-    
+
     // Write versions file for MultiQC
     publishDir "${params.outdir}/pipeline_info", mode: 'copy'
     file("software_versions.yml").text = versionsYaml
@@ -652,23 +687,23 @@ include { processVersionsFromTopic; workflowVersionToChannel } from 'plugin/nf-c
 workflow {
     ch_versions = channel.empty()
     ch_multiqc_files = channel.empty()
-    
+
     // Add workflow metadata to versions
     ch_versions = ch_versions.mix(
         channel.fromList(workflowVersionToChannel())
     )
-    
+
     // Process modules
     PROCESS_MODULE(samples)
     ch_versions = ch_versions.mix(PROCESS_MODULE.out.versions)
     ch_multiqc_files = ch_multiqc_files.mix(PROCESS_MODULE.out.reports)
-    
+
     // Generate versions YAML for MultiQC
     ch_versions.collect().map { versions ->
         def yamlContent = processVersionsFromTopic(versions)
         return tuple('software_versions_mqc.yaml', yamlContent)
     }.set { ch_versions_mqc }
-    
+
     // Run MultiQC with versions
     MULTIQC(
         ch_multiqc_files.mix(ch_versions_mqc).collect(),
@@ -686,12 +721,14 @@ workflow {
 ### Issue: Empty Version Output
 
 **Problem:**
+
 ```nextflow
 def versionsYaml = processVersionsFromTopic([])
 // Result: Only contains workflow metadata
 ```
 
 **Solution:**
+
 ```nextflow
 // Verify version channels are populated
 ch_versions.view { "Collected version: $it" }
@@ -706,6 +743,7 @@ ch_versions.collect().view { "All versions: $it" }
 Converting between formats produces malformed YAML
 
 **Solution:**
+
 ```nextflow
 // Validate input formats
 def topicVersions = ch_versions.collect().map { versions ->
@@ -723,6 +761,7 @@ def versionsYaml = processVersionsFromTopic(topicVersions)
 Version files not found during processing
 
 **Solution:**
+
 ```nextflow
 // Verify file existence before processing
 def validFiles = versionsFiles.findAll { file ->
@@ -756,7 +795,7 @@ workflow {
     // Process in parallel where possible
     def topicVersionsFuture = ch_topic_versions.collect()
     def legacyFilesFuture = ch_legacy_files.collect()
-    
+
     // Combine results efficiently
     tuple(topicVersionsFuture, legacyFilesFuture).map { topic, files ->
         processMixedVersionSources(topic, files)

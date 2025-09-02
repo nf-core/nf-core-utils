@@ -2,7 +2,7 @@
 
 /*
  * E2E validation test for nf-core-utils plugin version utilities
- * 
+ *
  * This test demonstrates the migration from local utility functions
  * to plugin-based utilities while keeping channel logic in the pipeline.
  * It validates the key functions: getWorkflowVersion and processVersionsFromFile.
@@ -118,7 +118,7 @@ workflow {
 
             ✅ Plugin loaded successfully
             ✅ Version utility functions tested
-            ✅ Channel logic preserved in pipeline  
+            ✅ Channel logic preserved in pipeline
             ✅ Migration pattern validated
 
             This test demonstrates:
