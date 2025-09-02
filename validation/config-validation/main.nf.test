@@ -29,9 +29,9 @@ nextflow_pipeline {
             assert workflow.success
             
             // Should have conda channel warnings in stderr (this is expected)
-            // assert workflow.stderr.toString().contains("Conda configuration") || 
-            //        workflow.stderr.toString().contains("conda-forge") ||
-            //        workflow.stderr.toString().contains("bioconda")
+            assert workflow.stderr.toString().contains("Conda configuration") || 
+                   workflow.stderr.toString().contains("conda-forge") ||
+                   workflow.stderr.toString().contains("bioconda")
             
             // Snapshot conda-related outputs
             assert snapshot(
