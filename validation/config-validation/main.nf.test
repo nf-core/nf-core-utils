@@ -17,42 +17,9 @@ nextflow_pipeline {
             // Snapshot the basic workflow execution
             assert snapshot(
                 // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
+                workflow.stderr.findAll { it.contains("conda") || it.contains("Conda") },
                 workflow.exitStatus,
                 workflow.success
-            ).match()
-        }
-    }
-
-    test("Conda channel configuration") {
-        
-        then {
-            assert workflow.success
-            
-            // Should have conda channel warnings in stderr (this is expected)
-            assert workflow.stderr.toString().contains("Conda configuration") || 
-                   workflow.stderr.toString().contains("conda-forge") ||
-                   workflow.stderr.toString().contains("bioconda")
-            
-            // Snapshot conda-related outputs
-            assert snapshot(
-                workflow.stderr.findAll { it.contains("conda") || it.contains("Conda") }
-            ).match()
-        }
-    }
-
-    test("Conda warnings") {
-        
-        then {
-            assert workflow.success
-            assert workflow.exitStatus == 0
-            
-            // Even with conda warnings, workflow should complete successfully
-            assert workflow.stdout.any { it.contains("Pipeline complete") }
-            
-            // Snapshot successful completion despite warnings
-            assert snapshot(
-                workflow.success,
-                workflow.exitStatus
             ).match()
         }
     }

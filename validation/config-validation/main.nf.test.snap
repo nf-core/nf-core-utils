@@ -1,16 +1,5 @@
 {
-    "Conda warnings": {
-        "content": [
-            true,
-            0
-        ],
-        "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
-        },
-        "timestamp": "2025-09-01T18:43:01.150456117"
-    },
-    "Conda channel configuration": {
+    "Validate configuration functions": {
         "content": [
             [
                 "    There is a problem with your Conda configuration!",
@@ -21,16 +10,7 @@
                 "    You will need to set-up the conda-forge and bioconda channels correctly.",
                 "    Please refer to https://bioconda.github.io/",
                 "    [conda-forge, bioconda]"
-            ]
-        ],
-        "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
-        },
-        "timestamp": "2025-09-01T18:53:24.352062965"
-    },
-    "Validate configuration functions": {
-        "content": [
+            ],
             0,
             true
         ],
