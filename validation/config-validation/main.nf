@@ -78,8 +78,8 @@ workflow {
     try {
         log.info("Testing monochrome output (default)")
         def valid_args = ['nextflow', 'run', 'main.nf', '-profile', 'docker']
-        checkProfileProvided(valid_args, true)
         // Explicit monochrome
+        checkProfileProvided(valid_args, true)
         log.info("✅ Monochrome mode test completed")
     }
     catch (Exception e) {
@@ -90,8 +90,8 @@ workflow {
     try {
         log.info("Testing color-enabled output")
         def valid_args = ['nextflow', 'run', 'main.nf', '-profile', 'docker']
-        checkProfileProvided(valid_args, false)
         // Enable colors
+        checkProfileProvided(valid_args, false)
         log.info("✅ Color-enabled mode test completed")
     }
     catch (Exception e) {

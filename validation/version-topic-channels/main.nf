@@ -49,6 +49,8 @@ workflow {
     log.info("=== Testing migrated version processing pipeline ===")
 
     // This replicates the migrated pipeline code pattern
+    // Channel logic stays in pipeline
+    // Use plugin utilities to process versions
     ch_processed_versions = ch_version_files
         .unique()
         .map { version_file ->
@@ -61,10 +63,10 @@ workflow {
                 log.info("Adding workflow version: ${workflow_version_}")
                 // Format as YAML to match legacy workflowVersionToYAML() output
                 """
-                    Workflow:
-                        ${workflow.manifest.name ?: 'nf-core-utils-validation'}: ${workflow_version_}
-                        Nextflow: ${workflow.nextflow.version}
-                    """.stripIndent().trim()
+                Workflow:
+                    ${workflow.manifest.name ?: 'nf-core-utils-validation'}: ${workflow_version_}
+                    Nextflow: ${workflow.nextflow.version}
+                """.stripIndent().trim()
             }
         )
 
