@@ -1,10 +1,6 @@
 {
-    "pipeline_utilities_success": {
+    "Pipeline utilities": {
         "content": [
-            [
-                "Pipeline is starting! \ud83d\ude80",
-                "Pipeline complete! \ud83d\udc4b"
-            ],
             0,
             true
         ],
@@ -12,28 +8,6 @@
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-08-22T11:58:57.522014"
-    },
-    "utilities_validation_success": {
-        "content": [
-            true,
-            0
-        ],
-        "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
-        },
-        "timestamp": "2025-08-22T11:59:03.385702"
-    },
-    "utility_testing_complete": {
-        "content": [
-            true,
-            0
-        ],
-        "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
-        },
-        "timestamp": "2025-08-22T11:59:00.426522"
+        "timestamp": "2025-09-01T18:53:47.192116437"
     }
 }

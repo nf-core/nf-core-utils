@@ -1,5 +1,5 @@
 {
-    "conda_configuration_output": {
+    "Validate configuration functions": {
         "content": [
             [
                 "    There is a problem with your Conda configuration!",
@@ -10,55 +10,6 @@
                 "    You will need to set-up the conda-forge and bioconda channels correctly.",
                 "    Please refer to https://bioconda.github.io/",
                 "    [conda-forge, bioconda]"
-            ]
-        ],
-        "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
-        },
-        "timestamp": "2025-08-26T14:26:01.476599"
-    },
-    "color_integration_test": {
-        "content": [
-            [
-                "Pipeline is starting! \ud83d\ude80",
-                "Pipeline complete! \ud83d\udc4b"
-            ],
-            0
-        ],
-        "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
-        },
-        "timestamp": "2025-08-26T14:25:44.018484"
-    },
-    "color_functionality_test": {
-        "content": [
-            [
-                "Pipeline is starting! \ud83d\ude80",
-                "Pipeline complete! \ud83d\udc4b"
-            ],
-            0
-        ],
-        "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
-        },
-        "timestamp": "2025-08-26T14:25:40.781344"
-    },
-    "successful_completion": {
-        "content": [true, 0],
-        "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
-        },
-        "timestamp": "2025-08-22T11:57:45.206638"
-    },
-    "config_validation_success": {
-        "content": [
-            [
-                "Pipeline is starting! \ud83d\ude80",
-                "Pipeline complete! \ud83d\udc4b"
             ],
             0,
             true
@@ -67,6 +18,26 @@
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-08-22T11:57:38.299299"
+        "timestamp": "2025-09-01T18:42:52.137501701"
+    },
+    "monochrome_logs params disabled": {
+        "content": [
+            0
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "25.04.6"
+        },
+        "timestamp": "2025-09-01T18:53:39.190207961"
+    },
+    "monochrome_logs params enabled": {
+        "content": [
+            0
+        ],
+        "meta": {
+            "nf-test": "0.9.2",
+            "nextflow": "25.04.6"
+        },
+        "timestamp": "2025-09-01T18:53:34.022556008"
     }
 }

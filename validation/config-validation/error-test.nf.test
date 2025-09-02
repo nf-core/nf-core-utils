@@ -4,7 +4,7 @@ nextflow_pipeline {
     script "../config-validation/error-test.nf"
     config "../config-validation/nextflow.config"
 
-    test("Should fail with monochrome error message") {
+    test("Error output - Monochrome") {
         
         when {
             params {
@@ -13,7 +13,7 @@ nextflow_pipeline {
         }
 
         then {
-            assert !workflow.success
+            assert workflow.failed
             assert workflow.exitStatus != 0
             
             // Should contain error message without color codes
@@ -31,11 +31,11 @@ nextflow_pipeline {
             // Snapshot monochrome error output
             assert snapshot(
                 workflow.stdout.findAll { it.contains("ERROR") || it.contains("HINT") }
-            ).match("monochrome_error_output")
+            ).match()
         }
     }
 
-    test("Should fail with colorized error message") {
+    test("Error output - Color") {
         
         when {
             params {
@@ -44,7 +44,7 @@ nextflow_pipeline {
         }
 
         then {
-            assert !workflow.success
+            assert workflow.failed
             assert workflow.exitStatus != 0
             
             // Should contain error message with color codes
@@ -63,7 +63,7 @@ nextflow_pipeline {
             // Snapshot color error output
             assert snapshot(
                 workflow.stdout.findAll { it.contains("ERROR") || it.contains("HINT") }
-            ).match("color_error_output")
+            ).match()
         }
     }
 }

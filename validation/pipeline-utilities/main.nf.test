@@ -4,14 +4,8 @@ nextflow_pipeline {
     script "../pipeline-utilities/main.nf"
     config "../pipeline-utilities/nextflow.config"
 
-    test("Should execute pipeline utility functions successfully") {
+    test("Pipeline utilities") {
         
-        when {
-            params {
-                // Use test parameters for pipeline utilities
-            }
-        }
-
         then {
             assert workflow.success
             assert workflow.exitStatus == 0
@@ -22,55 +16,10 @@ nextflow_pipeline {
             
             // Snapshot core pipeline utilities outputs
             assert snapshot(
-                workflow.stdout,
+                // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
                 workflow.exitStatus,
                 workflow.success
-            ).match("pipeline_utilities_success")
-        }
-    }
-
-    test("Should handle utility function testing") {
-        
-        when {
-            params {
-                // Utility function testing
-            }
-        }
-
-        then {
-            assert workflow.success
-            
-            // Verify workflow completed successfully
-            assert workflow.stdout.any { it.contains("Pipeline complete") }
-            
-            // Snapshot utility testing results
-            assert snapshot(
-                workflow.success,
-                workflow.exitStatus
-            ).match("utility_testing_complete")
-        }
-    }
-
-    test("Should complete pipeline utilities validation without errors") {
-        
-        when {
-            params {
-                // Validation completion test
-            }
-        }
-
-        then {
-            assert workflow.success
-            assert workflow.exitStatus == 0
-            
-            // Pipeline should complete successfully
-            assert workflow.stdout.any { it.contains("Pipeline complete") }
-            
-            // Snapshot successful execution
-            assert snapshot(
-                workflow.success,
-                workflow.exitStatus
-            ).match("utilities_validation_success")
+            ).match()
         }
     }
 }
