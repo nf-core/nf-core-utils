@@ -1,18 +1,18 @@
-id: 'methods-description'
-section_name: 'Pipeline Methods Description'
-section_href: 'https://nf-co.re/pipeline'
-plot_type: 'html'
+id: "methods-description"
+section_name: "Pipeline Methods Description"
+section_href: "https://nf-co.re/pipeline"
+plot_type: "html"
 description: |
-    <h4>Methods</h4>
-    <p>Data was processed using the nf-core pipeline ${manifest_map.name} v${manifest_map.version} ${doi_text}</p>
-    <p>${tool_citations}</p>
-    
-    <h4>Bibliography</h4>
-    <ol>
-    <li>The nf-core framework for community-curated bioinformatics pipelines.
-    <br>Philip Ewels, Alexander Peltzer, Sven Fillinger, Harshil Patel, Johannes Alneberg, Andreas Wilm, Maxime Ulysse Garcia, Paolo Di Tommaso & Sven Nahnsen.
-    <br><i>Nat Biotechnol.</i> 2020 Feb 13. doi: <a href="https://doi.org/10.1038/s41587-020-0439-x">10.1038/s41587-020-0439-x</a>.
-    </li>
-    ${tool_bibliography}
-    ${nodoi_text}
-    </ol> 
+  <h4>Methods</h4>
+  <p>Data was processed using the nf-core pipeline ${manifest_map.name} v${manifest_map.version} ${doi_text}</p>
+  <p>${tool_citations}</p>
+
+  <h4>Bibliography</h4>
+  <ol>
+  <li>The nf-core framework for community-curated bioinformatics pipelines.
+  <br>Philip Ewels, Alexander Peltzer, Sven Fillinger, Harshil Patel, Johannes Alneberg, Andreas Wilm, Maxime Ulysse Garcia, Paolo Di Tommaso & Sven Nahnsen.
+  <br><i>Nat Biotechnol.</i> 2020 Feb 13. doi: <a href="https://doi.org/10.1038/s41587-020-0439-x">10.1038/s41587-020-0439-x</a>.
+  </li>
+  ${tool_bibliography}
+  ${nodoi_text}
+  </ol>

@@ -2,7 +2,7 @@
 
 /*
  * Error condition test for nf-core-utils plugin color formatting
- * 
+ *
  * This test specifically validates error conditions and color formatting
  * It is expected to fail with specific error messages to test the color functionality
  */

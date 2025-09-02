@@ -5,9 +5,11 @@ This validation test demonstrates and validates the core pipeline utility functi
 ## Functions Tested
 
 ### `getWorkflowVersion(version, commitId)`
+
 **Purpose**: Generate consistent workflow version strings for pipeline reporting and logging.
 
 **Validation scenarios**:
+
 - Default version (from session/manifest)
 - Explicit version string
 - Version with commit ID integration
@@ -15,6 +17,7 @@ This validation test demonstrates and validates the core pipeline utility functi
 - Edge cases (null values, various formats)
 
 **Usage in fetchngs**:
+
 ```groovy
 include { getWorkflowVersion } from 'plugin/nf-core-utils'
 
@@ -23,9 +26,11 @@ def workflow_version = getWorkflowVersion(workflow.manifest.version, workflow.co
 ```
 
 ### `dumpParametersToJSON(outdir, params)`
+
 **Purpose**: Serialize pipeline parameters to a JSON file for provenance tracking and debugging.
 
 **Validation scenarios**:
+
 - Standard parameter sets (strings, numbers, booleans)
 - Complex nested parameters (maps, lists)
 - Edge cases (null values, empty parameters)
@@ -33,6 +38,7 @@ def workflow_version = getWorkflowVersion(workflow.manifest.version, workflow.co
 - Output directory handling
 
 **Usage in fetchngs**:
+
 ```groovy
 include { dumpParametersToJSON } from 'plugin/nf-core-utils'
 
@@ -43,16 +49,19 @@ dumpParametersToJSON(params.outdir, params)
 ## What This Test Validates
 
 ### 1. Function Correctness
+
 - **Version string formatting**: Proper `v` prefix handling, commit ID integration
 - **JSON serialization**: Correct parameter serialization and file creation
 - **Edge case handling**: Null parameters, empty values, missing directories
 
 ### 2. Output Validation
+
 - **File creation**: JSON parameter files created in correct locations
 - **Content validation**: JSON structure and parameter preservation
 - **Format consistency**: Version strings follow expected patterns
 
 ### 3. Integration Readiness
+
 - **Real-world parameters**: Uses parameter sets similar to actual fetchngs pipeline
 - **Error handling**: Graceful handling of edge cases and invalid inputs
 - **Performance**: Efficient execution suitable for pipeline initialization
@@ -60,6 +69,7 @@ dumpParametersToJSON(params.outdir, params)
 ## Running the Test
 
 ### Individual Execution
+
 ```bash
 # Basic validation
 nextflow run validation/pipeline-utilities/ -plugins nf-core-utils@0.3.0
@@ -72,6 +82,7 @@ nextflow run validation/pipeline-utilities/ -plugins nf-core-utils@0.3.0 -profil
 ```
 
 ### Via Validation Suite
+
 ```bash
 # Run all validation tests including this one
 ./validation/validate-all.sh
@@ -83,7 +94,9 @@ nextflow run validation/pipeline-utilities/ -plugins nf-core-utils@0.3.0 -profil
 ## Expected Outputs
 
 ### Console Output
+
 The test provides detailed logging of all validation steps:
+
 ```
 === Testing getWorkflowVersion() function ===
 Default workflow version: v1.12.0
@@ -99,11 +112,13 @@ Dumping parameters to JSON in: /path/to/validation_output
 ```
 
 ### Generated Files
+
 - `validation_output/params.json` - Serialized pipeline parameters
 - `validation_results/execution_*.html` - Nextflow execution reports
 - Log files with detailed validation results
 
 ### Validation Checks
+
 - ✅ Version string format validation (prefixes, commit integration)
 - ✅ JSON file creation and content validation
 - ✅ Parameter serialization accuracy
@@ -115,6 +130,7 @@ Dumping parameters to JSON in: /path/to/validation_output
 This test demonstrates the exact usage patterns found in the fetchngs pipeline:
 
 ### Pipeline Initialization Context
+
 ```groovy
 // From fetchngs PIPELINE_INITIALISATION workflow
 include { dumpParametersToJSON } from 'plugin/nf-core-utils'
@@ -122,19 +138,21 @@ include { getWorkflowVersion   } from 'plugin/nf-core-utils'
 
 workflow PIPELINE_INITIALISATION {
     // ... other initialization steps ...
-    
+
     // Dump parameters for provenance
     dumpParametersToJSON(params.outdir, params)
-    
+
     // Generate version string for reporting
     def version = getWorkflowVersion(workflow.manifest.version, workflow.commitId)
-    
+
     // ... continue with pipeline setup ...
 }
 ```
 
 ### Parameter Sets
+
 The test uses realistic parameter sets matching fetchngs:
+
 - SRA/ENA download configuration
 - Reference genome settings
 - Resource limitations
@@ -147,6 +165,6 @@ The test uses realistic parameter sets matching fetchngs:
 ✅ **Provenance**: Reliable parameter dumping for workflow reproducibility  
 ✅ **Version tracking**: Proper version string generation with commit integration  
 ✅ **Error resilience**: Graceful handling of edge cases and invalid inputs  
-✅ **Performance**: Efficient execution suitable for pipeline initialization  
+✅ **Performance**: Efficient execution suitable for pipeline initialization
 
 This validation ensures the pipeline utility functions are robust, reliable, and ready for production use in fetchngs and other nf-core pipelines.

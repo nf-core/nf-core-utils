@@ -39,12 +39,14 @@ topic-channel-citations/
 ```
 
 ### Modules
+
 - **`modules/local/fastqc/`**: Quality control process with co-located metadata
 - **`modules/local/multiqc/`**: Report aggregation process with co-located metadata
 - **`modules/local/samtools/view/`**: SAM/BAM processing with co-located metadata
 - **`modules/local/star/align/`**: Conditional alignment process (controlled by `params.run_optional`)
 
 ### Citation Flow
+
 ```
 Module Execution → getCitation("${moduleDir}/meta.yml") → Topic Channel → Collect → Auto-Format → Reports
 ```
@@ -52,13 +54,14 @@ Module Execution → getCitation("${moduleDir}/meta.yml") → Topic Channel → 
 ## Usage Pattern
 
 ### In Module Definition
+
 ```nextflow
 // modules/local/fastqc/main.nf
 process FASTQC {
     output:
     path "*.html", emit: html
     val citation_data, topic: citation
-    
+
     script:
     citation_data = getCitation("${moduleDir}/meta.yml")  // <-- Co-located meta.yml
     """
@@ -68,6 +71,7 @@ process FASTQC {
 ```
 
 ### In Main Workflow
+
 ```nextflow
 // Import modules
 include { FASTQC } from './modules/local/fastqc/main'
@@ -78,10 +82,10 @@ include { STAR_ALIGN } from './modules/local/star/align/main'
 workflow {
     // Use modules
     fastqc_out = FASTQC(samples)
-    
+
     // Collect citations automatically
     ch_citations = channel.topic('citation').collect()
-    
+
     // Generate formatted output
     final_citations = ch_citations.map { citations ->
         [
@@ -98,7 +102,7 @@ workflow {
 # Build and install plugin
 make install
 
-# Run validation test 
+# Run validation test
 cd validation/topic-channel-citations
 nextflow run . -plugins nf-core-utils@0.3.0
 
@@ -109,6 +113,7 @@ nextflow run . -plugins nf-core-utils@0.3.0 --run_optional true
 ## Expected Output
 
 The test will:
+
 1. Execute processes that emit citations to topic channel
 2. Collect all citation data automatically
 3. Generate formatted citation text and bibliography
@@ -118,12 +123,14 @@ The test will:
 ## Benefits Demonstrated
 
 ### Citation Management Benefits
+
 - **Zero Maintenance**: Citations update automatically when modules change
 - **Runtime Accuracy**: Only executed tools appear in citations
 - **Clean Separation**: Citation logic separate from pipeline logic
 - **Error Resilient**: Handles missing or malformed meta.yml files gracefully
 
 ### nf-core Module Structure Benefits
+
 - **Realistic Organization**: Matches actual nf-core pipeline structure
 - **Co-located Metadata**: Each module's meta.yml is in the same directory as its main.nf
 - **Clear Module Boundaries**: Each tool is self-contained in its own directory
@@ -131,6 +138,7 @@ The test will:
 - **Maintainable**: Easy to understand, modify, and extend individual modules
 
 ### Development Experience
+
 - **Clear Citation Path**: `${moduleDir}/meta.yml` references are obvious and reliable
 - **Modular Testing**: Each module can be tested independently
 - **Standard Patterns**: Follows established nf-core conventions that developers know

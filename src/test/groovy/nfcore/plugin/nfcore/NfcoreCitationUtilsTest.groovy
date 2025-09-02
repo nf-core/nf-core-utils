@@ -272,7 +272,7 @@ ${tool_bibliography}
         plot_type: 'html'
         description: |
             This pipeline uses the following tools: ${tool_citations}
-            
+
             <h4>Bibliography</h4>
             <ol>
             ${tool_bibliography}
@@ -339,7 +339,7 @@ ${tool_bibliography}
     }
 
     // --- New Topic Channel Tests ---
-    
+
     def "processCitationsFromTopic should handle topic channel format"() {
         given:
         def topicData = [
@@ -551,7 +551,7 @@ ${tool_bibliography}
         then:
         result.size() == 3
         result.containsKey('tool_a')
-        result.containsKey('tool_b') 
+        result.containsKey('tool_b')
         result.containsKey('tool_c')
         result.tool_c.citation.contains('Valid tool')
     }
@@ -691,7 +691,7 @@ ${tool_bibliography}
         given:
         def topicCitations = [
             ['FASTQC', 'fastqc', [
-                doi: '10.1093/bioinformatics/btv033', 
+                doi: '10.1093/bioinformatics/btv033',
                 author: 'Andrews S',
                 year: 2010,
                 title: 'FastQC: Quality Control Tool',
@@ -745,7 +745,7 @@ ${tool_bibliography}
         then:
         result.contains('Tools used in the workflow included:')
         result.contains('tool_a')
-        result.contains('tool_b') 
+        result.contains('tool_b')
         result.contains('tool_c')
     }
 
@@ -775,11 +775,11 @@ ${tool_bibliography}
         def processACitations = NfcoreCitationUtils.getCitation(createMockMetaYml('fastqc'))
         def processBCitations = NfcoreCitationUtils.getCitation(createMockMetaYml('multiqc'))
         def processCCitations = NfcoreCitationUtils.getCitation(createMockMetaYml('samtools'))
-        
+
         // Combine as would happen in topic channel collection
         def allTopicCitations = []
         allTopicCitations.addAll(processACitations)
-        allTopicCitations.addAll(processBCitations) 
+        allTopicCitations.addAll(processBCitations)
         allTopicCitations.addAll(processCCitations)
 
         when:
@@ -791,7 +791,7 @@ ${tool_bibliography}
         citationText.contains('fastqc')
         citationText.contains('multiqc')
         citationText.contains('samtools')
-        
+
         bibliography.contains('<li>')
         bibliography.split('<li>').size() > 3  // Should have multiple bibliography entries
     }
@@ -835,4 +835,4 @@ ${tool_bibliography}
         tempFile.text = content
         return tempFile.absolutePath
     }
-} 
+}

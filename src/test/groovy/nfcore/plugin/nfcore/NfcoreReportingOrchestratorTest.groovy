@@ -51,7 +51,7 @@ class NfcoreReportingOrchestratorTest extends Specification {
         result.containsKey('tool_bibliography')
         result.containsKey('methods_description')
         result.containsKey('citations_map')
-        
+
         result.versions_yaml.contains('fastqc: 0.12.1')
         result.versions_yaml.contains("multiqc: '1.15'") || result.versions_yaml.contains('multiqc: 1.15')
         result.versions_yaml.contains('samtools: 1.17')
@@ -168,7 +168,7 @@ class NfcoreReportingOrchestratorTest extends Specification {
         !result.containsKey('tool_bibliography')
         !result.containsKey('methods_description')
         !result.containsKey('citations_map')
-        
+
         result.versions_yaml.contains('fastqc: 0.12.1')
         result.versions_yaml.contains("multiqc: '1.15'") || result.versions_yaml.contains('multiqc: 1.15')
         result.versions_yaml.contains('samtools: 1.17')
@@ -199,7 +199,7 @@ class NfcoreReportingOrchestratorTest extends Specification {
         result.containsKey('tool_bibliography')
         result.containsKey('methods_description')
         result.containsKey('citations_map')
-        
+
         result.tool_citations.contains('fastqc')
         result.tool_bibliography.contains('<li>')
         result.citations_map.size() > 0
@@ -258,4 +258,4 @@ class NfcoreReportingOrchestratorTest extends Specification {
         result.methods_description == ""
         result.citations_map.isEmpty()
     }
-} 
+}

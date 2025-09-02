@@ -5,15 +5,15 @@ nextflow_pipeline {
     config "../pipeline-utilities/nextflow.config"
 
     test("Pipeline utilities") {
-        
+
         then {
             assert workflow.success
             assert workflow.exitStatus == 0
-            
+
             // Verify basic pipeline execution markers (stdout is a list)
             assert workflow.stdout.any { it.contains("Pipeline is starting") }
             assert workflow.stdout.any { it.contains("Pipeline complete") }
-            
+
             // Snapshot core pipeline utilities outputs
             assert snapshot(
                 // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils

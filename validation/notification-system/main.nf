@@ -2,12 +2,12 @@
 
 /*
  * E2E validation test for nf-core-utils plugin notification system
- * 
+ *
  * This test validates the notification functions used in pipeline completion:
  * - completionEmail(): Send pipeline completion emails
- * - completionSummary(): Generate pipeline completion summaries  
+ * - completionSummary(): Generate pipeline completion summaries
  * - imNotification(): Send instant messenger (Slack/Teams) notifications
- * 
+ *
  * These functions are typically used in workflow completion handlers.
  */
 
@@ -104,7 +104,7 @@ workflow {
             log.warn("completionEmail test: ${e.message}")
         }
 
-        // Test 3: imNotification() function  
+        // Test 3: imNotification() function
         log.info("=== Testing imNotification() function ===")
         try {
             imNotification(
@@ -124,7 +124,7 @@ workflow {
             ===========================================
 
             ✅ completionSummary() - Pipeline completion logging tested
-            ✅ completionEmail() - Email notification functionality tested  
+            ✅ completionEmail() - Email notification functionality tested
             ✅ imNotification() - Instant messenger integration tested
 
             Notification system functions tested successfully! 🚀

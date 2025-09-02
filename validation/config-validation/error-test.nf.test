@@ -5,7 +5,7 @@ nextflow_pipeline {
     config "../config-validation/nextflow.config"
 
     test("Error output - Monochrome") {
-        
+
         when {
             params {
                 monochrome_logs = true
@@ -15,19 +15,19 @@ nextflow_pipeline {
         then {
             assert workflow.failed
             assert workflow.exitStatus != 0
-            
+
             // Should contain error message without color codes
             assert workflow.stdout.any { it.contains("Pipeline is starting") }
-            
+
             // Check stdout for the actual error message (error appears in stdout in nf-test)
             def errorMessage = workflow.stdout.join('\n')
             assert errorMessage.contains("trailing comma")
             assert errorMessage.contains("ERROR")
             assert errorMessage.contains("HINT")
-            
+
             // Should NOT contain ANSI color codes
             assert !errorMessage.contains('\033[')
-            
+
             // Snapshot monochrome error output
             assert snapshot(
                 workflow.stdout.findAll { it.contains("ERROR") || it.contains("HINT") }
@@ -36,7 +36,7 @@ nextflow_pipeline {
     }
 
     test("Error output - Color") {
-        
+
         when {
             params {
                 monochrome_logs = false
@@ -46,20 +46,20 @@ nextflow_pipeline {
         then {
             assert workflow.failed
             assert workflow.exitStatus != 0
-            
+
             // Should contain error message with color codes
             assert workflow.stdout.any { it.contains("Pipeline is starting") }
-            
+
             // Check stdout for the actual error message (error appears in stdout in nf-test)
             def errorMessage = workflow.stdout.join('\n')
             assert errorMessage.contains("trailing comma")
             assert errorMessage.contains("ERROR")
             assert errorMessage.contains("HINT")
-            
+
             // Note: Color codes may not be visible in test output due to nf-test capturing
             // The important thing is that the function accepts the parameter without errors
             // In real usage, colors would be displayed based on terminal capabilities
-            
+
             // Snapshot color error output
             assert snapshot(
                 workflow.stdout.findAll { it.contains("ERROR") || it.contains("HINT") }

@@ -5,6 +5,7 @@ Configuration validation is the first line of defense against common pipeline ex
 ## 1. Overview
 
 Poor configuration is one of the leading causes of pipeline failures and user frustration. Users often:
+
 - Run pipelines without custom profiles, leading to suboptimal resource allocation
 - Make syntax errors in profile specifications
 - Provide positional arguments that are silently ignored
@@ -15,6 +16,7 @@ The `NfcoreConfigValidator` utility addresses these issues by providing proactiv
 ### 1.1. What You'll Learn
 
 By the end of this tutorial, you'll understand how to:
+
 - Implement configuration validation that prevents common user errors
 - Provide helpful, color-coded feedback messages
 - Guide users toward nf-core configuration best practices
@@ -23,6 +25,7 @@ By the end of this tutorial, you'll understand how to:
 ### 1.2. Core Validation Functions
 
 The utility provides two essential validation functions:
+
 - **`checkConfigProvided()`**: Validates that custom configuration or profiles are being used
 - **`checkProfileProvided(args, monochromeLogs)`**: Validates command-line profile arguments and warns about common mistakes
 
@@ -39,7 +42,7 @@ Consider what happens when users run pipelines without proper configuration:
 nextflow run nf-core/rnaseq --input samples.csv --outdir results
 
 # User provides conflicting arguments
-nextflow run nf-core/rnaseq --input samples.csv -profile docker, 
+nextflow run nf-core/rnaseq --input samples.csv -profile docker,
 
 # User provides positional arguments that are ignored
 nextflow run nf-core/rnaseq samples.csv --outdir results
@@ -99,7 +102,7 @@ This function encourages users to provide custom configurations for optimal perf
 Nextflow can be configured in several ways, listed in order of preference:
 
 1. **Institutional configs** (best): Pre-configured settings for specific institutions
-2. **Custom profiles**: User-defined profiles for specific environments  
+2. **Custom profiles**: User-defined profiles for specific environments
 3. **Custom config files**: Project-specific configuration files
 4. **Default settings** (suboptimal): Basic Nextflow defaults
 
@@ -130,12 +133,12 @@ workflow {
 boolean checkConfigProvided()
 ```
 
-| Aspect | Details |
-|--------|---------|
-| **Parameters** | None (uses session context automatically) |
-| **Returns** | `boolean` - `true` if custom configuration detected |
-| **Session Dependencies** | Requires Nextflow session context |
-| **Side Effects** | Logs warning messages if no custom config found |
+| Aspect                   | Details                                             |
+| ------------------------ | --------------------------------------------------- |
+| **Parameters**           | None (uses session context automatically)           |
+| **Returns**              | `boolean` - `true` if custom configuration detected |
+| **Session Dependencies** | Requires Nextflow session context                   |
+| **Side Effects**         | Logs warning messages if no custom config found     |
 
 #### Advanced Configuration Guidance
 
@@ -153,22 +156,22 @@ if (!hasCustomConfig) {
     ==========================================
     NO CUSTOM CONFIGURATION DETECTED
     ==========================================
-    
+
     For optimal performance, consider:
-    
+
     1. Institutional configs:
        nextflow run pipeline.nf -profile myInstitution
-    
+
     2. Container profiles:
        nextflow run pipeline.nf -profile docker
        nextflow run pipeline.nf -profile singularity
-    
+
     3. Custom config files:
        nextflow run pipeline.nf -c my_config.config
-    
+
     4. HPC profiles:
        nextflow run pipeline.nf -profile test,slurm,docker
-    
+
     See: https://nf-co.re/docs/usage/configuration
     ==========================================
     """
@@ -192,7 +195,7 @@ Users frequently make syntax errors when specifying profiles:
 # ❌ Trailing comma (causes parsing errors)
 nextflow run pipeline.nf -profile docker,
 
-# ❌ Space-separated values (only first is used)  
+# ❌ Space-separated values (only first is used)
 nextflow run pipeline.nf -profile test docker
 
 # ❌ Positional arguments (silently ignored)
@@ -238,12 +241,14 @@ workflow {
 ```
 
 **Without colors (default):**
+
 ```console title="Monochrome error output"
 ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!
 HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.
 ```
 
 **With colors enabled:**
+
 ```console title="Color error output"
 [31mERROR[0m ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!
 [33mHINT[0m: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.
@@ -255,10 +260,10 @@ HINT: A common mistake is to provide multiple values separated by spaces e.g. `-
 void checkProfileProvided(List args, boolean monochromeLogs = true)
 ```
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `args` | List | Required | Command-line arguments (use built-in `args` variable) |
-| `monochromeLogs` | Boolean | `true` | If `true`, disables color codes in error messages |
+| Parameter        | Type    | Default  | Description                                           |
+| ---------------- | ------- | -------- | ----------------------------------------------------- |
+| `args`           | List    | Required | Command-line arguments (use built-in `args` variable) |
+| `monochromeLogs` | Boolean | `true`   | If `true`, disables color codes in error messages     |
 
 #### Comprehensive Profile Validation
 
@@ -276,7 +281,7 @@ if (!hasCustomConfig) {
     log.info """
     Consider using a configuration profile for better performance:
     - For Docker: -profile docker
-    - For Singularity: -profile singularity  
+    - For Singularity: -profile singularity
     - For HPC: -profile test,slurm,docker
     - For testing: -profile test
     """
@@ -315,7 +320,7 @@ checkProfileProvided(args, params.monochrome_logs)
 
 // Pipeline parameters
 params.input = null
-params.outdir = "./results"  
+params.outdir = "./results"
 params.genome = null
 
 // Import additional pipeline components
@@ -326,9 +331,9 @@ workflow {
     if (!params.input) {
         error "Please provide an input sample sheet with --input"
     }
-    
+
     log.info "Starting pipeline with validated configuration"
-    
+
     // Pipeline workflow logic
     ch_input = INPUT_CHECK(file(params.input, checkIfExists: true))
     FASTQC(ch_input)
@@ -355,20 +360,20 @@ if (!hasCustomConfig) {
     if (isHPC) {
         log.warn "Running on HPC without custom config. Consider: -profile test,slurm,singularity"
     } else if (isCloud) {
-        log.warn "Running on cloud without custom config. Consider: -profile test,aws,docker"  
+        log.warn "Running on cloud without custom config. Consider: -profile test,aws,docker"
     } else {
         log.warn "Consider using -profile docker or -profile singularity for local execution"
     }
 }
 
-// Enable colors based on environment  
+// Enable colors based on environment
 checkProfileProvided(args, isCI ? true : params.monochrome_logs)
 
 workflow {
     log.info """
     Environment Detection:
     - CI/CD: ${isCI}
-    - HPC: ${isHPC} 
+    - HPC: ${isHPC}
     - Cloud: ${isCloud}
     - Config: ${hasCustomConfig ? 'Custom' : 'Default'}
     """
@@ -389,27 +394,27 @@ def performGracefulValidation() {
     try {
         def hasCustomConfig = checkConfigProvided()
         checkProfileProvided(args, params.monochrome_logs)
-        
+
         if (!hasCustomConfig && !workflow.profile) {
             log.warn """
             ⚠️  PERFORMANCE WARNING ⚠️
-            
+
             No custom configuration detected. This may lead to:
             - Inefficient resource usage
-            - Slower execution times  
+            - Slower execution times
             - Compatibility issues
-            
+
             Recommended action: Add -profile docker or -profile singularity
-            
+
             Pipeline will continue with default settings...
             """
-            
+
             // Add a delay to ensure user sees the warning
             Thread.sleep(3000)
         }
-        
+
         return true
-        
+
     } catch (Exception e) {
         log.error "Validation error: ${e.message}"
         log.warn "Pipeline will attempt to continue, but may fail..."
@@ -421,7 +426,7 @@ def validationPassed = performGracefulValidation()
 
 workflow {
     log.info "Validation status: ${validationPassed ? 'Passed' : 'Warning'}"
-    
+
     // Pipeline continues regardless of validation results
     log.info "Starting pipeline execution..."
 }
@@ -431,17 +436,18 @@ workflow {
 
 ### 5.1. Profile Validation Errors
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| "cannot end with a trailing comma" | `nextflow run -profile docker,` | Remove trailing comma: `-profile docker` |
-| "positional argument detected" | `nextflow run pipeline.nf input.csv` | Use proper syntax: `--input input.csv` |
-| "multiple values separated by spaces" | `-profile test docker` | Use comma separation: `-profile test,docker` |
+| Error                                 | Cause                                | Solution                                     |
+| ------------------------------------- | ------------------------------------ | -------------------------------------------- |
+| "cannot end with a trailing comma"    | `nextflow run -profile docker,`      | Remove trailing comma: `-profile docker`     |
+| "positional argument detected"        | `nextflow run pipeline.nf input.csv` | Use proper syntax: `--input input.csv`       |
+| "multiple values separated by spaces" | `-profile test docker`               | Use comma separation: `-profile test,docker` |
 
 ### 5.2. Configuration Detection Issues
 
 **Problem**: `checkConfigProvided()` returns `false` even with custom config
 
 **Debugging steps**:
+
 ```nextflow title="config_debug.nf"
 include { checkConfigProvided } from 'plugin/nf-core-utils'
 
@@ -465,11 +471,12 @@ workflow {
 **Problem**: Colors not displaying correctly in terminal
 
 **Solutions**:
+
 ```nextflow title="color_troubleshooting.nf"
 include { checkProfileProvided } from 'plugin/nf-core-utils'
 
 // Test color support detection
-def supportsColors = System.getenv('TERM') != null && 
+def supportsColors = System.getenv('TERM') != null &&
                     System.getenv('TERM') != 'dumb' &&
                     System.console() != null
 
@@ -488,7 +495,7 @@ When implementing configuration validation in your pipeline:
 - [ ] Call validation functions early, before heavy processing
 - [ ] Provide helpful error messages with solutions
 - [ ] Enable colors for better user experience when supported
-- [ ] Handle validation failures gracefully 
+- [ ] Handle validation failures gracefully
 - [ ] Test with various configuration scenarios
 
 ### 6.2. Integration Pattern
@@ -514,7 +521,7 @@ workflow {
     if (!params.input) {
         error "Please provide --input"
     }
-    
+
     log.info "Configuration validation passed - starting analysis"
     // Your pipeline processes here...
 }
@@ -522,12 +529,12 @@ workflow {
 
 ### 6.3. Error Prevention Strategy
 
-| User Scenario | Validation Response | User Experience |
-|---------------|-------------------|-----------------|
-| No custom config | Helpful warning with suggestions | Guided toward best practices |
-| Profile syntax error | Clear error message with examples | Quick problem resolution |
-| Positional arguments | Warning about ignored parameters | Prevention of silent failures |
-| Good configuration | Silent validation | Smooth pipeline execution |
+| User Scenario        | Validation Response               | User Experience               |
+| -------------------- | --------------------------------- | ----------------------------- |
+| No custom config     | Helpful warning with suggestions  | Guided toward best practices  |
+| Profile syntax error | Clear error message with examples | Quick problem resolution      |
+| Positional arguments | Warning about ignored parameters  | Prevention of silent failures |
+| Good configuration   | Silent validation                 | Smooth pipeline execution     |
 
 ## 7. Takeaway
 
@@ -547,4 +554,4 @@ The utility transforms potential user frustration into guided learning experienc
 - Check out **[NextflowPipelineExtension](../NextflowPipelineExtension.md)** for core pipeline functions
 
 !!! tip "Advanced Usage"
-    For complex pipelines with multiple environments, consider implementing environment-specific validation logic using the patterns shown in section 4.2.
+For complex pipelines with multiple environments, consider implementing environment-specific validation logic using the patterns shown in section 4.2.

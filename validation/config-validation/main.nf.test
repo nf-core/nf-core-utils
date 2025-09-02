@@ -5,15 +5,15 @@ nextflow_pipeline {
     config "../config-validation/nextflow.config"
 
     test("Validate configuration functions") {
-        
+
         then {
             assert workflow.success
             assert workflow.exitStatus == 0
-            
+
             // Verify basic pipeline execution markers (stdout is a list)
             assert workflow.stdout.any { it.contains("Pipeline is starting") }
             assert workflow.stdout.any { it.contains("Pipeline complete") }
-            
+
             // Snapshot the basic workflow execution
             assert snapshot(
                 // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
@@ -25,7 +25,7 @@ nextflow_pipeline {
     }
 
     test("monochrome_logs params enabled") {
-        
+
         when {
             params {
                 monochrome_logs = true
@@ -35,11 +35,11 @@ nextflow_pipeline {
         then {
             assert workflow.success
             assert workflow.exitStatus == 0
-            
+
             // Should complete successfully (the detailed logs are not captured in workflow.stdout by nf-test)
             assert workflow.stdout.any { it.contains("Pipeline is starting") }
             assert workflow.stdout.any { it.contains("Pipeline complete") }
-            
+
             // Snapshot basic successful execution
             assert snapshot(
                 // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
@@ -49,7 +49,7 @@ nextflow_pipeline {
     }
 
     test("monochrome_logs params disabled") {
-        
+
         when {
             params {
                 monochrome_logs = false
@@ -59,11 +59,11 @@ nextflow_pipeline {
         then {
             assert workflow.success
             assert workflow.exitStatus == 0
-            
+
             // Should complete successfully
             assert workflow.stdout.any { it.contains("Pipeline is starting") }
             assert workflow.stdout.any { it.contains("Pipeline complete") }
-            
+
             // Snapshot integration scenario success
             assert snapshot(
                 // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils

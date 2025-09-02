@@ -4,16 +4,16 @@ nextflow_pipeline {
     script "../notification-system/main.nf"
 
     test("Notification system") {
-        
+
 
         then {
             assert workflow.success
             assert workflow.exitStatus == 0
-            
+
             // Verify basic pipeline execution markers
             assert workflow.stdout.any { it.contains("Pipeline is starting") }
             assert workflow.stdout.any { it.contains("Pipeline complete") }
-            
+
             // Snapshot notification system outputs - testing successful execution
             // The detailed function testing happens in onComplete handler which may not be fully captured in stdout
             assert snapshot(

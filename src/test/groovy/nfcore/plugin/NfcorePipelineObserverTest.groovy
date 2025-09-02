@@ -89,4 +89,4 @@ class NfcorePipelineObserverTest extends Specification {
         1 * validator.checkConfigProvided(null, { it.profile == 'standard' && it.configFiles == [] })
         1 * validator.checkProfileProvided('standard', '', true)
     }
-} 
+}

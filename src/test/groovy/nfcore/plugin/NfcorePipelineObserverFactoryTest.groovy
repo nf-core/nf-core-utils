@@ -15,4 +15,4 @@ class NfcorePipelineObserverFactoryTest extends Specification {
         result.size() == 1
         result.first() instanceof NfcorePipelineObserver
     }
-} 
+}

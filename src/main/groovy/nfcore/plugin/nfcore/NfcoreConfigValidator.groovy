@@ -97,4 +97,4 @@ class NfcoreConfigValidator {
         }
         checkConfigProvided(projectName, config)
     }
-} 
+}

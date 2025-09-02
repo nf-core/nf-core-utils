@@ -49,7 +49,7 @@ class NextflowPipelineUtils {
         try {
             def timestamp = new java.util.Date().format('yyyy-MM-dd_HH-mm-ss')
             def filename = "params_${timestamp}.json"
-            
+
             // Create a temp file in the system temp directory
             def temp_pf = File.createTempFile("params_", ".json")
             def jsonStr = groovy.json.JsonOutput.toJson(params ?: [:])
@@ -74,17 +74,17 @@ class NextflowPipelineUtils {
     static boolean checkCondaChannels() {
         def parser = new Yaml()
         def channels = [] as List
-        
+
         try {
             def process = "conda config --show channels".execute()
             process.waitFor()
-            
+
             // Check if conda command was successful
             if (process.exitValue() != 0) {
                 System.err.println("WARN: Conda command failed - conda may not be installed or available in PATH")
                 return true  // Return true to not block pipeline if conda is not available
             }
-            
+
             def result = process.text?.trim()
             if (result && result != "null") {
                 def config = parser.load(result)
@@ -115,13 +115,13 @@ class NextflowPipelineUtils {
         def channels_as_set = (channels ?: []) as Set
         def required_as_set = required_channels_in_order as Set
 
-        def channels_missing = !required_as_set.every { ch -> 
+        def channels_missing = !required_as_set.every { ch ->
             channels_as_set.contains(ch)
         }
 
         // Check that they are in the right order
-        def channel_subset = channels.findAll { ch -> 
-            ch != null && ch in required_channels_in_order 
+        def channel_subset = channels.findAll { ch ->
+            ch != null && ch in required_channels_in_order
         } ?: []
         def channel_priority_violation = !channel_subset.equals(required_channels_in_order)
 
@@ -141,4 +141,4 @@ class NextflowPipelineUtils {
 
         return true
     }
-} 
+}

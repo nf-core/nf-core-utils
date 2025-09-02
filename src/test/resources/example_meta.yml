@@ -39,4 +39,4 @@ output:
   - zip:
       type: file
       description: Zip archive of results
-      pattern: "*.zip" 
+      pattern: "*.zip"

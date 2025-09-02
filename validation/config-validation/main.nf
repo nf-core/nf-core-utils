@@ -2,12 +2,12 @@
 
 /*
  * E2E validation test for nf-core-utils plugin configuration validation functions
- * 
+ *
  * This test validates the configuration validation functions:
  * - checkConfigProvided(): Validate pipeline configuration setup
  * - checkProfileProvided(): Validate execution profiles
  * - checkCondaChannels(): Validate conda channel configuration
- * 
+ *
  * These functions are used in pipeline initialization to ensure proper setup.
  */
 

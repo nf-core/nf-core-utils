@@ -22,7 +22,7 @@ import org.yaml.snakeyaml.Yaml
 /**
  * Utility class for handling version information in nf-core pipelines.
  * Supports both legacy versions.yml files and new topic channels approach.
- * 
+ *
  * This class is focused solely on version management and does not handle
  * citation-related functionality (see NfcoreCitationUtils for that).
  */
@@ -79,7 +79,7 @@ class NfcoreVersionUtils {
     /**
      * Process version information from topic channel format
      * Handles the new eval syntax: [process, name, version]
-     * 
+     *
      * @param topicData List containing [process, name, version] tuples
      * @return YAML string with processed versions
      */
@@ -90,13 +90,13 @@ class NfcoreVersionUtils {
                 def process = tuple[0]
                 def name = tuple[1]
                 def version = tuple[2]
-                
+
                 // Extract tool name from process (remove module path prefix)
                 def toolName = process.tokenize(':').last()
                 versions[name] = version
             }
         }
-        
+
         def yaml = new Yaml()
         def yamlString = yaml.dumpAsMap(versions)
         // Remove trailing newline for consistency
@@ -106,7 +106,7 @@ class NfcoreVersionUtils {
     /**
      * Process version information from versions_file topic (legacy YAML files)
      * Handles the old versions.yml path output style
-     * 
+     *
      * @param versionsFileData List containing file paths to versions.yml files
      * @return YAML string with processed versions
      */
@@ -131,7 +131,7 @@ class NfcoreVersionUtils {
                 System.err.println("Warning: Could not process versions file ${filePath}: ${e.message}")
             }
         }
-        
+
         def yaml = new Yaml()
         return yaml.dumpAsMap(allVersions).trim()
     }
@@ -139,7 +139,7 @@ class NfcoreVersionUtils {
     /**
      * Get workflow version for pipeline as channel data
      * For use with topic channels
-     * 
+     *
      * @param session The Nextflow session
      * @return List of [process, name, version] tuples for workflow info
      */
@@ -148,7 +148,7 @@ class NfcoreVersionUtils {
         def workflowName = manifest?.getName() ?: 'Workflow'
         def workflowVersion = getWorkflowVersion(session)
         def nextflowVersion = (session.config instanceof Map && session.config.nextflow instanceof Map && session.config.nextflow['version']) ? session.config.nextflow['version'] : 'unknown'
-        
+
         return [
             ['Workflow', workflowName, workflowVersion],
             ['Workflow', 'Nextflow', nextflowVersion]
@@ -213,7 +213,7 @@ class NfcoreVersionUtils {
     /**
      * Process versions from topic channels (new approach)
      * Supports both legacy versions.yml files and new topic channel format
-     * 
+     *
      * @param topicVersions List of topic channel data [process, name, version]
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @param session The Nextflow session
@@ -221,7 +221,7 @@ class NfcoreVersionUtils {
      */
     static String processVersionsFromTopicChannels(List<List> topicVersions, List<String> legacyVersions = [], Session session) {
         def combinedVersions = []
-        
+
         // Process topic channel versions (new format)
         if (topicVersions) {
             def topicYaml = processVersionsFromTopic(topicVersions)
@@ -229,17 +229,17 @@ class NfcoreVersionUtils {
                 combinedVersions.add(topicYaml)
             }
         }
-        
+
         // Process legacy YAML versions (old format)
         if (legacyVersions) {
             def parsedLegacy = legacyVersions.collect { processVersionsFromYAML(it) }
             combinedVersions.addAll(parsedLegacy.findAll { it })
         }
-        
+
         // Add workflow version info
         def workflowYaml = workflowVersionToYAML(session)
         combinedVersions.add(workflowYaml)
-        
+
         return combinedVersions.unique().join("\n").trim()
     }
 
@@ -248,7 +248,7 @@ class NfcoreVersionUtils {
     /**
      * Process mixed topic channels and file-based versions
      * Combines data from both 'versions' and 'versions_file' topics
-     * 
+     *
      * @param topicVersions List of [process, name, version] from 'versions' topic
      * @param versionsFiles List of file paths from 'versions_file' topic
      * @param session The Nextflow session
@@ -256,7 +256,7 @@ class NfcoreVersionUtils {
      */
     static String processMixedVersionSources(List<List> topicVersions, List<String> versionsFiles, Session session) {
         def combinedVersions = []
-        
+
         // Process new topic format
         if (topicVersions) {
             def topicYaml = processVersionsFromTopic(topicVersions)
@@ -264,7 +264,7 @@ class NfcoreVersionUtils {
                 combinedVersions.add(topicYaml)
             }
         }
-        
+
         // Process legacy file format
         if (versionsFiles) {
             def fileYaml = processVersionsFromFile(versionsFiles)
@@ -272,18 +272,18 @@ class NfcoreVersionUtils {
                 combinedVersions.add(fileYaml)
             }
         }
-        
+
         // Add workflow version info
         def workflowYaml = workflowVersionToYAML(session)
         combinedVersions.add(workflowYaml)
-        
+
         return combinedVersions.unique().join("\n").trim()
     }
 
     /**
      * Convert legacy YAML string to new eval syntax format
      * Transforms old versions.yml content to [process, name, version] tuples
-     * 
+     *
      * @param yamlContent The YAML content as string
      * @param processName The process name to use (defaults to 'LEGACY')
      * @return List of [process, name, version] tuples
@@ -293,7 +293,7 @@ class NfcoreVersionUtils {
             def yaml = new Yaml()
             def parsed = yaml.load(yamlContent)
             def result = []
-            
+
             if (parsed instanceof Map) {
                 parsed.each { key, value ->
                     // Handle nested maps (like tool:foo: version)
@@ -305,7 +305,7 @@ class NfcoreVersionUtils {
                     }
                 }
             }
-            
+
             return result
         } catch (Exception e) {
             System.err.println("Warning: Could not convert legacy YAML to eval syntax: ${e.message}")
@@ -316,7 +316,7 @@ class NfcoreVersionUtils {
     /**
      * Generate YAML output from eval syntax data
      * Converts [process, name, version] tuples back to YAML format for reporting
-     * 
+     *
      * @param evalData List of [process, name, version] tuples
      * @param session The Nextflow session
      * @param includeWorkflow Whether to include workflow version info
@@ -324,7 +324,7 @@ class NfcoreVersionUtils {
      */
     static String generateYamlFromEvalSyntax(List<List> evalData, Session session, boolean includeWorkflow = true) {
         def versions = [:]
-        
+
         // Process eval syntax data
         evalData.each { tuple ->
             if (tuple.size() >= 3) {
@@ -334,20 +334,20 @@ class NfcoreVersionUtils {
                 versions[name] = version
             }
         }
-        
+
         def yamlParts = []
-        
+
         // Add software versions
         if (versions) {
             def yaml = new Yaml()
             yamlParts.add(yaml.dumpAsMap(versions).trim())
         }
-        
+
         // Add workflow info if requested
         if (includeWorkflow) {
             yamlParts.add(workflowVersionToYAML(session))
         }
-        
+
         return yamlParts.join("\n").trim()
     }
 }

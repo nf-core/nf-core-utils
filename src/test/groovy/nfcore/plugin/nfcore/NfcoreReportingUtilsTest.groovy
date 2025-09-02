@@ -134,4 +134,4 @@ class NfcoreReportingUtilsTest extends Specification {
         // Restore original method
         nextflow.Nextflow.metaClass.static.getSession = originalSession
     }
-} 
+}

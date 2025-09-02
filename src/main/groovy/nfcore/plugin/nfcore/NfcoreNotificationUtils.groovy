@@ -167,7 +167,7 @@ class NfcoreNotificationUtils {
             System.err.println("ERROR: Cannot send completion email - Nextflow session is null")
             return
         }
-        
+
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def config = session.config
@@ -223,7 +223,7 @@ class NfcoreNotificationUtils {
         // Render the TXT template
         def email_txt = "Default email content"
         def email_html = "<html><body>Default email content</body></html>"
-        
+
         try {
             def tf = new File("${session.projectDir}/assets/email_template.txt")
             if (tf.exists()) {
@@ -254,10 +254,10 @@ class NfcoreNotificationUtils {
                 log.warn("Failed to parse max_multiqc_email_size: ${e.message}")
             }
         }
-        
+
         def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${session.projectDir}", mqcFile: mqc_report, mqcMaxSize: max_multiqc_email_size]
         def sendmail_html = email_html  // Fallback content
-        
+
         try {
             def sf = new File("${session.projectDir}/assets/sendmail_template.txt")
             if (sf.exists()) {
@@ -298,11 +298,11 @@ class NfcoreNotificationUtils {
             try {
                 def output_hf = new File(session.launchDir.toString(), ".pipeline_report.html")
                 output_hf.withWriter { w -> w << email_html }
-                
+
                 // Ensure pipeline_info directory exists
                 def pipeline_info_dir = new File("${outdir}/pipeline_info")
                 pipeline_info_dir.mkdirs()
-                
+
                 FilesEx.copyTo(output_hf.toPath(), "${outdir}/pipeline_info/pipeline_report.html")
                 output_hf.delete()
 
@@ -353,7 +353,7 @@ class NfcoreNotificationUtils {
             System.err.println("ERROR: Cannot send IM notification - Nextflow session is null")
             return
         }
-        
+
         if (hook_url == null || hook_url.trim().isEmpty()) {
             log.warn("Cannot send IM notification - hook URL is null or empty")
             return
@@ -399,7 +399,7 @@ class NfcoreNotificationUtils {
             // Defaults to "Adaptive Cards" (https://adaptivecards.io), except Slack which has its own format
             def json_path = hook_url.contains("hooks.slack.com") ? "slackreport.json" : "adaptivecard.json"
             def hf = new File("${session.projectDir}/assets/${json_path}")
-            
+
             if (hf.exists()) {
                 def json_template = TEMPLATE_ENGINE.createTemplate(hf).make(msg_fields)
                 json_message = json_template.toString()

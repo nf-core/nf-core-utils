@@ -191,7 +191,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Process versions from both topic channels and legacy files
      * Supports progressive migration from versions.yml files to topic channels
-     * 
+     *
      * @param topicVersions List of [process, name, version] from 'versions' topic
      * @param versionsFiles List of file paths from 'versions_file' topic
      * @return Combined YAML string with all versions
@@ -204,7 +204,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Convert legacy YAML string to new eval syntax format
      * Transforms old versions.yml content to [process, name, version] tuples
-     * 
+     *
      * @param yamlContent The YAML content as string
      * @param processName The process name to use (defaults to 'LEGACY')
      * @return List of [process, name, version] tuples
@@ -217,7 +217,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate YAML output from eval syntax data
      * Converts [process, name, version] tuples back to YAML format for reporting
-     * 
+     *
      * @param evalData List of [process, name, version] tuples
      * @param includeWorkflow Whether to include workflow version info
      * @return YAML string suitable for MultiQC and reporting
@@ -229,7 +229,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Process versions from topic channel format (new eval syntax)
-     * 
+     *
      * @param topicData List containing [process, name, version] tuples
      * @return YAML string with processed versions
      */
@@ -240,7 +240,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Process versions from file paths (legacy format)
-     * 
+     *
      * @param versionsFiles List of file paths to versions.yml files
      * @return YAML string with processed versions
      */
@@ -252,7 +252,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Get workflow version information as topic channel data
      * For use with topic channels
-     * 
+     *
      * @return List of [process, name, version] tuples for workflow info
      */
     @Function
@@ -263,7 +263,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     // --- Citation Management Functions ---
     /**
      * Generate citation for a tool from meta.yml at the module level
-     * 
+     *
      * @param metaFilePath Path to the meta.yml file (String or File)
      * @return Map containing tool citations for the module
      */
@@ -274,7 +274,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Generate methods description for MultiQC using collected citations
-     * 
+     *
      * @param collectedCitations Map containing all tool citations from modules
      * @return Formatted citation string for tools used in the workflow
      */
@@ -285,7 +285,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Generate bibliography text from collected citations
-     * 
+     *
      * @param collectedCitations Map containing all tool citations from modules
      * @return Formatted bibliography HTML for tools used in the workflow
      */
@@ -296,7 +296,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Generate methods description text using collected citations
-     * 
+     *
      * @param mqcMethodsYaml MultiQC methods YAML file path
      * @param collectedCitations Map containing all tool citations from modules (optional)
      * @param meta Additional metadata (optional)
@@ -310,7 +310,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Collect citations from multiple meta.yml files
-     * 
+     *
      * @param metaFilePaths List of paths to module meta.yml files
      * @return Map containing all collected citations
      */
@@ -331,7 +331,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     // --- Orchestrated Reporting Functions ---
     /**
      * Generate comprehensive version and citation report
-     * 
+     *
      * @param topicVersions List of topic channel data [process, name, version]
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @param metaFilePaths List of paths to module meta.yml files (optional)
@@ -340,8 +340,8 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     Map generateComprehensiveReport(
-        List<List> topicVersions, 
-        List<String> legacyVersions = [], 
+        List<List> topicVersions,
+        List<String> legacyVersions = [],
         List<String> metaFilePaths = [],
         String mqcMethodsYamlPath = null
     ) {
@@ -353,7 +353,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Generate version-only report
-     * 
+     *
      * @param topicVersions List of topic channel data [process, name, version]
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @return Map containing only versions information
@@ -365,7 +365,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Generate citation-only report
-     * 
+     *
      * @param metaFilePaths List of paths to module meta.yml files
      * @param mqcMethodsYamlPath Path to MultiQC methods description template (optional)
      * @return Map containing only citation information
@@ -379,7 +379,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     // --- Enhanced Citation Topic Channel Functions ---
     /**
      * Process citations from topic channel format (new eval syntax)
-     * 
+     *
      * @param topicData List containing [module, tool, citation_data] tuples
      * @return Map of tool citations
      */
@@ -390,7 +390,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Process citations from file paths (legacy format)
-     * 
+     *
      * @param citationFiles List of file paths to meta.yml files
      * @return Map of tool citations
      */
@@ -402,7 +402,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Process citations from both topic channels and legacy files
      * Supports progressive migration from meta.yml files to topic channels
-     * 
+     *
      * @param topicCitations List of [module, tool, citation_data] from 'citations' topic
      * @param citationFiles List of file paths from 'citations_file' topic
      * @return Combined map of all citations
@@ -415,7 +415,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Convert legacy meta.yml data to new topic channel format
      * Transforms meta.yml tools data to [module, tool, citation_data] tuples
-     * 
+     *
      * @param metaFilePath Path to meta.yml file
      * @param moduleName Name of the module (defaults to filename)
      * @return List of [module, tool, citation_data] tuples

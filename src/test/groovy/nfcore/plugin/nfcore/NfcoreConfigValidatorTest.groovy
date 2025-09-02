@@ -127,4 +127,4 @@ class NfcoreConfigValidatorTest extends Specification {
         assert message.contains('ERROR')
         assert message.contains('HINT')
     }
-} 
+}

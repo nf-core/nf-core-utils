@@ -5,12 +5,14 @@ Keeping users informed about pipeline execution is crucial for building user-fri
 ## 1. Overview
 
 Modern bioinformatics pipelines often run for hours or days, making it essential to notify users about completion status, errors, and results. Users need to know:
+
 - When their pipeline completes successfully or fails
 - What parameters were used and what results were generated
 - Where to find outputs and reports
 - Performance metrics and resource usage
 
 The `NfcoreNotificationUtils` utility provides three core notification channels:
+
 - **Terminal Summaries**: Immediate, color-coded status information
 - **Email Notifications**: Detailed reports with attachments and metadata
 - **Instant Messaging**: Slack/Teams integration for team collaboration
@@ -18,7 +20,7 @@ The `NfcoreNotificationUtils` utility provides three core notification channels:
 ### 1.1. Critical Session Context Requirement
 
 !!! warning "Session Context Required"
-    **ALL notification functions require Nextflow session context and MUST be called from `workflow.onComplete` or `workflow.onError` handlers only.** They will fail with null pointer exceptions if called from the main workflow block.
+**ALL notification functions require Nextflow session context and MUST be called from `workflow.onComplete` or `workflow.onError` handlers only.** They will fail with null pointer exceptions if called from the main workflow block.
 
 This requirement exists because notification functions need access to workflow metadata (success status, timing, resource usage) that is only available during completion handlers.
 
@@ -43,7 +45,7 @@ params.outdir = "results"
 
 workflow {
     log.info "Processing ${params.input}..."
-    
+
     // Your pipeline logic here
     log.info "Analysis complete"
 }
@@ -79,10 +81,10 @@ include { completionSummary } from 'plugin/nf-core-utils'
 
 workflow {
     log.info "Pipeline starting..."
-    
+
     // ❌ WRONG - This will cause a NullPointerException
     // completionSummary(params.monochrome_logs)  // Session is null here!
-    
+
     log.info "Pipeline logic completed"
 }
 
@@ -91,7 +93,7 @@ workflow.onComplete {
     log.info "Session available: ${session != null}"
     log.info "Workflow success: ${workflow.success}"
     log.info "Workflow duration: ${workflow.duration}"
-    
+
     // Now the notification function works
     completionSummary(params.monochrome_logs)
 }
@@ -104,10 +106,10 @@ Let's build up from basic terminal output to comprehensive notifications:
 ```nextflow title="progressive_notifications.nf" hl_lines="15-23"
 #!/usr/bin/env nextflow
 
-include { 
-    completionSummary; 
-    completionEmail; 
-    imNotification 
+include {
+    completionSummary;
+    completionEmail;
+    imNotification
 } from 'plugin/nf-core-utils'
 
 params.email = null
@@ -120,13 +122,13 @@ workflow {
 workflow.onComplete {
     // Level 1: Always show terminal summary
     completionSummary(params.monochrome_logs)
-    
+
     // Level 2: Email notifications (if configured)
     if (params.email) {
         log.info "Sending completion email..."
         // We'll implement this next
     }
-    
+
     // Level 3: Team notifications (if configured)
     if (params.hook_url) {
         log.info "Sending team notification..."
@@ -168,13 +170,14 @@ workflow.onComplete {
 void completionSummary(boolean monochromeLogs = true)
 ```
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `monochromeLogs` | Boolean | `true` | If `true`, disables color codes for plain text output |
+| Parameter        | Type    | Default | Description                                           |
+| ---------------- | ------- | ------- | ----------------------------------------------------- |
+| `monochromeLogs` | Boolean | `true`  | If `true`, disables color codes for plain text output |
 
 #### Color-Coded Output Examples
 
 **Success with colors enabled:**
+
 ```console title="Successful completion (colors enabled)"
 -[nf-core/rnaseq] Pipeline completed successfully-
 Completed at: 2024-01-15T10:30:45.123Z
@@ -186,6 +189,7 @@ Ignored     : 0
 ```
 
 **Failure with error details:**
+
 ```console title="Failed completion (colors enabled)"
 -[nf-core/rnaseq] Pipeline completed with errors-
 Completed at: 2024-01-15T09:15:23.456Z
@@ -215,7 +219,7 @@ workflow {
 workflow.onComplete {
     // Always show the summary
     completionSummary(params.monochrome_logs)
-    
+
     // Add custom completion information
     if (workflow.success) {
         log.info """
@@ -252,7 +256,7 @@ def summary_params = [
         'revision': workflow.revision ?: 'N/A'
     ],
     'Input/output options': [
-        'input': params.input ?: 'N/A', 
+        'input': params.input ?: 'N/A',
         'outdir': params.outdir ?: 'N/A'
     ],
     'Resource usage': [
@@ -284,7 +288,7 @@ workflow {
 workflow.onComplete {
     // Only send email if user provided an email address
     if (params.email || params.email_on_fail) {
-        
+
         // Organize parameters for the email
         def summary_params = [
             'Pipeline Information': [
@@ -298,18 +302,18 @@ workflow.onComplete {
                 'profile': workflow.profile
             ]
         ]
-        
+
         // Send the email
         completionEmail(
             summary_params,           // Parameter summary
-            params.email,            // Success email address  
+            params.email,            // Success email address
             params.email_on_fail,    // Failure email address
             false,                   // Use HTML format (not plain text)
             params.outdir,           // Output directory
             params.monochrome_logs,  // Color settings
             []                       // MultiQC reports (empty for now)
         )
-        
+
         log.info "Completion email sent"
     }
 }
@@ -321,7 +325,7 @@ workflow.onComplete {
 void completionEmail(
     Map summaryParams,        // Grouped parameter summary
     String email,            // Primary email address
-    String emailOnFail,      // Failure notification email  
+    String emailOnFail,      // Failure notification email
     boolean plaintextEmail,  // Use plain text instead of HTML
     String outdir,          // Output directory path
     boolean monochromeLogs, // Color settings for email content
@@ -365,14 +369,14 @@ workflow.onComplete {
                 'publishMode': params.publish_dir_mode
             ]
         ]
-        
+
         // Include MultiQC reports as attachments
         def multiqc_report = file("${params.outdir}/multiqc/multiqc_report.html")
         def mqc_reports = multiqc_report.exists() ? [multiqc_report] : []
-        
+
         completionEmail(
             summary_params,
-            params.email, 
+            params.email,
             params.email_on_fail,
             params.plaintext_email ?: false,
             params.outdir,
@@ -395,7 +399,7 @@ Instant messaging notifications use webhooks to send JSON payloads to chat servi
 // Slack webhook URL format
 params.hook_url = "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
 
-// Teams webhook URL format  
+// Teams webhook URL format
 // params.hook_url = "https://outlook.office.com/webhook/YOUR/TEAMS/WEBHOOK"
 ```
 
@@ -420,6 +424,7 @@ workflow.onError {
 ```
 
 **Terminal Output Features:**
+
 - **Color-coded Status**: Green for success, red for failure
 - **Execution Statistics**: Duration, CPU time, memory usage
 - **Process Summary**: Number of processes, cached tasks, ignored processes
@@ -427,6 +432,7 @@ workflow.onError {
 - **Configuration Summary**: Profile, container engine, work directory
 
 **Example Output:**
+
 ```
 -[nf-core/rnaseq] Pipeline completed successfully-
 Completed at: 2024-01-15T10:30:45.123Z
@@ -445,26 +451,31 @@ Ignored     : 0
 Sends JSON notifications to instant messaging webhooks (Slack, Microsoft Teams) with pipeline summary and workflow metadata. Supports rich formatting for better readability.
 
 **Function Signature:**
+
 ```nextflow
 void imNotification(Map summaryParams, String hookUrl)
 ```
 
 **Parameters:**
+
 - `summaryParams` (Map): Nested map of grouped summary parameters (same structure as `completionEmail`)
 - `hookUrl` (String): Webhook URL for Slack, Teams, or other compatible service
 
 **⚠️ Usage Requirements:**
+
 - Must be called from `workflow.onComplete` or `workflow.onError` handlers only
 - Requires Nextflow session context (workflow metadata, timing, success status)
 - Do not call from main workflow block
 - Function handles null/empty hookUrl gracefully (logs warning and returns)
 
 **Supported Webhook Types:**
+
 - **Slack**: `https://hooks.slack.com/services/...`
 - **Microsoft Teams**: `https://outlook.office.com/webhook/...`
 - **Generic webhooks**: Any endpoint accepting JSON POST requests
 
 **Usage Example:**
+
 ```nextflow
 include { imNotification } from 'plugin/nf-core-utils'
 
@@ -482,7 +493,7 @@ workflow.onComplete {
                 'container': workflow.containerEngine
             ]
         ]
-        
+
         imNotification(summary_params, params.hook_url)
     }
 }
@@ -496,13 +507,14 @@ workflow.onError {
                 'exitStatus': workflow.exitStatus
             ]
         ]
-        
+
         imNotification(summary_params, params.hook_url)
     }
 }
 ```
 
 **JSON Payload Structure:**
+
 - **Service Detection**: Automatically detects Slack vs Teams format
 - **Rich Formatting**: Uses service-specific formatting (markdown, cards)
 - **Color Coding**: Green for success, red for failure
@@ -522,16 +534,16 @@ include { completionSummary; completionEmail; imNotification } from 'plugin/nf-c
 workflow {
     // Main workflow logic here
     log.info "Pipeline execution starting..."
-    
+
     // Process data...
-    
+
     log.info "Pipeline execution complete"
 }
 
 workflow.onComplete {
     // Always show terminal summary
     completionSummary(params.monochrome_logs)
-    
+
     // Prepare summary parameters (reused for all notifications)
     def summary_params = [
         'Core Nextflow options': [
@@ -556,7 +568,7 @@ workflow.onComplete {
             'max_time': params.max_time
         ]
     ]
-    
+
     // Send completion email if configured
     if (params.email || params.email_on_fail) {
         completionEmail(
@@ -569,19 +581,19 @@ workflow.onComplete {
             multiqc_report.ifEmpty([])
         )
     }
-    
+
     // Send instant message notification if configured
     if (params.hook_url) {
         imNotification(summary_params, params.hook_url)
     }
-    
+
     log.info "All notifications sent successfully"
 }
 
 workflow.onError {
     // Show error summary
     completionSummary(params.monochrome_logs)
-    
+
     // Send error notifications if configured
     if (params.email_on_fail || params.hook_url) {
         def error_params = [
@@ -597,7 +609,7 @@ workflow.onError {
                 'container': workflow.containerEngine
             ]
         ]
-        
+
         // Send error email
         if (params.email_on_fail) {
             completionEmail(
@@ -610,7 +622,7 @@ workflow.onError {
                 null  // No MultiQC report on error
             )
         }
-        
+
         // Send error IM notification
         if (params.hook_url) {
             imNotification(error_params, params.hook_url)
@@ -684,9 +696,9 @@ params.email = params.test_mode ? null : params.email
 params.hook_url = System.getenv('SLACK_WEBHOOK_URL')
 
 // Filter sensitive parameters from summary
-def filtered_params = params.findAll { k, v -> 
-    !k.toLowerCase().contains('password') && 
-    !k.toLowerCase().contains('token') 
+def filtered_params = params.findAll { k, v ->
+    !k.toLowerCase().contains('password') &&
+    !k.toLowerCase().contains('token')
 }
 ```
 
@@ -697,6 +709,7 @@ def filtered_params = params.findAll { k, v ->
 ### Issue: "Session is null" Error
 
 **Problem:**
+
 ```nextflow
 // ❌ WRONG - This will cause null pointer exceptions
 workflow {
@@ -705,6 +718,7 @@ workflow {
 ```
 
 **Solution:**
+
 ```nextflow
 // ✅ CORRECT - Call from completion handlers
 workflow.onComplete {
@@ -715,11 +729,13 @@ workflow.onComplete {
 ### Issue: Email Not Sending
 
 **Common Causes:**
+
 1. SMTP configuration not set up in Nextflow config
 2. Email parameters not provided
 3. MultiQC report path incorrect
 
 **Solution:**
+
 ```nextflow
 // Check configuration
 if (!params.email && !params.email_on_fail) {
@@ -734,11 +750,13 @@ log.info "MultiQC reports to attach: ${mqc_report}"
 ### Issue: Webhook Failures
 
 **Common Causes:**
+
 1. Invalid webhook URL format
 2. Network connectivity issues
 3. Service-specific formatting problems
 
 **Solution:**
+
 ```nextflow
 // Validate webhook URL
 if (params.hook_url && !params.hook_url.startsWith('http')) {
@@ -768,7 +786,7 @@ test("Notification functions work correctly") {
             monochrome_logs = false
         }
     }
-    
+
     then {
         assert workflow.success
         // Verify notification functions were called (check logs)
@@ -783,7 +801,7 @@ test("Error notifications work correctly") {
         exit 1
         """
     }
-    
+
     then {
         assert workflow.failed
         // Verify error notifications were sent
@@ -815,7 +833,7 @@ def slack_summary = [
 ### Microsoft Teams Integration
 
 ```nextflow
-// Teams webhook configuration  
+// Teams webhook configuration
 params.hook_url = "https://outlook.office.com/webhook/YOUR/TEAMS/WEBHOOK"
 
 // Teams supports rich card formatting
