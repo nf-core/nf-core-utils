@@ -10,7 +10,7 @@
                 "==========================================",
                 "Testing profile with trailing comma (expected to fail)",
                 "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, [CONTAINER]`.",
-                " -- Check script '[PATH]/config-validation/error-test.nf' at line: 24 or see '[PATH]/.nf-test/tests/[NFT_HASH]/meta/nextflow.log' file for more details",
+                " -- Check script '[PATH]/config-validation/error-test.nf' at line: 24 or see '[PATH]/tests/[NFT_HASH]/meta/nextflow.log' file for more details",
                 "ERROR ~ ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!"
             ]
         ],
@@ -18,7 +18,7 @@
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-09-08T17:34:53.774136373"
+        "timestamp": "2025-09-08T18:18:26.66798259"
     },
     "Error output - Color": {
         "content": [
@@ -31,7 +31,7 @@
                 "==========================================",
                 "Testing profile with trailing comma (expected to fail)",
                 "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, [CONTAINER]`.",
-                " -- Check script '[PATH]/config-validation/error-test.nf' at line: 24 or see '[PATH]/.nf-test/tests/[NFT_HASH]/meta/nextflow.log' file for more details",
+                " -- Check script '[PATH]/config-validation/error-test.nf' at line: 24 or see '[PATH]/tests/[NFT_HASH]/meta/nextflow.log' file for more details",
                 "ERROR ~ ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!"
             ]
         ],
@@ -39,6 +39,6 @@
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-09-08T17:34:55.803257593"
+        "timestamp": "2025-09-08T18:18:28.863335117"
     }
 }

@@ -15,7 +15,7 @@
                 "Version with v prefix (v3.0.0): v3.0.0",
                 "Null version with commit: v1.12.0-gxyz789a",
                 "=== Testing dumpParametersToJSON() function ===",
-                "Dumping parameters to JSON in: [PATH]/.nf-test/tests/[NFT_HASH]/work/validation_output",
+                "Dumping parameters to JSON in: [PATH]/tests/[NFT_HASH]/work/validation_output",
                 "\u2705 Parameters dumped successfully",
                 "=== Testing edge cases ===",
                 "\u2705 Null output directory handled correctly",
@@ -35,13 +35,13 @@
                 "==========================================",
                 "Pipeline complete! \ud83d\udc4b",
                 "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info.",
-                "WARN: JSON file not found at: [PATH]/.nf-test/tests/[NFT_HASH]/work/validation_output/params.json"
+                "WARN: JSON file not found at: [PATH]/tests/[NFT_HASH]/work/validation_output/params.json"
             ]
         ],
         "meta": {
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-09-08T17:40:01.981370709"
+        "timestamp": "2025-09-08T18:18:56.487587663"
     }
 }

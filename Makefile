@@ -32,3 +32,7 @@ release:
 validate:
 	@$(MAKE) install
 	cd validation && nf-test test --verbose --debug
+
+update-snapshots:
+	@$(MAKE) install
+	cd validation && nf-test test --verbose --debug --update-snapshot --clean-snapshot
