@@ -26,12 +26,12 @@
                 "Testing color formatting feature with valid profiles only",
                 "\u2705 Color formatting tests completed successfully",
                 "=== Testing checkCondaChannels() function ===",
-                "Conda channels check result: true",
+                "Conda channels check result: false",
                 "\u2705 checkCondaChannels() executed successfully",
-                "\u2705 Conda channels are configured correctly",
+                "\u26a0\ufe0f Conda channels may need configuration adjustment",
                 "=== Testing integration scenario ===",
                 "Simulating fetchngs pipeline initialization sequence...",
-                "Conda channels status: OK",
+                "Conda channels status: Needs attention",
                 "Configuration status: May need custom config",
                 "Profile validation: Completed for typical fetchngs usage with color setting: monochrome",
                 "\u2705 Integration scenario completed successfully",
@@ -52,6 +52,24 @@
                 "Configuration validation functions ready for fetchngs! \ud83d\ude80",
                 "==========================================",
                 "Pipeline complete! \ud83d\udc4b",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "    There is a problem with your Conda configuration!",
+                "    You will need to set-up the [CONTAINER]-forge and bio[CONTAINER] channels correctly.",
+                "    Please refer to https://bio[CONTAINER].github.io/",
+                "    The observed channel order is",
+                "    [defaults]",
+                "    but the following channel order is required:",
+                "    [[CONTAINER]-forge, bio[CONTAINER]]",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "    There is a problem with your Conda configuration!",
+                "    You will need to set-up the [CONTAINER]-forge and bio[CONTAINER] channels correctly.",
+                "    Please refer to https://bio[CONTAINER].github.io/",
+                "    The observed channel order is",
+                "    [defaults]",
+                "    but the following channel order is required:",
+                "    [[CONTAINER]-forge, bio[CONTAINER]]",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
                 "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info.",
                 "WARN: Null arguments case: null"
             ]
@@ -60,7 +78,7 @@
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-09-08T17:37:03.942656083"
+        "timestamp": "2025-09-08T18:31:38.345251455"
     },
     "monochrome_logs params disabled": {
         "content": [
@@ -89,12 +107,12 @@
                 "Testing color formatting feature with valid profiles only",
                 "\u2705 Color formatting tests completed successfully",
                 "=== Testing checkCondaChannels() function ===",
-                "Conda channels check result: true",
+                "Conda channels check result: false",
                 "\u2705 checkCondaChannels() executed successfully",
-                "\u2705 Conda channels are configured correctly",
+                "\u26a0\ufe0f Conda channels may need configuration adjustment",
                 "=== Testing integration scenario ===",
                 "Simulating fetchngs pipeline initialization sequence...",
-                "Conda channels status: OK",
+                "Conda channels status: Needs attention",
                 "Configuration status: May need custom config",
                 "Profile validation: Completed for typical fetchngs usage with color setting: monochrome",
                 "\u2705 Integration scenario completed successfully",
@@ -115,6 +133,24 @@
                 "Configuration validation functions ready for fetchngs! \ud83d\ude80",
                 "==========================================",
                 "Pipeline complete! \ud83d\udc4b",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "    There is a problem with your Conda configuration!",
+                "    You will need to set-up the [CONTAINER]-forge and bio[CONTAINER] channels correctly.",
+                "    Please refer to https://bio[CONTAINER].github.io/",
+                "    The observed channel order is",
+                "    [defaults]",
+                "    but the following channel order is required:",
+                "    [[CONTAINER]-forge, bio[CONTAINER]]",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "    There is a problem with your Conda configuration!",
+                "    You will need to set-up the [CONTAINER]-forge and bio[CONTAINER] channels correctly.",
+                "    Please refer to https://bio[CONTAINER].github.io/",
+                "    The observed channel order is",
+                "    [defaults]",
+                "    but the following channel order is required:",
+                "    [[CONTAINER]-forge, bio[CONTAINER]]",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
                 "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info.",
                 "WARN: Null arguments case: null"
             ]
@@ -123,7 +159,7 @@
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-09-08T17:37:14.870125631"
+        "timestamp": "2025-09-08T18:31:48.853518178"
     },
     "monochrome_logs params enabled": {
         "content": [
@@ -152,12 +188,12 @@
                 "Testing color formatting feature with valid profiles only",
                 "\u2705 Color formatting tests completed successfully",
                 "=== Testing checkCondaChannels() function ===",
-                "Conda channels check result: true",
+                "Conda channels check result: false",
                 "\u2705 checkCondaChannels() executed successfully",
-                "\u2705 Conda channels are configured correctly",
+                "\u26a0\ufe0f Conda channels may need configuration adjustment",
                 "=== Testing integration scenario ===",
                 "Simulating fetchngs pipeline initialization sequence...",
-                "Conda channels status: OK",
+                "Conda channels status: Needs attention",
                 "Configuration status: May need custom config",
                 "Profile validation: Completed for typical fetchngs usage with color setting: true",
                 "\u2705 Integration scenario completed successfully",
@@ -178,6 +214,24 @@
                 "Configuration validation functions ready for fetchngs! \ud83d\ude80",
                 "==========================================",
                 "Pipeline complete! \ud83d\udc4b",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "    There is a problem with your Conda configuration!",
+                "    You will need to set-up the [CONTAINER]-forge and bio[CONTAINER] channels correctly.",
+                "    Please refer to https://bio[CONTAINER].github.io/",
+                "    The observed channel order is",
+                "    [defaults]",
+                "    but the following channel order is required:",
+                "    [[CONTAINER]-forge, bio[CONTAINER]]",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+                "    There is a problem with your Conda configuration!",
+                "    You will need to set-up the [CONTAINER]-forge and bio[CONTAINER] channels correctly.",
+                "    Please refer to https://bio[CONTAINER].github.io/",
+                "    The observed channel order is",
+                "    [defaults]",
+                "    but the following channel order is required:",
+                "    [[CONTAINER]-forge, bio[CONTAINER]]",
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
                 "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info.",
                 "WARN: Null arguments case: null"
             ]
@@ -186,6 +240,6 @@
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-09-08T17:37:09.534668619"
+        "timestamp": "2025-09-08T18:31:43.739912276"
     }
 }
