@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Exposed `processVersionsFromYAML()` function for parsing and flattening YAML version strings
+- Exposed `workflowVersionToYAML()` function for getting workflow version as YAML string
+- Exposed `softwareVersionsToYAML()` function for combining version YAMLs from channels
+- Comprehensive documentation for all three new version utility functions
+
 ## [0.3.1] - 2025-09-12
 
 ### Changed
