@@ -201,7 +201,7 @@ class NfcoreVersionUtils {
         List versionsList = (chVersions instanceof List) ? chVersions : chVersions?.toList() ?: []
         Session sess = (session instanceof Session) ? session : null
         def nfVersion = nextflowVersion
-        
+
         def yaml = new Yaml()
         // Collect nested: process -> tools map
         Map<String, Map<String, Object>> merged = [:].withDefault { [:] as Map<String, Object> }

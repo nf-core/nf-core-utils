@@ -295,7 +295,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
         // Extract versions channel/list and nextflowVersion
         Object versions = null
         def nextflowVersion = options?.nextflowVersion
-        
+
         // Handle named parameters: softwareVersionsToYAML(softwareVersions: ch, nextflowVersion: v)
         if (versionsOrOptions instanceof Map && versionsOrOptions.containsKey('softwareVersions')) {
             versions = versionsOrOptions.softwareVersions
@@ -305,9 +305,9 @@ class NfUtilsExtension extends PluginExtensionPoint {
         else {
             versions = versionsOrOptions
         }
-        
+
         // If it's a channel, return a mapped channel
-        if (versions?.getClass()?.getName()?.contains('DataflowBroadcast') || 
+        if (versions?.getClass()?.getName()?.contains('DataflowBroadcast') ||
             versions?.getClass()?.getName()?.contains('DataflowStream') ||
             versions?.getClass()?.getName()?.contains('DataflowVariable')) {
             return versions.toList().map { versionsList ->
