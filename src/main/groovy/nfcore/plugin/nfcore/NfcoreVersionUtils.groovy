@@ -17,6 +17,7 @@
 package nfcore.plugin.nfcore
 
 import nextflow.Session
+import nextflow.Const
 import org.yaml.snakeyaml.Yaml
 
 /**
@@ -84,23 +85,18 @@ class NfcoreVersionUtils {
      * @return YAML string with processed versions
      */
     static String processVersionsFromTopic(List<List> topicData) {
-        def versions = [:]
+        // Maintain flat tool->version map for compatibility
+        Map<String, Object> versions = [:]
         topicData.each { tuple ->
             if (tuple.size() >= 3) {
-                def process = tuple[0]
-                def name = tuple[1]
+                def tool = tuple[1]?.toString()
                 def version = tuple[2]
-
-                // Extract tool name from process (remove module path prefix)
-                def toolName = process.tokenize(':').last()
-                versions[name] = version
+                if (tool) versions[tool] = (version instanceof CharSequence) ? version.toString() : version
             }
         }
 
         def yaml = new Yaml()
-        def yamlString = yaml.dumpAsMap(versions)
-        // Remove trailing newline for consistency
-        return yamlString.trim()
+        return yaml.dumpAsMap(versions).trim()
     }
 
     /**
@@ -147,8 +143,8 @@ class NfcoreVersionUtils {
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'Workflow'
         def workflowVersion = getWorkflowVersion(session)
-        def nextflowVersion = (session.config instanceof Map && session.config.nextflow instanceof Map && session.config.nextflow['version']) ? session.config.nextflow['version'] : 'unknown'
-
+        // Get Nextflow version from environment variable
+        def nextflowVersion = System.getenv('NXF_VER') ?: 'unknown'
         return [
             ['Workflow', workflowName, workflowVersion],
             ['Workflow', 'Nextflow', nextflowVersion]
@@ -158,15 +154,16 @@ class NfcoreVersionUtils {
     /**
      * Get workflow version for pipeline as YAML string
      */
-    static String workflowVersionToYAML(Session session) {
+    static String workflowVersionToYAML(Session session, Object nextflowVersion = null) {
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def workflowVersion = getWorkflowVersion(session)
-        def nextflowVersion = (session.config instanceof Map && session.config.nextflow instanceof Map && session.config.nextflow['version']) ? session.config.nextflow['version'] : 'unknown'
+        // Use provided version, or fall back to environment variable
+        def nfVer = nextflowVersion?.toString() ?: System.getenv('NXF_VER') ?: 'unknown'
         return """
         Workflow:
             ${workflowName}: ${workflowVersion}
-            Nextflow: ${nextflowVersion}
+            Nextflow: ${nfVer}
         """.stripIndent().trim()
     }
 
@@ -185,18 +182,161 @@ class NfcoreVersionUtils {
      *   workflow.onComplete {
      *     def all_versions = versions_ch.collect()
      *     def versions_yaml = NfcoreVersionUtils.softwareVersionsToYAML(all_versions, workflow.session)
-     *     println versions_yaml
+     *     println versions_yamllet'
      *   }
      *
-     * @param chVersions List of YAML strings (from Nextflow pipeline)
+     * Accepts mixed inputs:
+     * - YAML strings (legacy inline)
+     * - File paths (String), File, or Path objects pointing to legacy versions.yml
+     * - Topic tuples: [process, tool, version]
+     * - Maps of tool->version
+     *
+     * @param chVersions List of mixed version entries from the pipeline (can be ArrayBag or other iterable)
      * @param session The Nextflow session
+     * @param nextflowVersion Optional Nextflow version to include in output (can be VersionNumber or string)
      * @return Combined YAML string
      */
-    static String softwareVersionsToYAML(List<String> chVersions, Session session) {
-        def parsedVersions = chVersions.collect { processVersionsFromYAML(it) }
-        def uniqueVersions = parsedVersions.findAll { it }.unique()
-        def workflowYaml = workflowVersionToYAML(session)
-        return ([*uniqueVersions, workflowYaml].join("\n")).trim()
+    static String softwareVersionsToYAML(Object chVersions, Object session, Object nextflowVersion = null) {
+        // Convert to proper types
+        List versionsList = (chVersions instanceof List) ? chVersions : chVersions?.toList() ?: []
+        Session sess = (session instanceof Session) ? session : null
+        def nfVersion = nextflowVersion
+        
+        def yaml = new Yaml()
+        // Collect nested: process -> tools map
+        Map<String, Map<String, Object>> merged = [:].withDefault { [:] as Map<String, Object> }
+
+        Closure<String> cleanKey = { k ->
+            if (k == null) return null
+            def s = k.toString()
+            return (s.contains(':')) ? s.tokenize(':').last() : s
+        }
+
+        Closure mergeProcessMap = { String processName, Map toolsMap ->
+            if (!processName || !toolsMap) return
+            toolsMap.each { tk, tv ->
+                def toolKey = cleanKey(tk)
+                if (toolKey) merged[processName][toolKey] = (tv instanceof CharSequence) ? tv.toString() : tv
+            }
+        }
+
+        Closure mergeParsedYaml = { Map parsed ->
+            if (!parsed) return
+            // If any value is a Map, treat as process blocks
+            def hasNested = parsed.values().any { it instanceof Map }
+            if (hasNested) {
+                parsed.each { pk, pv ->
+                    if (pv instanceof Map) {
+                        def procName = pk?.toString()
+                        mergeProcessMap(procName, pv as Map)
+                    } else if (pk) {
+                        // Top-level scalar, park under 'Software'
+                        mergeProcessMap('Software', [(pk.toString()): pv])
+                    }
+                }
+            } else {
+                // Flat tool->version map, park under 'Software'
+                mergeProcessMap('Software', parsed)
+            }
+        }
+
+        Closure processEntry
+        processEntry = { Object entry ->
+            if (entry == null) return
+            try {
+                // Strings may be inline YAML or file paths
+                if (entry instanceof CharSequence) {
+                    def s = entry.toString().trim()
+                    if (!s) return
+                    def f = new File(s)
+                    if (f.exists() && f.isFile()) {
+                        def processed = processVersionsFromYAML(f.text)
+                        if (processed) {
+                            def map = yaml.load(processed)
+                            if (map instanceof Map) mergeParsedYaml(map as Map)
+                        }
+                    } else {
+                        def processed = processVersionsFromYAML(s)
+                        if (processed) {
+                            def map = yaml.load(processed)
+                            if (map instanceof Map) mergeParsedYaml(map as Map)
+                        }
+                    }
+                }
+                // File path like objects
+                else if (entry instanceof File) {
+                    if (entry.exists()) {
+                        def processed = processVersionsFromYAML(entry.text)
+                        if (processed) {
+                            def map = yaml.load(processed)
+                            if (map instanceof Map) mergeParsedYaml(map as Map)
+                        }
+                    }
+                }
+                // Handle Nextflow Path or other Path-like types
+                else if (entry.getClass().getName().toLowerCase().endsWith('.path')) {
+                    def f = new File(entry.toString())
+                    if (f.exists() && f.isFile()) {
+                        def processed = processVersionsFromYAML(f.text)
+                        if (processed) {
+                            def map = yaml.load(processed)
+                            if (map instanceof Map) mergeParsedYaml(map as Map)
+                        }
+                    }
+                }
+                // Topic tuple(s)
+                else if (entry instanceof List || entry.getClass().isArray()) {
+                    def list = (entry instanceof List) ? (List) entry : (entry as Object[]).toList()
+                    // If we got a list of lists (e.g. collected channel), recurse
+                    if (!list.isEmpty() && list[0] instanceof List) {
+                        list.each { processEntry(it) }
+                    } else if (list.size() >= 3) {
+                        def procRaw = list[0]?.toString() ?: ''
+                        def processName = procRaw.contains(':') ? procRaw.substring(procRaw.lastIndexOf(':') + 1) : procRaw
+                        def tool = list[1]?.toString()
+                        def version = list[2]
+                        if (processName && tool) merged[processName][tool] = version instanceof CharSequence ? version.toString() : version
+                    }
+                }
+                // Direct map
+                else if (entry instanceof Map) {
+                    mergeParsedYaml(entry as Map)
+                }
+                // Unknown type - try toString as YAML
+                else {
+                    def s = entry.toString()
+                    if (s) {
+                        def f = new File(s)
+                        if (f.exists() && f.isFile()) {
+                            def processed = processVersionsFromYAML(f.text)
+                            if (processed) {
+                                def map = yaml.load(processed)
+                                if (map instanceof Map) mergeParsedYaml(map as Map)
+                            }
+                        } else {
+                            def processed = processVersionsFromYAML(s)
+                            if (processed) {
+                                def map = yaml.load(processed)
+                                if (map instanceof Map) mergeParsedYaml(map as Map)
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Warning: Could not process version entry ${entry}: ${e.message}")
+            }
+        }
+
+        versionsList?.each { processEntry(it) }
+
+        // Sort processes alphabetically, and within each process sort tools alphabetically
+        Map<String, Map<String, Object>> sortedMerged = merged.sort().collectEntries { processName, toolsMap ->
+            [(processName): toolsMap.sort()]
+        }
+
+        String versionsYaml = sortedMerged ? yaml.dumpAsMap(sortedMerged).trim() : ''
+        def workflowYaml = workflowVersionToYAML(sess, nfVersion)
+        return ([versionsYaml, workflowYaml].findAll { it && it != '{}' }.join("\n")).trim()
     }
 
     /**
