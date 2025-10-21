@@ -143,8 +143,8 @@ class NfcoreVersionUtils {
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'Workflow'
         def workflowVersion = getWorkflowVersion(session)
-        // Get Nextflow version from environment variable
-        def nextflowVersion = System.getenv('NXF_VER') ?: 'unknown'
+        // Get Nextflow version from session config, fall back to environment variable
+        def nextflowVersion = session?.getConfig()?.get('nextflow')?.get('version') ?: System.getenv('NXF_VER') ?: 'unknown'
         return [
             ['Workflow', workflowName, workflowVersion],
             ['Workflow', 'Nextflow', nextflowVersion]
@@ -158,8 +158,11 @@ class NfcoreVersionUtils {
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def workflowVersion = getWorkflowVersion(session)
-        // Use provided version, or fall back to environment variable
-        def nfVer = nextflowVersion?.toString() ?: System.getenv('NXF_VER') ?: 'unknown'
+        // Use provided version, or try session config, or fall back to environment variable
+        def nfVer = nextflowVersion?.toString() ?:
+                    session?.getConfig()?.get('nextflow')?.get('version') ?:
+                    System.getenv('NXF_VER') ?:
+                    'unknown'
         return """
         Workflow:
             ${workflowName}: ${workflowVersion}
