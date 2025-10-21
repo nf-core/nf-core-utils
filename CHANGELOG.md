@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- New `getGenomeAttribute()` function to retrieve genome attributes from `params.genomes` for the selected genome ([#24](https://github.com/nf-core/nf-core-utils/pull/24))
+
+### Changed
+
+- Enhanced `softwareVersionsToYAML()` to support mixed input sources including YAML strings, file paths, topic tuples, and maps ([#24](https://github.com/nf-core/nf-core-utils/pull/24))
+- Improved Nextflow version detection in `workflowVersionToYAML()` with fallback to `NXF_VER` environment variable
+
 ## [0.3.1] - 2025-09-12
 
 ### Changed
