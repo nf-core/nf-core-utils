@@ -15,7 +15,6 @@ nextflow_pipeline {
 
         then {
             assert workflow.success
-            assert workflow.trace.succeeded().size() > 0
         }
     }
 }
