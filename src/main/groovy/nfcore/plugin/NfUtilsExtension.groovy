@@ -23,6 +23,7 @@ import nfcore.plugin.nfcore.NfcoreConfigValidator
 import nfcore.plugin.nfcore.NfcoreVersionUtils
 import nfcore.plugin.nfcore.NfcoreCitationUtils
 import nfcore.plugin.nfcore.NfcoreReportingOrchestrator
+import nfcore.plugin.ReferencesUtils
 
 /**
  * Implements a custom function which can be imported by
@@ -45,6 +46,20 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     void sayHello(String target) {
         println "Hello, ${target}!"
+    }
+
+    /**
+     * Get a genome attribute from params.genomes for the selected genome.
+     * Delegates to ReferencesUtils.getGenomeAttribute().
+     *
+     * @param attribute The attribute name to retrieve (e.g. 'fasta', 'gtf')
+     * @return The attribute value or null
+     */
+    @Function
+    Object getGenomeAttribute(String attribute) {
+        Map params = session?.getConfig()?.get('params') as Map
+        if (!params) params = session?.params as Map
+        return ReferencesUtils.getGenomeAttribute(params, attribute)
     }
 
     // --- Methods from NfcoreExtension ---
@@ -258,6 +273,50 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     List<List> workflowVersionToChannel() {
         return NfcoreVersionUtils.workflowVersionToChannel(this.session)
+    }
+
+    /**
+     * Combine versions from mixed sources into a single YAML string
+     * Works with both channels and lists
+     * When given a channel, returns a channel that emits the combined YAML
+     * When given a list, returns the YAML string directly
+     *
+     * Supports multiple calling patterns:
+     * 1. Named parameters: softwareVersionsToYAML(softwareVersions: channel, nextflowVersion: workflow.nextflow.version)
+     * 2. Positional: softwareVersionsToYAML(channel)
+     * 3. Mixed: softwareVersionsToYAML(channel, nextflowVersion: workflow.nextflow.version)
+     *
+     * @param versionsOrOptions Either a channel/list of versions, or a Map with 'softwareVersions' and optional 'nextflowVersion' keys
+     * @param options Optional map with 'nextflowVersion' key
+     * @return Channel emitting combined YAML string, or String directly if input is a list
+     */
+    @Function
+    Object softwareVersionsToYAML(Object versionsOrOptions, Map options = [:]) {
+        // Extract versions channel/list and nextflowVersion
+        Object versions = null
+        def nextflowVersion = options?.nextflowVersion
+
+        // Handle named parameters: softwareVersionsToYAML(softwareVersions: ch, nextflowVersion: v)
+        if (versionsOrOptions instanceof Map && versionsOrOptions.containsKey('softwareVersions')) {
+            versions = versionsOrOptions.softwareVersions
+            nextflowVersion = versionsOrOptions.nextflowVersion ?: nextflowVersion
+        }
+        // Handle positional: softwareVersionsToYAML(ch) or softwareVersionsToYAML(ch, nextflowVersion: v)
+        else {
+            versions = versionsOrOptions
+        }
+
+        // If it's a channel, return a mapped channel
+        if (versions?.getClass()?.getName()?.contains('DataflowBroadcast') ||
+            versions?.getClass()?.getName()?.contains('DataflowStream') ||
+            versions?.getClass()?.getName()?.contains('DataflowVariable')) {
+            return versions.toList().map { versionsList ->
+                // Call with positional arguments in the correct order
+                NfcoreVersionUtils.softwareVersionsToYAML(versionsList as List, this.session as Session, nextflowVersion)
+            }
+        }
+        // If it's a list, process directly
+        return NfcoreVersionUtils.softwareVersionsToYAML(versions as List, this.session as Session, nextflowVersion)
     }
 
     // --- Citation Management Functions ---
