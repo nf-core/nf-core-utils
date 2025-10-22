@@ -1,6 +1,11 @@
 package nfcore.plugin
 
+import ch.qos.logback.classic.Level
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import nfcore.plugin.nfcore.NfcoreConfigValidator
+import org.slf4j.LoggerFactory
 import spock.lang.PendingFeature
 import spock.lang.Specification
 
@@ -28,48 +33,6 @@ class NfcorePipelineObserverTest extends Specification {
         1 * validator.checkProfileProvided('standard', '--foo bar', true)
     }
 
-    def 'onFlowCreate should print the start message'() {
-        given:
-        def observer = new NfcorePipelineObserver()
-        def session = Mock(nextflow.Session) {
-            workflowMetadata >> [projectName: 'test-pipeline']
-            config >> [:]
-            profile >> 'standard'
-            commandLine >> ''
-        }
-        def out = new ByteArrayOutputStream()
-        def oldOut = System.out
-        System.out = new PrintStream(out)
-
-        when:
-        observer.onFlowCreate(session)
-        System.out.flush()
-
-        then:
-        out.toString().contains('Pipeline is starting! 🚀')
-
-        cleanup:
-        System.out = oldOut
-    }
-
-    def 'onFlowComplete should print the complete message'() {
-        given:
-        def observer = new NfcorePipelineObserver()
-        def out = new ByteArrayOutputStream()
-        def oldOut = System.out
-        System.out = new PrintStream(out)
-
-        when:
-        observer.onFlowComplete()
-        System.out.flush()
-
-        then:
-        out.toString().contains('Pipeline complete! 👋')
-
-        cleanup:
-        System.out = oldOut
-    }
-
     @PendingFeature()
     def 'onFlowCreate handles missing metadata gracefully'() {
         given:
@@ -88,5 +51,113 @@ class NfcorePipelineObserverTest extends Specification {
         then:
         1 * validator.checkConfigProvided(null, { it.profile == 'standard' && it.configFiles == [] })
         1 * validator.checkProfileProvided('standard', '', true)
+    }
+
+    def 'onFlowCreate should log start message at TRACE level'() {
+        given:
+        def observer = new NfcorePipelineObserver()
+        def session = Mock(nextflow.Session) {
+            workflowMetadata >> [projectName: 'test-pipeline']
+            config >> [:]
+            profile >> 'standard'
+            commandLine >> ''
+        }
+
+        // Set up logging capture
+        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
+        listAppender.start()
+        logger.addAppender(listAppender)
+        def originalLevel = logger.level
+        logger.setLevel(Level.TRACE)
+
+        when:
+        observer.onFlowCreate(session)
+
+        then:
+        def logEvents = listAppender.list
+        logEvents.any { it.level == Level.TRACE && it.message.contains('Pipeline is starting! 🚀') }
+
+        cleanup:
+        logger.setLevel(originalLevel)
+        logger.detachAppender(listAppender)
+    }
+
+    def 'onFlowComplete should log complete message at TRACE level'() {
+        given:
+        def observer = new NfcorePipelineObserver()
+
+        // Set up logging capture
+        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
+        listAppender.start()
+        logger.addAppender(listAppender)
+        def originalLevel = logger.level
+        logger.setLevel(Level.TRACE)
+
+        when:
+        observer.onFlowComplete()
+
+        then:
+        def logEvents = listAppender.list
+        logEvents.any { it.level == Level.TRACE && it.message.contains('Pipeline complete! 👋') }
+
+        cleanup:
+        logger.setLevel(originalLevel)
+        logger.detachAppender(listAppender)
+    }
+
+    def 'onFlowCreate should NOT log start message below TRACE level'() {
+        given:
+        def observer = new NfcorePipelineObserver()
+        def session = Mock(nextflow.Session) {
+            workflowMetadata >> [projectName: 'test-pipeline']
+            config >> [:]
+            profile >> 'standard'
+            commandLine >> ''
+        }
+
+        // Set up logging capture with DEBUG level
+        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
+        listAppender.start()
+        logger.addAppender(listAppender)
+        def originalLevel = logger.level
+        logger.setLevel(Level.DEBUG)
+
+        when:
+        observer.onFlowCreate(session)
+
+        then:
+        def logEvents = listAppender.list
+        !logEvents.any { it.message.contains('Pipeline is starting! 🚀') }
+
+        cleanup:
+        logger.setLevel(originalLevel)
+        logger.detachAppender(listAppender)
+    }
+
+    def 'onFlowComplete should NOT log complete message below TRACE level'() {
+        given:
+        def observer = new NfcorePipelineObserver()
+
+        // Set up logging capture with DEBUG level
+        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
+        listAppender.start()
+        logger.addAppender(listAppender)
+        def originalLevel = logger.level
+        logger.setLevel(Level.DEBUG)
+
+        when:
+        observer.onFlowComplete()
+
+        then:
+        def logEvents = listAppender.list
+        !logEvents.any { it.message.contains('Pipeline complete! 👋') }
+
+        cleanup:
+        logger.setLevel(originalLevel)
+        logger.detachAppender(listAppender)
     }
 }
