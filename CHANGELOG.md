@@ -9,8 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New `getGenomeAttribute()` function to retrieve genome attributes from `params.genomes` for the selected genome ([#24](https://github.com/nf-core/nf-core-utils/pull/24))
-
 ### Changed
 
 - Enhanced `softwareVersionsToYAML()` to support mixed input sources including YAML strings, file paths, topic tuples, and maps ([#24](https://github.com/nf-core/nf-core-utils/pull/24))
