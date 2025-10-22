@@ -21,8 +21,75 @@ The extension provides two essential functions:
 
 ### 1.2. Migration from Legacy Systems
 
-!!! note "Subworkflow Migration"
-This extension replaces the legacy `utils_references` subworkflow with cleaner, plugin-based functionality that's easier to maintain and use.
+This function is used to retrieve genome attributes in the nf-core TEMPLATE.
+
+It retrieves a specific attribute (such as `fasta`, `gtf`, or index paths) for the selected genome from the `params.genomes` map. It is useful for pipelines that support multiple genomes and need to access reference files or metadata for the currently selected genome.
+
+#### Function Signature
+
+```groovy
+Object getGenomeAttribute(String attribute)
+```
+
+or (static utility):
+
+```groovy
+Object ReferencesUtils.getGenomeAttribute(Map params, String attribute)
+```
+
+#### Parameters
+
+| Parameter   | Type   | Required | Description                                                        |
+| ----------- | ------ | -------- | ------------------------------------------------------------------ |
+| `attribute` | String | Yes      | The attribute name to retrieve (e.g. 'fasta', 'gtf', 'star')       |
+| `params`    | Map    | Yes      | (static) The Nextflow params map containing `genome` and `genomes` |
+
+#### Return Value
+
+Returns the value of the requested attribute for the selected genome, or `null` if not found.
+
+#### Practical Example
+
+```groovy
+// Example params structure
+def params = [
+    genome: 'GRCh38',
+    genomes: [
+        GRCh38: [
+            fasta: 's3://bucket/genome.fa',
+            gtf: 's3://bucket/genes.gtf',
+        ],
+        GRCh37: [
+            fasta: 's3://bucket/genome37.fa'
+            star: 's3://bucket/star_index/'
+        ]
+    ]
+]
+
+// Retrieve the FASTA file for the selected genome
+def fasta = ReferencesUtils.getGenomeAttribute(params, 'fasta')
+// Returns: 's3://bucket/genome.fa'
+
+// Retrieve the GTF file
+def gtf = ReferencesUtils.getGenomeAttribute(params, 'gtf')
+// Returns: 's3://bucket/genes.gtf'
+
+// If the attribute or genome is missing, returns null
+def missing = ReferencesUtils.getGenomeAttribute(params, 'star')
+// Returns: null
+```
+
+#### Usage in Nextflow
+
+```nextflow
+include { getGenomeAttribute } from 'plugin/nf-core-utils'
+
+workflow {
+    // Example: get the FASTA file for the selected genome
+    genome_fasta = getGenomeAttribute('fasta')
+    log.info "Selected genome FASTA: ${genome_fasta}"
+}
+```
 
 ## 2. Getting Started
 
@@ -33,10 +100,9 @@ Let's start with a simple example that demonstrates the core concept:
 ```nextflow title="basic_references.nf"
 #!/usr/bin/env nextflow
 
-nextflow.enable.dsl = 2
-
 // Import reference utilities
-include { getReferencesFile; getReferencesValue } from 'plugin/nf-core-utils'
+include { getReferencesFile  } from 'plugin/nf-core-utils'
+include { getReferencesValue } from 'plugin/nf-core-utils'
 
 // Pipeline parameters
 params.fasta = null          // User can override with custom file
@@ -105,17 +171,6 @@ workflow {
 
 This function intelligently resolves file paths based on user parameters and reference metadata.
 
-#### Function Signature
-
-```groovy
-Channel getReferencesFile(
-    Channel references,    // Reference metadata channel
-    Object param,         // User parameter (file path or null)
-    String attribute,     // Metadata attribute name
-    String basepath      // Base path for relative resolution
-)
-```
-
 #### Parameters
 
 | Parameter    | Type        | Required | Description                                   |
@@ -124,6 +179,43 @@ Channel getReferencesFile(
 | `param`      | String/null | Yes      | User-provided file path (null = use metadata) |
 | `attribute`  | String      | Yes      | Metadata attribute name to extract            |
 | `basepath`   | String      | No       | Base path for relative path resolution        |
+
+#### Practical Example
+
+```nextflow title="file_resolution_example.nf"
+#!/usr/bin/env nextflow
+
+include { getReferencesFile } from 'plugin/nf-core-utils'
+
+params.fasta = null
+params.gtf = "/custom/annotations.gtf"
+params.igenomes_base = 's3://ngi-igenomes/igenomes'
+
+workflow {
+    // Create comprehensive reference metadata
+    references = Channel.of([
+        genome: 'GRCh38',
+        fasta: 'Homo_sapiens/NCBI/GRCh38/Sequence/WholeGenomeFasta/genome.fa',
+        gtf: 'Homo_sapiens/NCBI/GRCh38/Annotation/Genes/genes.gtf',
+        readme: 'Homo_sapiens/NCBI/GRCh38/README.txt'
+    ])
+
+    // Resolve multiple reference files
+    genome_fasta = getReferencesFile(references, params.fasta, 'fasta', params.igenomes_base)
+    genome_gtf = getReferencesFile(references, params.gtf, 'gtf', params.igenomes_base)
+
+    // Combine for downstream processing
+    references_ready = genome_fasta.combine(genome_gtf)
+
+    references_ready.view { fasta, gtf ->
+        """
+        Reference files ready:
+        FASTA: ${fasta}
+        GTF: ${gtf}
+        """
+    }
+}
+```
 
 #### Practical Example
 
@@ -230,9 +322,8 @@ Here's a comprehensive example showing how to integrate reference resolution int
 ```nextflow title="complete_reference_pipeline.nf" hl_lines="8-11 18-27 35-42"
 #!/usr/bin/env nextflow
 
-nextflow.enable.dsl = 2
-
-include { getReferencesFile; getReferencesValue } from 'plugin/nf-core-utils'
+include { getReferencesFile  } from 'plugin/nf-core-utils'
+include { getReferencesValue } from 'plugin/nf-core-utils'
 
 // Pipeline parameters with sensible defaults
 params.input = 'samples.csv'
@@ -316,7 +407,8 @@ For pipelines using standardized reference collections, create a systematic appr
 ```nextflow title="igenomes_integration.nf"
 #!/usr/bin/env nextflow
 
-include { getReferencesFile; getReferencesValue } from 'plugin/nf-core-utils'
+include { getReferencesFile  } from 'plugin/nf-core-utils'
+include { getReferencesValue } from 'plugin/nf-core-utils'
 
 params.genome = 'GRCh38'
 params.igenomes_base = 's3://ngi-igenomes/igenomes'
@@ -374,7 +466,8 @@ For pipelines supporting multiple genomes:
 ```nextflow title="multi_genome_support.nf"
 #!/usr/bin/env nextflow
 
-include { getReferencesFile; getReferencesValue } from 'plugin/nf-core-utils'
+include { getReferencesFile  } from 'plugin/nf-core-utils'
+include { getReferencesValue } from 'plugin/nf-core-utils'
 
 // Support for multiple genomes
 params.genomes = ['GRCh38', 'mm10']
@@ -545,7 +638,8 @@ Always document your reference requirements:
  * Supported genomes: GRCh38, GRCh37, mm10, mm9
  */
 
-include { getReferencesFile; getReferencesValue } from 'plugin/nf-core-utils'
+include { getReferencesFile  } from 'plugin/nf-core-utils'
+include { getReferencesValue } from 'plugin/nf-core-utils'
 
 // Reference parameters with documentation
 params.genome = null          // Standard genome name (e.g., 'GRCh38')
