@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exposed `softwareVersionsToYAML()` function for combining version YAMLs from channels
 - Comprehensive documentation for all three new version utility functions
 
+### Changed
+
+### Fixed
+
+- Fix versions needed for build and tests
+
 ## [0.3.1] - 2025-09-12
 
 ### Changed
