@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 
 /*
  * E2E validation test for nf-core-utils plugin configuration validation functions
@@ -30,7 +29,7 @@ workflow {
         log.info("Configuration check result: ${config_valid}")
         log.info("✅ checkConfigProvided() executed successfully")
     }
-    catch (e: Exception) {
+    catch (Exception e) {
         log.error("Error in checkConfigProvided(): ${e.message}")
     }
 
@@ -66,7 +65,7 @@ workflow {
             checkProfileProvided(args)
             log.info("✅ Profile check completed for case ${index + 1}")
         }
-        catch (e: Exception) {
+        catch (Exception e) {
             log.error("Error in checkProfileProvided() case ${index + 1}: ${e.message}")
         }
     }
@@ -82,7 +81,7 @@ workflow {
         checkProfileProvided(valid_args, true)
         log.info("✅ Monochrome mode test completed")
     }
-    catch (e: Exception) {
+    catch (Exception e) {
         log.error("Monochrome test error: ${e.message}")
     }
 
@@ -94,7 +93,7 @@ workflow {
         checkProfileProvided(valid_args, false)
         log.info("✅ Color-enabled mode test completed")
     }
-    catch (e: Exception) {
+    catch (Exception e) {
         log.error("Color-enabled test error: ${e.message}")
     }
 
@@ -117,7 +116,7 @@ workflow {
             log.info("⚠️ Conda channels may need configuration adjustment")
         }
     }
-    catch (e: Exception) {
+    catch (Exception e) {
         log.error("Error in checkCondaChannels(): ${e.message}")
     }
 
@@ -143,7 +142,7 @@ workflow {
 
         log.info("✅ Integration scenario completed successfully")
     }
-    catch (e: Exception) {
+    catch (Exception e) {
         log.error("Integration scenario error: ${e.message}")
     }
 
@@ -155,7 +154,7 @@ workflow {
         checkProfileProvided([])
         log.info("✅ Empty arguments handled correctly")
     }
-    catch (e: Exception) {
+    catch (Exception e) {
         log.warn("Empty arguments case: ${e.message}")
     }
 
@@ -164,7 +163,7 @@ workflow {
         checkProfileProvided(null)
         log.info("✅ Null arguments handled correctly")
     }
-    catch (e: Exception) {
+    catch (Exception e) {
         log.warn("Null arguments case: ${e.message}")
     }
 
