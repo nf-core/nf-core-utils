@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NFT_VER: "0.9.2"
+  NFT_WORKDIR: "~"
+  NXF_ANSI_LOG: false
+  NXF_SINGULARITY_CACHEDIR: ${{ github.workspace }}/.singularity
+  NXF_SINGULARITY_LIBRARYDIR: ${{ github.workspace }}/.singularity
 jobs:
   validation:
     runs-on: ubuntu-latest
@@ -37,6 +44,13 @@ jobs:
         uses: nf-core/setup-nf-test@v1
         with:
           install-pdiff: true
+
+      - name: Conda setup
+        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3
+        with:
+          auto-update-conda: true
+          conda-solver: libmamba
+          conda-remove-defaults: true
 
       - name: Clean workspace
         run: make clean

@@ -8,17 +8,8 @@ nextflow_pipeline {
 
         then {
             assert workflow.success
-            assert workflow.exitStatus == 0
-
-            // Verify basic pipeline execution markers (stdout is a list)
-            assert workflow.stdout.any { it.contains("Pipeline is starting") }
-            assert workflow.stdout.any { it.contains("Pipeline complete") }
-
-            // Snapshot core pipeline utilities outputs
             assert snapshot(
-                // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
-                workflow.exitStatus,
-                workflow.success
+                filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true)
             ).match()
         }
     }
