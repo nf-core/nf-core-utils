@@ -30,7 +30,7 @@ workflow {
         log.info("Configuration check result: ${config_valid}")
         log.info("✅ checkConfigProvided() executed successfully")
     }
-    catch (Exception e) {
+    catch (e: Exception) {
         log.error("Error in checkConfigProvided(): ${e.message}")
     }
 
@@ -66,7 +66,7 @@ workflow {
             checkProfileProvided(args)
             log.info("✅ Profile check completed for case ${index + 1}")
         }
-        catch (Exception e) {
+        catch (e: Exception) {
             log.error("Error in checkProfileProvided() case ${index + 1}: ${e.message}")
         }
     }
@@ -82,7 +82,7 @@ workflow {
         checkProfileProvided(valid_args, true)
         log.info("✅ Monochrome mode test completed")
     }
-    catch (Exception e) {
+    catch (e: Exception) {
         log.error("Monochrome test error: ${e.message}")
     }
 
@@ -94,7 +94,7 @@ workflow {
         checkProfileProvided(valid_args, false)
         log.info("✅ Color-enabled mode test completed")
     }
-    catch (Exception e) {
+    catch (e: Exception) {
         log.error("Color-enabled test error: ${e.message}")
     }
 
@@ -117,7 +117,7 @@ workflow {
             log.info("⚠️ Conda channels may need configuration adjustment")
         }
     }
-    catch (Exception e) {
+    catch (e: Exception) {
         log.error("Error in checkCondaChannels(): ${e.message}")
     }
 
@@ -143,7 +143,7 @@ workflow {
 
         log.info("✅ Integration scenario completed successfully")
     }
-    catch (Exception e) {
+    catch (e: Exception) {
         log.error("Integration scenario error: ${e.message}")
     }
 
@@ -155,7 +155,7 @@ workflow {
         checkProfileProvided([])
         log.info("✅ Empty arguments handled correctly")
     }
-    catch (Exception e) {
+    catch (e: Exception) {
         log.warn("Empty arguments case: ${e.message}")
     }
 
@@ -164,7 +164,7 @@ workflow {
         checkProfileProvided(null)
         log.info("✅ Null arguments handled correctly")
     }
-    catch (Exception e) {
+    catch (e: Exception) {
         log.warn("Null arguments case: ${e.message}")
     }
 

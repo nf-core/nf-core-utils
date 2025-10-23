@@ -62,7 +62,7 @@ workflow {
         dumpParametersToJSON(output_dir, test_params)
         log.info("✅ Parameters dumped successfully")
     }
-    catch (Exception e) {
+    catch (e: Exception) {
         log.error("Error dumping parameters: ${e.message}")
         log.error("Error details: ${e}")
     }
@@ -75,7 +75,7 @@ workflow {
         dumpParametersToJSON(null, test_params)
         log.info("✅ Null output directory handled correctly")
     }
-    catch (Exception e) {
+    catch (e: Exception) {
         log.error("Error with null output: ${e.message}")
     }
 
@@ -100,7 +100,7 @@ workflow {
             assert json_content.max_cpus == 16
             log.info("✅ JSON content validation passed")
         }
-        catch (Exception e) {
+        catch (e: Exception) {
             log.error("JSON validation failed: ${e.message}")
         }
     }

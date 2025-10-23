@@ -82,7 +82,7 @@ workflow {
             completionSummary(true)
             log.info("✅ completionSummary(monochrome) completed successfully")
         }
-        catch (Exception e) {
+        catch (e: Exception) {
             log.warn("completionSummary test: ${e.message}")
         }
 
@@ -100,7 +100,7 @@ workflow {
             )
             log.info("✅ completionEmail completed successfully")
         }
-        catch (Exception e) {
+        catch (e: Exception) {
             log.warn("completionEmail test: ${e.message}")
         }
 
@@ -113,7 +113,7 @@ workflow {
             )
             log.info("✅ imNotification completed successfully")
         }
-        catch (Exception e) {
+        catch (e: Exception) {
             log.warn("imNotification test: ${e.message}")
         }
 
