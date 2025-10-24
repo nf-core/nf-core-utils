@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package nfcore.plugin
+package nfcore.plugin.references
 
 import groovy.transform.CompileStatic
 import nextflow.Session
+import nextflow.file.FileHelper
 
 /**
  * Implements utility functions for handling reference files and values
@@ -69,5 +70,62 @@ class ReferencesUtils {
                 null
             }
         }
+    }
+
+    /**
+     * Update references file by replacing base paths in the YAML file
+     *
+     * @param options Named parameters map (can be first positional arg when using named params)
+     * @param yamlReference The path to the YAML reference file
+     * @return The updated file object (either staged copy or original)
+     */
+    def updateReferencesFile(Map options, def yamlReference) {
+        // Support named parameters: basepathFinal/basepath_final and basepathToReplace/basepath_to_replace
+        def basepathFinal = options.basepathFinal ?: options.basepath_final
+        def basepathToReplace = options.basepathToReplace ?: options.basepath_to_replace
+
+        def correctYamlFile = FileHelper.asPath(yamlReference.toString())
+
+        if (!correctYamlFile || !correctYamlFile.exists()) {
+            throw new IllegalArgumentException("YAML reference file does not exist: ${yamlReference}")
+        }
+
+        if (basepathFinal) {
+            // Create a staged copy in a temporary location
+            def stagedYamlFile = FileHelper.asPath("${session.workDir}/tmp/${UUID.randomUUID().toString()}.${correctYamlFile.getExtension()}")
+
+            // Ensure parent directory exists
+            stagedYamlFile.parent.mkdirs()
+
+            // Copy the file
+            correctYamlFile.copyTo(stagedYamlFile)
+            correctYamlFile = stagedYamlFile
+
+            // Use a local variable to accumulate changes
+            def updatedYamlContent = correctYamlFile.text
+
+            // Handle basepathToReplace as a list or convert to list
+            def pathsToReplace = basepathToReplace instanceof List ? basepathToReplace : [basepathToReplace]
+            pathsToReplace.each { basepathReplacement ->
+                if (basepathReplacement) {
+                    updatedYamlContent = updatedYamlContent.replace(basepathReplacement.toString(), basepathFinal.toString())
+                }
+            }
+            correctYamlFile.text = updatedYamlContent
+        }
+
+        return correctYamlFile
+    }
+
+    /**
+     * Update references file by replacing base paths in the YAML file (positional parameters version)
+     *
+     * @param yamlReference The path to the YAML reference file
+     * @param basepathFinal The final base path to use as replacement (can be null, false, or empty)
+     * @param basepathToReplace List of base paths to be replaced (can be null, false, or empty)
+     * @return The updated file object (either staged copy or original)
+     */
+    def updateReferencesFile(def yamlReference, def basepathFinal, def basepathToReplace) {
+        return updateReferencesFile([basepathFinal: basepathFinal, basepathToReplace: basepathToReplace], yamlReference)
     }
 }
