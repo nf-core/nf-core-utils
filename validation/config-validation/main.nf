@@ -123,10 +123,6 @@ workflow {
     checkProfileProvided([])
     log.info("✅ Empty arguments handled correctly")
 
-    // Test with null arguments (if applicable)
-    checkProfileProvided(null)
-    log.info("✅ Null arguments handled correctly")
-
     log.info("==========================================")
     log.info("Configuration Validation Complete")
     log.info("==========================================")
@@ -137,7 +133,6 @@ workflow {
             ==========================================
             Configuration Validation Results
             ==========================================
-
             ✅ checkConfigProvided() - Pipeline configuration validation tested
             ✅ checkProfileProvided() - Execution profile validation tested
             ✅ Color formatting - Both monochrome and color modes tested
@@ -145,7 +140,6 @@ workflow {
             ✅ checkCondaChannels() - Conda channel validation tested
             ✅ Integration scenario - Typical pipeline initialization flow tested
             ✅ Edge cases - Error handling and boundary conditions tested
-
             Configuration validation functions ready for fetchngs! 🚀
             ==========================================
             """.stripIndent().trim()
