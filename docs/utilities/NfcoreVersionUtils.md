@@ -527,8 +527,8 @@ workflow {
 
 ```yaml
 Workflow:
-    nf-core/rnaseq: v3.12.0-gabcdef1
-    Nextflow: 23.04.1
+  nf-core/rnaseq: v3.12.0-gabcdef1
+  Nextflow: 23.04.1
 ```
 
 **Integration with Version Collection:**
