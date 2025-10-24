@@ -243,6 +243,19 @@ class NfcoreVersionUtils {
             }
         }
 
+        // Helper: safely detect presence of a no-arg toFile() method without relying on Groovy metaClass
+        Closure<Boolean> hasToFileMethod = { Object o ->
+            if (o == null) return false
+            try {
+                def m = o.getClass().getMethod('toFile' as String)
+                return m != null && m.getParameterCount() == 0
+            } catch (NoSuchMethodException ignore) {
+                return false
+            } catch (SecurityException ignore) {
+                return false
+            }
+        }
+
         Closure processEntry
         processEntry = { Object entry ->
             if (entry == null) return
@@ -276,8 +289,12 @@ class NfcoreVersionUtils {
                         }
                     }
                 }
+                // Direct map (tool -> version or process blocks)
+                else if (entry instanceof Map) {
+                    mergeParsedYaml(entry as Map)
+                }
                 // Check if object has toFile() method (works for all Path types)
-                else if (entry.metaClass.respondsTo(entry, 'toFile')) {
+                else if (hasToFileMethod(entry)) {
                     try {
                         def f = entry.toFile()
                         if (f.exists() && f.isFile()) {
@@ -312,10 +329,6 @@ class NfcoreVersionUtils {
                         def version = list[2]
                         if (processName && tool) merged[processName][tool] = version instanceof CharSequence ? version.toString() : version
                     }
-                }
-                // Direct map
-                else if (entry instanceof Map) {
-                    mergeParsedYaml(entry as Map)
                 }
                 // Unknown type - try toString as YAML
                 else {
