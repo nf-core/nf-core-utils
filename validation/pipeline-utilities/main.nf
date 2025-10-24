@@ -62,10 +62,6 @@ workflow {
         dumpParametersToJSON(output_dir, test_params)
         log.info("✅ Parameters dumped successfully")
     }
-    catch (Exception e) {
-        log.error("Error dumping parameters: ${e.message}")
-        log.error("Error details: ${e}")
-    }
 
     // Test edge cases
     log.info("=== Testing edge cases ===")
@@ -74,9 +70,6 @@ workflow {
     try {
         dumpParametersToJSON(null, test_params)
         log.info("✅ Null output directory handled correctly")
-    }
-    catch (Exception e) {
-        log.error("Error with null output: ${e.message}")
     }
 
     // Validate outputs
@@ -99,9 +92,6 @@ workflow {
             assert json_content.input == 'SRR_Acc_List.txt'
             assert json_content.max_cpus == 16
             log.info("✅ JSON content validation passed")
-        }
-        catch (Exception e) {
-            log.error("JSON validation failed: ${e.message}")
         }
     }
     else {

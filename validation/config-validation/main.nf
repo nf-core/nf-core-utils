@@ -30,9 +30,6 @@ workflow {
         log.info("Configuration check result: ${config_valid}")
         log.info("✅ checkConfigProvided() executed successfully")
     }
-    catch (Exception e) {
-        log.error("Error in checkConfigProvided(): ${e.message}")
-    }
 
     // Test 2: checkProfileProvided() function
     log.info("=== Testing checkProfileProvided() function ===")
@@ -66,9 +63,6 @@ workflow {
             checkProfileProvided(args)
             log.info("✅ Profile check completed for case ${index + 1}")
         }
-        catch (Exception e) {
-            log.error("Error in checkProfileProvided() case ${index + 1}: ${e.message}")
-        }
     }
 
     // Test 2a: Color formatting feature tests
@@ -82,9 +76,6 @@ workflow {
         checkProfileProvided(valid_args, true)
         log.info("✅ Monochrome mode test completed")
     }
-    catch (Exception e) {
-        log.error("Monochrome test error: ${e.message}")
-    }
 
     // Test with colors enabled
     try {
@@ -93,9 +84,6 @@ workflow {
         // Enable colors
         checkProfileProvided(valid_args, false)
         log.info("✅ Color-enabled mode test completed")
-    }
-    catch (Exception e) {
-        log.error("Color-enabled test error: ${e.message}")
     }
 
     // Test successful color formatting scenarios only
@@ -116,9 +104,6 @@ workflow {
         else {
             log.info("⚠️ Conda channels may need configuration adjustment")
         }
-    }
-    catch (Exception e) {
-        log.error("Error in checkCondaChannels(): ${e.message}")
     }
 
     // Test 4: Integration scenario - typical pipeline initialization
@@ -143,9 +128,6 @@ workflow {
 
         log.info("✅ Integration scenario completed successfully")
     }
-    catch (Exception e) {
-        log.error("Integration scenario error: ${e.message}")
-    }
 
     // Test 5: Edge cases and error handling
     log.info("=== Testing edge cases ===")
@@ -155,17 +137,11 @@ workflow {
         checkProfileProvided([])
         log.info("✅ Empty arguments handled correctly")
     }
-    catch (Exception e) {
-        log.warn("Empty arguments case: ${e.message}")
-    }
 
     // Test with null arguments (if applicable)
     try {
         checkProfileProvided(null)
         log.info("✅ Null arguments handled correctly")
-    }
-    catch (Exception e) {
-        log.warn("Null arguments case: ${e.message}")
     }
 
     log.info("==========================================")

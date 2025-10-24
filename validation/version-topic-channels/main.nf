@@ -24,7 +24,7 @@ workflow {
     log.info("=== Creating mock version files ===")
 
     // Create channels with mock version file content (simulating module outputs)
-    ch_mock_versions = Channel.of(
+    ch_mock_versions = channel.of(
         """
         FASTQC:
             fastqc: 0.11.9
@@ -59,7 +59,7 @@ workflow {
         }
         .unique()
         .mix(
-            Channel.of(getWorkflowVersion()).map { workflow_version_ ->
+            channel.of(getWorkflowVersion()).map { workflow_version_ ->
                 log.info("Adding workflow version: ${workflow_version_}")
                 // Format as YAML to match legacy workflowVersionToYAML() output
                 """

@@ -82,9 +82,6 @@ workflow {
             completionSummary(true)
             log.info("✅ completionSummary(monochrome) completed successfully")
         }
-        catch (Exception e) {
-            log.warn("completionSummary test: ${e.message}")
-        }
 
         // Test 2: completionEmail() function
         log.info("=== Testing completionEmail() function ===")
@@ -100,9 +97,6 @@ workflow {
             )
             log.info("✅ completionEmail completed successfully")
         }
-        catch (Exception e) {
-            log.warn("completionEmail test: ${e.message}")
-        }
 
         // Test 3: imNotification() function
         log.info("=== Testing imNotification() function ===")
@@ -112,9 +106,6 @@ workflow {
                 'https://hooks.slack.com/services/test/webhook',
             )
             log.info("✅ imNotification completed successfully")
-        }
-        catch (Exception e) {
-            log.warn("imNotification test: ${e.message}")
         }
 
         log.info(
