@@ -276,14 +276,26 @@ class NfcoreVersionUtils {
                         }
                     }
                 }
-                // Handle Nextflow Path or other Path-like types
-                else if (entry.getClass().getName().toLowerCase().endsWith('.path')) {
-                    def f = new File(entry.toString())
-                    if (f.exists() && f.isFile()) {
-                        def processed = processVersionsFromYAML(f.text)
-                        if (processed) {
-                            def map = yaml.load(processed)
-                            if (map instanceof Map) mergeParsedYaml(map as Map)
+                // Check if object has toFile() method (works for all Path types)
+                else if (entry.metaClass.respondsTo(entry, 'toFile')) {
+                    try {
+                        def f = entry.toFile()
+                        if (f.exists() && f.isFile()) {
+                            def processed = processVersionsFromYAML(f.text)
+                            if (processed) {
+                                def map = yaml.load(processed)
+                                if (map instanceof Map) mergeParsedYaml(map as Map)
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Fallback to string representation
+                        def f = new File(entry.toString())
+                        if (f.exists() && f.isFile()) {
+                            def processed = processVersionsFromYAML(f.text)
+                            if (processed) {
+                                def map = yaml.load(processed)
+                                if (map instanceof Map) mergeParsedYaml(map as Map)
+                            }
                         }
                     }
                 }

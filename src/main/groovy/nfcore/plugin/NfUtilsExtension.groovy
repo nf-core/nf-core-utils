@@ -16,6 +16,8 @@
 
 package nfcore.plugin
 
+import groovyx.gpars.dataflow.DataflowReadChannel
+import groovyx.gpars.dataflow.DataflowWriteChannel
 import nextflow.Session
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
@@ -292,14 +294,17 @@ class NfUtilsExtension extends PluginExtensionPoint {
         }
 
         // If it's a channel, return a mapped channel
-        if (versions?.getClass()?.getName()?.contains('DataflowBroadcast') ||
-            versions?.getClass()?.getName()?.contains('DataflowStream') ||
-            versions?.getClass()?.getName()?.contains('DataflowVariable')) {
+        if (versions instanceof DataflowReadChannel ||
+            versions instanceof DataflowWriteChannel) {
             return versions.toList().map { versionsList ->
-                // Call with positional arguments in the correct order
-                NfcoreVersionUtils.softwareVersionsToYAML(versionsList as List, this.session as Session, nextflowVersion)
+                NfcoreVersionUtils.softwareVersionsToYAML(
+                    versionsList as List,
+                    this.session as Session,
+                    nextflowVersion
+                )
             }
         }
+
         // If it's a list, process directly
         return NfcoreVersionUtils.softwareVersionsToYAML(versions as List, this.session as Session, nextflowVersion)
     }
