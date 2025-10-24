@@ -58,26 +58,15 @@ workflow {
     def output_dir = "${workflow.workDir}/validation_output"
     log.info("Dumping parameters to JSON in: ${output_dir}")
 
-    try {
-        dumpParametersToJSON(output_dir, test_params)
-        log.info("✅ Parameters dumped successfully")
-    }
-    catch (Exception e) {
-        log.error("Error dumping parameters: ${e.message}")
-        log.error("Error details: ${e}")
-    }
+    dumpParametersToJSON(output_dir, test_params)
+    log.info("✅ Parameters dumped successfully")
 
     // Test edge cases
     log.info("=== Testing edge cases ===")
 
     // Test with null output directory
-    try {
-        dumpParametersToJSON(null, test_params)
-        log.info("✅ Null output directory handled correctly")
-    }
-    catch (Exception e) {
-        log.error("Error with null output: ${e.message}")
-    }
+    dumpParametersToJSON(null, test_params)
+    log.info("✅ Null output directory handled correctly")
 
     // Validate outputs
     log.info("=== Validating outputs ===")
@@ -90,19 +79,14 @@ workflow {
         log.info("✅ JSON file created: ${json_file_path}")
 
         // Validate JSON content
-        try {
-            def json_content = new groovy.json.JsonSlurper().parseText(json_file.text)
-            log.info("✅ JSON content is valid")
-            log.info("JSON contains ${json_content.size()} parameters")
+        def json_content = new groovy.json.JsonSlurper().parseText(json_file.text)
+        log.info("✅ JSON content is valid")
+        log.info("JSON contains ${json_content.size()} parameters")
 
-            // Basic content validation
-            assert json_content.input == 'SRR_Acc_List.txt'
-            assert json_content.max_cpus == 16
-            log.info("✅ JSON content validation passed")
-        }
-        catch (Exception e) {
-            log.error("JSON validation failed: ${e.message}")
-        }
+        // Basic content validation
+        assert json_content.input == 'SRR_Acc_List.txt'
+        assert json_content.max_cpus == 16
+        log.info("✅ JSON content validation passed")
     }
     else {
         log.warn("JSON file not found at: ${json_file_path}")
