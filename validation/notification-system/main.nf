@@ -75,38 +75,32 @@ workflow {
 
         // Test 1: completionSummary() function
         log.info("=== Testing completionSummary() function ===")
-        try {
-            completionSummary(false)
-            log.info("✅ completionSummary(colored) completed successfully")
+        completionSummary(false)
+        log.info("✅ completionSummary(colored) completed successfully")
 
-            completionSummary(true)
-            log.info("✅ completionSummary(monochrome) completed successfully")
-        }
+        completionSummary(true)
+        log.info("✅ completionSummary(monochrome) completed successfully")
 
         // Test 2: completionEmail() function
         log.info("=== Testing completionEmail() function ===")
-        try {
-            completionEmail(
-                mock_summary_params,
-                'test@example.com',
-                'admin@example.com',
-                false,
-                './results',
-                false,
-                mock_multiqc_reports,
-            )
-            log.info("✅ completionEmail completed successfully")
-        }
+        completionEmail(
+            mock_summary_params,
+            'test@example.com',
+            'admin@example.com',
+            false,
+            './results',
+            false,
+            mock_multiqc_reports,
+        )
+        log.info("✅ completionEmail completed successfully")
 
         // Test 3: imNotification() function
         log.info("=== Testing imNotification() function ===")
-        try {
-            imNotification(
-                mock_summary_params,
-                'https://hooks.slack.com/services/test/webhook',
-            )
-            log.info("✅ imNotification completed successfully")
-        }
+        imNotification(
+            mock_summary_params,
+            'https://hooks.slack.com/services/test/webhook',
+        )
+        log.info("✅ imNotification completed successfully")
 
         log.info(
             """
