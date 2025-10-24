@@ -51,8 +51,7 @@ workflow {
     }
 
     // Collect all citations from topic channel automatically
-    ch_citations = channel
-        .topic('citation')
+    ch_citations = channel.topic('citation')
         .collect()
         .map { citations ->
             log.info("=== Collected ${citations.size()} citation emissions ===")
