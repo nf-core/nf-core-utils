@@ -6,10 +6,6 @@ repos:
         entry: nextflow lint
         language: system
         files: '\.nf$|nextflow\.config$'
-        exclude: |
-          (?x)^(
-            validation/.*\.nf$
-          )$
         args:
           [
             "-format",
