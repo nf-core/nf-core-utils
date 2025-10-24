@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Changed pipeline start/complete messages from `log` to `TRACE` level to reduce console noise in normal operation
+
 ### Fixed
 
 - Fix versions needed for build and tests
