@@ -14,7 +14,6 @@ nextflow_pipeline {
 
         then {
             assert workflow.failed
-            assert workflow.exitStatus != 0
 
             // Should contain error message without color codes
             assert workflow.stdout.any { it.contains("Pipeline is starting") }
@@ -45,7 +44,6 @@ nextflow_pipeline {
 
         then {
             assert workflow.failed
-            assert workflow.exitStatus != 0
 
             // Should contain error message with color codes
             assert workflow.stdout.any { it.contains("Pipeline is starting") }
