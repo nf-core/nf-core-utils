@@ -156,11 +156,12 @@ workflow {
 
 These functions provide metadata and can be called anywhere in your pipeline:
 
-| Function                            | Purpose                             | Example                                         |
-| ----------------------------------- | ----------------------------------- | ----------------------------------------------- |
-| `getWorkflowVersion()`              | Get git-aware version string        | `getWorkflowVersion()`                          |
-| `logColours(monochrome_logs)`       | Get color codes for terminal output | `logColours(params.monochrome_logs)`            |
-| `sectionLogs(sections, monochrome)` | Generate colored section summaries  | `sectionLogs(sections, params.monochrome_logs)` |
+| Function                            | Purpose                                     | Example                                         |
+| ----------------------------------- | ------------------------------------------- | ----------------------------------------------- |
+| `getWorkflowVersion()`              | Get git-aware version string                | `getWorkflowVersion()`                          |
+| `softwareVersionsToYAML(versions)`  | Combine versions from mixed sources to YAML | `softwareVersionsToYAML(ch_versions)`           |
+| `logColours(monochrome_logs)`       | Get color codes for terminal output         | `logColours(params.monochrome_logs)`            |
+| `sectionLogs(sections, monochrome)` | Generate colored section summaries          | `sectionLogs(sections, params.monochrome_logs)` |
 
 ### 3.3. MultiQC Integration Functions
 
@@ -326,6 +327,130 @@ The plugin supports a progressive migration path from legacy approaches to moder
 
 !!! tip "Migration Strategy"
 Start by converting high-priority modules to topic channels while keeping legacy modules unchanged. The mixed approach allows gradual migration without breaking existing functionality.
+
+### 4.4. Software Versions Collection with `softwareVersionsToYAML()`
+
+The `softwareVersionsToYAML()` function provides a unified way to collect and format software versions from any source. It's the recommended approach for version management in both new and migrating pipelines.
+
+#### Basic Usage Pattern
+
+```nextflow title="simple_versions.nf"
+include { softwareVersionsToYAML } from 'plugin/nf-core-utils'
+
+workflow {
+    // Collect versions from processes
+    ch_versions = Channel.empty()
+    ch_versions = ch_versions.mix(FASTQC.out.versions)
+    ch_versions = ch_versions.mix(SAMTOOLS.out.versions)
+
+    // Convert to YAML and save
+    ch_versions_yaml = softwareVersionsToYAML(ch_versions)
+
+    ch_versions_yaml.collectFile(
+        name: 'software_versions.yml',
+        storeDir: "${params.outdir}/pipeline_info"
+    )
+}
+```
+
+#### With Custom Nextflow Version
+
+```nextflow title="custom_nf_version.nf"
+// Override detected Nextflow version (useful for testing)
+ch_versions_yaml = softwareVersionsToYAML(
+    ch_versions,
+    nextflowVersion: '24.10.0'
+)
+
+// Or use named parameters
+ch_versions_yaml = softwareVersionsToYAML(
+    softwareVersions: ch_versions,
+    nextflowVersion: workflow.nextflow.version
+)
+```
+
+#### Mixed Input Types (Migration Scenario)
+
+The function automatically handles different version formats, making it perfect for pipelines in transition:
+
+```nextflow title="mixed_versions.nf"
+workflow {
+    // Modern processes emit topic tuples
+    MODERN_FASTQC(samples)  // Emits: ['FASTQC', 'fastqc', '0.12.1']
+
+    // Legacy processes emit YAML strings or files
+    LEGACY_SAMTOOLS(bams)   // Emits: 'samtools: 1.17'
+
+    // Some processes emit maps
+    CUSTOM_PROCESS(data)    // Emits: [tool1: '1.0', tool2: '2.0']
+
+    // Mix all version sources together
+    ch_all_versions = Channel.empty()
+        .mix(MODERN_FASTQC.out.versions)
+        .mix(LEGACY_SAMTOOLS.out.versions)
+        .mix(CUSTOM_PROCESS.out.versions)
+
+    // Function handles all types seamlessly!
+    ch_versions_yaml = softwareVersionsToYAML(ch_all_versions)
+
+    ch_versions_yaml.collectFile(
+        name: 'software_versions.yml',
+        storeDir: "${params.outdir}/pipeline_info"
+    )
+}
+```
+
+#### Direct Processing (No Channel)
+
+For use cases where you already have collected versions as a list:
+
+```nextflow title="direct_processing.nf"
+workflow.onComplete {
+    // Collect versions as a list
+    def versionsList = [
+        ['FASTQC', 'fastqc', '0.12.1'],
+        ['SAMTOOLS', 'samtools', '1.17'],
+        'multiqc: 1.15'  // Can mix formats!
+    ]
+
+    // Process directly without channel
+    def versionsYaml = softwareVersionsToYAML(
+        versionsList,
+        [nextflowVersion: workflow.nextflow.version]
+    )
+
+    // Write to file
+    file("${params.outdir}/pipeline_info/software_versions.yml").text = versionsYaml
+}
+```
+
+#### Output Format
+
+The function generates structured, sorted YAML:
+
+```yaml title="software_versions.yml"
+FASTQC:
+  fastqc: 0.12.1
+SAMTOOLS:
+  samtools: 1.17
+Software:
+  multiqc: 1.15
+  python: 3.9.0
+Workflow:
+  nf-core/mypipeline: v1.0.0
+  Nextflow: 24.10.0
+```
+
+Key features:
+
+- **Processes sorted alphabetically** for consistency
+- **Tools within each process sorted** for easy reading
+- **Automatic process name extraction** from full paths
+- **Tool name cleaning** (removes `tool:` prefixes)
+- **Automatic workflow metadata** inclusion
+
+!!! tip "Best Practice"
+Use `softwareVersionsToYAML()` as your primary version collection function. It handles all input types, making your pipeline future-proof and migration-friendly.
 
 ## 5. Complete Pipeline Example
 

@@ -1,0 +1,20 @@
+nextflow_pipeline {
+
+    name "Test softwareVersionsToYAML() function"
+    script "main.nf"
+    tag "software_versions"
+    tag "integration"
+
+    test("Should handle mixed input types") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+    }
+}
