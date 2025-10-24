@@ -450,6 +450,215 @@ workflow {
 
 ---
 
+### `processVersionsFromYAML(String yamlFile)`
+
+**Description:**  
+Parses a YAML string of software versions and flattens nested keys. This is a core utility function used internally by `softwareVersionsToYAML` and can be used directly for processing individual version YAML files.
+
+**Function Signature:**
+
+```nextflow
+String processVersionsFromYAML(String yamlFile)
+```
+
+**Parameters:**
+
+- `yamlFile` (String): YAML content as a string to process
+
+**Returns:**
+
+- `String`: Processed YAML string with flattened keys
+
+**Usage Example:**
+
+```nextflow
+include { processVersionsFromYAML } from 'plugin/nf-core-utils'
+
+// Process a single version YAML
+def yamlContent = '''
+tool:fastqc: 0.12.1
+bar: 2.0.0
+'''
+
+def processed = processVersionsFromYAML(yamlContent)
+// Result: "fastqc: 0.12.1\nbar: 2.0.0"
+```
+
+**Key Behavior:**
+
+- Removes nested tool prefixes (e.g., `tool:fastqc:` becomes `fastqc:`)
+- Preserves version information
+- Returns empty string for invalid YAML
+
+---
+
+### `workflowVersionToYAML()`
+
+**Description:**  
+Returns workflow version information as a formatted YAML string, including workflow name, version, and Nextflow version. This is the YAML equivalent of `workflowVersionToChannel()`.
+
+**Function Signature:**
+
+```nextflow
+String workflowVersionToYAML()
+```
+
+**Parameters:**
+
+- None (uses session context automatically)
+
+**Returns:**
+
+- `String`: YAML-formatted workflow version information
+
+**Usage Example:**
+
+```nextflow
+include { workflowVersionToYAML } from 'plugin/nf-core-utils'
+
+workflow {
+    // Get workflow version as YAML
+    def workflowYaml = workflowVersionToYAML()
+    log.info "Workflow info:\n${workflowYaml}"
+}
+```
+
+**Output Example:**
+
+```yaml
+Workflow:
+  nf-core/rnaseq: v3.12.0-gabcdef1
+  Nextflow: 23.04.1
+```
+
+**Integration with Version Collection:**
+
+```nextflow
+// Include workflow version in version collection
+workflow.onComplete {
+    def workflowInfo = workflowVersionToYAML()
+    def versionsFile = file("${params.outdir}/pipeline_info/versions.yml")
+    versionsFile.text = workflowInfo
+}
+```
+
+---
+
+### `softwareVersionsToYAML(List<String> chVersions)`
+
+**Description:**  
+Combines a list of YAML version strings into a single unified YAML string. This is the primary function used in nf-core pipelines to collect all software versions from processes. It automatically deduplicates entries and appends workflow version information.
+
+**Function Signature:**
+
+```nextflow
+String softwareVersionsToYAML(List<String> chVersions)
+```
+
+**Parameters:**
+
+- `chVersions` (List<String>): List of YAML version strings collected from processes
+
+**Returns:**
+
+- `String`: Combined YAML string with all versions and workflow metadata
+
+**Usage Example:**
+
+```nextflow
+include { softwareVersionsToYAML } from 'plugin/nf-core-utils'
+
+workflow {
+    ch_versions = Channel.empty()
+
+    // Collect versions from processes
+    FASTQC(samples)
+    ch_versions = ch_versions.mix(FASTQC.out.versions.first())
+
+    MULTIQC(reports)
+    ch_versions = ch_versions.mix(MULTIQC.out.versions.first())
+
+    // Combine all versions
+    softwareVersionsToYAML(ch_versions.collect())
+        .collectFile(
+            name: 'software_versions.yml',
+            storeDir: "${params.outdir}/pipeline_info"
+        )
+}
+```
+
+**Standard nf-core Pattern:**
+
+```nextflow
+// This is the standard pattern used in nf-core pipelines
+include { softwareVersionsToYAML } from 'plugin/nf-core-utils'
+
+workflow PIPELINE {
+    take:
+    samplesheet
+
+    main:
+    ch_versions = Channel.empty()
+
+    // Run processes and collect versions
+    PROCESS_A(samplesheet)
+    ch_versions = ch_versions.mix(PROCESS_A.out.versions.first())
+
+    PROCESS_B(PROCESS_A.out.results)
+    ch_versions = ch_versions.mix(PROCESS_B.out.versions.first())
+
+    // Generate combined versions file
+    softwareVersionsToYAML(ch_versions)
+        .collectFile(
+            storeDir: "${params.outdir}/pipeline_info",
+            name: 'nf_core_pipeline_software_mqc_versions.yml',
+            sort: true,
+            newLine: true
+        ).set { ch_collated_versions }
+
+    emit:
+    versions = ch_versions
+    collated_versions = ch_collated_versions
+}
+```
+
+**Advanced Usage with Unique Filtering:**
+
+```nextflow
+// Process versions with unique filtering for better performance
+workflow {
+    ch_versions = Channel.empty()
+
+    // Collect all versions
+    ch_versions = ch_versions
+        .mix(PROCESS_A.out.versions)
+        .mix(PROCESS_B.out.versions)
+        .mix(PROCESS_C.out.versions)
+
+    // Generate unified YAML with deduplication
+    ch_versions
+        .unique()                    // Remove duplicate channel entries
+        .map { it.text }            // Extract YAML content from files
+        .collect()                  // Collect all into a list
+        .map { versionList ->
+            softwareVersionsToYAML(versionList)
+        }
+        .collectFile(
+            name: 'versions.yml',
+            storeDir: "${params.outdir}/pipeline_info"
+        )
+}
+```
+
+**Key Features:**
+
+- **Automatic Deduplication**: Removes duplicate version entries
+- **Workflow Integration**: Automatically includes workflow and Nextflow versions
+- **MultiQC Compatible**: Output format is directly compatible with MultiQC
+- **Flexible Input**: Accepts versions from any number of processes
+
+---
+
 ## Topic Channel Migration Guide
 
 ### Stage 1: Legacy File-Based Approach

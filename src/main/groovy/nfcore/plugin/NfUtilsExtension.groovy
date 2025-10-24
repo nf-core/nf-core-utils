@@ -260,6 +260,48 @@ class NfUtilsExtension extends PluginExtensionPoint {
         return NfcoreVersionUtils.workflowVersionToChannel(this.session)
     }
 
+    /**
+     * Parse and flatten YAML string of software versions
+     * Example: "tool:foo: 1.0.0\nbar: 2.0.0" -> "foo: 1.0.0\nbar: 2.0.0"
+     *
+     * @param yamlFile The YAML content as string
+     * @return Processed YAML string with flattened keys
+     */
+    @Function
+    String processVersionsFromYAML(String yamlFile) {
+        return NfcoreVersionUtils.processVersionsFromYAML(yamlFile)
+    }
+
+    /**
+     * Get workflow version for pipeline as YAML string
+     * Returns workflow name, version, and Nextflow version in YAML format
+     *
+     * @return YAML string with workflow version information
+     */
+    @Function
+    String workflowVersionToYAML() {
+        return NfcoreVersionUtils.workflowVersionToYAML(this.session)
+    }
+
+    /**
+     * Combine a list of YAML version strings into a single YAML string
+     * This is the main function used in nf-core pipelines to collect all software versions.
+     * Deduplicates entries and appends workflow version info.
+     *
+     * Usage pattern in pipelines:
+     *   ch_versions = Channel.empty()
+     *   ch_versions = ch_versions.mix(PROCESS.out.versions)
+     *   softwareVersionsToYAML(ch_versions.unique().collect())
+     *     .collectFile(name: 'software_versions.yml')
+     *
+     * @param chVersions List of YAML version strings from processes
+     * @return Combined YAML string with all versions and workflow info
+     */
+    @Function
+    String softwareVersionsToYAML(List<String> chVersions) {
+        return NfcoreVersionUtils.softwareVersionsToYAML(chVersions, this.session)
+    }
+
     // --- Citation Management Functions ---
     /**
      * Generate citation for a tool from meta.yml at the module level

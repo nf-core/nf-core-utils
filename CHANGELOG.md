@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Exposed `processVersionsFromYAML()` function for parsing and flattening YAML version strings
+- Exposed `workflowVersionToYAML()` function for getting workflow version as YAML string
+- Exposed `softwareVersionsToYAML()` function for combining version YAMLs from channels
+- Comprehensive documentation for all three new version utility functions
+
 ### Changed
 
 ### Fixed
