@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 
 /*
  * E2E validation test for nf-core-utils plugin configuration validation functions
