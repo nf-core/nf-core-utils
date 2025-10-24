@@ -114,7 +114,8 @@ workflow {
         samtools: 1.17
     """.stripIndent()
 
-    def version_file = Channel.of(version_file_content)
+    def version_file = Channel
+        .of(version_file_content)
         .collectFile(name: 'versions.yml', newLine: true)
 
     def result6 = softwareVersionsToYAML(version_file)
