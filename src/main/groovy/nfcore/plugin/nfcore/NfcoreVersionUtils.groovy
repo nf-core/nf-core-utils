@@ -185,7 +185,7 @@ class NfcoreVersionUtils {
      *   workflow.onComplete {
      *     def all_versions = versions_ch.collect()
      *     def versions_yaml = NfcoreVersionUtils.softwareVersionsToYAML(all_versions, workflow.session)
-     *     println versions_yamllet'
+     *     println versions_yaml
      *   }
      *
      * Accepts mixed inputs:
