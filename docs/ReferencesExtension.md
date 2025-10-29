@@ -14,8 +14,9 @@ The References Extension solves this by providing a unified interface that autom
 
 ### 1.1. Core Capabilities
 
-The extension provides two essential functions:
+The extension provides three essential functions:
 
+- **Path Transformation**: `updateReferencesFile()` - Updates YAML reference files by replacing base paths
 - **File Resolution**: `getReferencesFile()` - Resolves file paths from parameters or reference metadata
 - **Value Resolution**: `getReferencesValue()` - Retrieves metadata values with parameter override support
 
@@ -101,7 +102,223 @@ workflow {
 
 ## 3. Core Functions Reference
 
-### 3.1. getReferencesFile - File Path Resolution
+### 3.1. updateReferencesFile - Reference File Path Transformation
+
+This function updates a YAML reference file by replacing base paths, useful for adapting reference files to different storage locations or environments. It creates a staged copy of the YAML file with updated paths, leaving the original unchanged.
+
+#### Function Signature
+
+```groovy
+// Named parameters version (recommended)
+Path updateReferencesFile(
+    Map options,          // Configuration map with basepathFinal and basepathToReplace
+    Object yamlReference  // Path to YAML reference file
+)
+
+// Positional parameters version
+Path updateReferencesFile(
+    Object yamlReference,      // Path to YAML reference file
+    Object basepathFinal,      // Final base path to use as replacement
+    Object basepathToReplace   // Base path(s) to be replaced (String or List)
+)
+```
+
+#### Parameters
+
+| Parameter                                               | Type             | Required | Description                                                                           |
+| ------------------------------------------------------- | ---------------- | -------- | ------------------------------------------------------------------------------------- |
+| `options.basepathFinal`<br>or `basepath_final`          | String/null      | No       | The final base path to use as replacement. If null/false/empty, returns original file |
+| `options.basepathToReplace`<br>or `basepath_to_replace` | String/List/null | No       | Base path(s) to be replaced. Can be a single string or list of strings                |
+| `yamlReference`                                         | Path/String      | Yes      | Path to the YAML reference file to update                                             |
+
+#### Return Value
+
+Returns a `Path` object pointing to either:
+
+- A staged copy with updated paths (when `basepathFinal` is provided)
+- The original file (when `basepathFinal` is null, false, or empty)
+
+#### Practical Examples
+
+**Example 1: Adapting iGenomes paths to local storage**
+
+```nextflow title="update_igenomes_paths.nf"
+#!/usr/bin/env nextflow
+
+include { updateReferencesFile } from 'plugin/nf-core-utils'
+
+params.references_yaml = 'references/grch38.yml'
+params.local_base = '/data/references'
+
+workflow {
+    // Original YAML contains: ${params.igenomes_base}/Homo_sapiens/...
+    // Update to local path: /data/references/Homo_sapiens/...
+
+    updated_yaml = updateReferencesFile(
+        basepathFinal: params.local_base,
+        basepathToReplace: '${params.igenomes_base}',
+        yamlReference: params.references_yaml
+    )
+
+    updated_yaml.view { "Updated reference file: ${it}" }
+}
+```
+
+**Example 2: Replacing multiple base paths**
+
+```nextflow title="multi_path_replacement.nf"
+#!/usr/bin/env nextflow
+
+include { updateReferencesFile } from 'plugin/nf-core-utils'
+
+params.references_yaml = 'references/genome_info.yml'
+params.unified_base = '/mnt/shared/references'
+
+workflow {
+    // Replace multiple different base paths with a single unified path
+    // Useful when consolidating references from different sources
+
+    updated_yaml = updateReferencesFile(
+        basepathFinal: params.unified_base,
+        basepathToReplace: [
+            '${params.igenomes_base}',
+            '${params.references_base}',
+            '/old/storage/location',
+            's3://old-bucket/references'
+        ],
+        yamlReference: params.references_yaml
+    )
+
+    updated_yaml.view { "Consolidated reference file: ${it}" }
+}
+```
+
+**Example 3: Using positional parameters**
+
+```nextflow title="positional_params.nf"
+#!/usr/bin/env nextflow
+
+include { updateReferencesFile } from 'plugin/nf-core-utils'
+
+workflow {
+    // Simple syntax when you only need basic path replacement
+    def yamlFile = file('references/genome.yml')
+
+    updated = updateReferencesFile(
+        yamlFile,
+        '/new/base/path',
+        '/old/base/path'
+    )
+
+    updated.view { "Updated: ${it}" }
+}
+```
+
+**Example 4: Cloud to local migration**
+
+```nextflow title="cloud_to_local.nf"
+#!/usr/bin/env nextflow
+
+include { updateReferencesFile } from 'plugin/nf-core-utils'
+
+params.references_yaml = 'config/aws_references.yml'
+params.local_mirror = '/data/local-mirror'
+params.s3_base = 's3://ngi-igenomes/igenomes'
+
+workflow {
+    // Migrate from S3 to local storage
+    local_references = updateReferencesFile(
+        basepath_final: params.local_mirror,      // Using snake_case variant
+        basepath_to_replace: params.s3_base,
+        yamlReference: params.references_yaml
+    )
+
+    // Use the updated reference file in downstream processes
+    PROCESS_WITH_LOCAL_REFS(local_references)
+}
+
+process PROCESS_WITH_LOCAL_REFS {
+    input:
+    path yaml_file
+
+    script:
+    """
+    echo "Processing with updated references from: ${yaml_file}"
+    cat ${yaml_file}
+    """
+}
+```
+
+**Example 5: Conditional path updates**
+
+```nextflow title="conditional_update.nf"
+#!/usr/bin/env nextflow
+
+include { updateReferencesFile } from 'plugin/nf-core-utils'
+
+params.references_yaml = 'references.yml'
+params.use_local = false
+params.local_base = '/data/references'
+
+workflow {
+    // Only update paths if using local storage
+    updated_yaml = updateReferencesFile(
+        basepathFinal: params.use_local ? params.local_base : null,
+        basepathToReplace: '${params.igenomes_base}',
+        yamlReference: params.references_yaml
+    )
+
+    // If params.use_local is false, returns original file unchanged
+    updated_yaml.view { "Reference file: ${it}" }
+}
+```
+
+#### Key Features
+
+> [!TIP] "Staged Copies"
+> When `basepathFinal` is provided, the function creates a staged copy in a temporary location (under `workDir/tmp/`), ensuring your original reference files remain unchanged. This is ideal for adapting references without modifying source files.
+
+> [!NOTE] "Multiple Replacements"
+> The `basepathToReplace` parameter accepts either a single string or a list of strings, allowing you to replace multiple different base paths with a single unified path in one operation.
+
+> [!IMPORTANT] "Parameter Name Variants"
+> The function supports both camelCase (`basepathFinal`, `basepathToReplace`) and snake_case (`basepath_final`, `basepath_to_replace`) parameter names for flexibility.
+
+#### Common Use Cases
+
+1. **iGenomes Migration**: Update iGenomes reference paths when moving from cloud to local storage
+2. **Path Consolidation**: Unify references from multiple sources into a single base path
+3. **Environment Adaptation**: Adapt reference files for different compute environments (HPC, cloud, local)
+4. **Testing**: Create test versions of reference files with modified paths for pipeline validation
+5. **Multi-site Deployment**: Adapt reference configurations for different institutional storage systems
+
+#### Error Handling
+
+The function validates the input YAML file and throws an `IllegalArgumentException` if:
+
+- The YAML file doesn't exist
+- The YAML file path is invalid or null
+
+```nextflow title="error_handling.nf"
+#!/usr/bin/env nextflow
+
+include { updateReferencesFile } from 'plugin/nf-core-utils'
+
+workflow {
+    try {
+        updated = updateReferencesFile(
+            basepathFinal: '/new/path',
+            basepathToReplace: '/old/path',
+            yamlReference: 'non_existent.yml'
+        )
+    } catch (IllegalArgumentException e) {
+        log.error "Reference file error: ${e.message}"
+        exit 1
+    }
+}
+```
+
+### 3.2. getReferencesFile - File Path Resolution
 
 This function intelligently resolves file paths based on user parameters and reference metadata.
 
@@ -162,7 +379,7 @@ workflow {
 }
 ```
 
-### 3.2. getReferencesValue - Metadata Value Resolution
+### 3.3. getReferencesValue - Metadata Value Resolution
 
 This function extracts metadata values with user parameter override support.
 

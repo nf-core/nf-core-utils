@@ -156,6 +156,33 @@ class NfUtilsExtension extends PluginExtensionPoint {
         return nfcore.plugin.references.ReferencesUtils.getReferencesValue(referencesList, param, attribute)
     }
 
+    /**
+     * Update references file by replacing base paths in the YAML file
+     * @param options Named parameters: basepathFinal (or basepath_final) and basepathToReplace (or basepath_to_replace)
+     * @param yamlReference The path to the YAML reference file
+     * @return The updated file object (either staged copy or original)
+     */
+    @Function
+    def updateReferencesFile(Map options, def yamlReference) {
+        def referencesUtils = new nfcore.plugin.references.ReferencesUtils()
+        referencesUtils.init(this.session)
+        return referencesUtils.updateReferencesFile(options, yamlReference)
+    }
+
+    /**
+     * Update references file by replacing base paths in the YAML file (positional parameters)
+     * @param yamlReference The path to the YAML reference file
+     * @param basepathFinal The final base path to use as replacement (can be null, false, or empty)
+     * @param basepathToReplace List of base paths to be replaced (can be null, false, or empty)
+     * @return The updated file object (either staged copy or original)
+     */
+    @Function
+    def updateReferencesFile(def yamlReference, def basepathFinal, def basepathToReplace) {
+        def referencesUtils = new nfcore.plugin.references.ReferencesUtils()
+        referencesUtils.init(this.session)
+        return referencesUtils.updateReferencesFile(yamlReference, basepathFinal, basepathToReplace)
+    }
+
     // --- Methods from NextflowPipelineExtension ---
     /**
      * Generate version string for a workflow
