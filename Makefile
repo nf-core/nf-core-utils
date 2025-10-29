@@ -31,8 +31,8 @@ release:
 # Run E2E validation test
 validate:
 	@$(MAKE) install
-	cd validation && nf-test test --verbose --debug
+	cd validation && nf-test test --verbose
 
 update-snapshots:
 	@$(MAKE) install
-	cd validation && nf-test test --verbose --debug --update-snapshot --clean-snapshot
+	cd validation && nf-test test --verbose --update-snapshot --clean-snapshot

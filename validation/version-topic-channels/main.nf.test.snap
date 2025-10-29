@@ -25,7 +25,7 @@
                 "  samtools: 1.17",
                 "Workflow:",
                 "    nf-core-utils-validation: v1.0.0",
-                "    Nextflow: 25.04.6",
+                "    Nextflow: 25.10.0",
                 "\u2705 All validation checks passed!",
                 "\u2705 Plugin functions working correctly",
                 "\u2705 Channel logic preserved in pipeline",
