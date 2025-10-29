@@ -1,8 +1,8 @@
 nextflow_pipeline {
 
     name "Test nf-core-utils pipeline utilities"
-    script "../main.nf"
-    config "../nextflow.config"
+    script "./main.nf"
+    config "./nextflow.config"
 
     test("Pipeline utilities") {
 

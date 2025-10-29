@@ -3,7 +3,7 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/topic-channel-citations/../topic-channel-citations/main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Launching `[PATH]/topic-channel-citations/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
                 "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "nf-core-utils Plugin Topic Channel Citation E2E Test",

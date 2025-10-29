@@ -3,7 +3,7 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/config-validation/../config-validation/error-test.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Launching `[PATH]/config-validation/./error-test.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
                 "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "Color Formatting Error Test",
@@ -26,7 +26,7 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/config-validation/../config-validation/error-test.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Launching `[PATH]/config-validation/./error-test.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
                 "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "Color Formatting Error Test",

@@ -1,7 +1,7 @@
 nextflow_pipeline {
 
     name "Test nf-core-utils notification system"
-    script "../main.nf"
+    script "./main.nf"
 
     test("Notification system") {
 

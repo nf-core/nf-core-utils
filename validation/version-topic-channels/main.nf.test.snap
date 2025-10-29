@@ -3,7 +3,7 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/version-topic-channels/../version-topic-channels/main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Launching `[PATH]/version-topic-channels/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
                 "Pipeline is starting! \ud83d\ude80",
                 "=== Testing getWorkflowVersion() plugin function ===",
                 "Generated workflow version: v1.0.0",

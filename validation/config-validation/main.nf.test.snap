@@ -3,7 +3,7 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/config-validation/../config-validation/main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
                 "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "Configuration Validation Test",
@@ -65,7 +65,7 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/config-validation/../config-validation/main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
                 "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "Configuration Validation Test",
@@ -127,7 +127,7 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/config-validation/../config-validation/main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
                 "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "Configuration Validation Test",
