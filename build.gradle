@@ -1,29 +1,19 @@
 plugins {
-    id 'io.nextflow.nextflow-plugin' version '0.0.1-alpha3'
+    id 'io.nextflow.nextflow-plugin' version '1.0.0-beta.9'
 }
 
-version = '0.3.0'
+version = '0.3.1'
 
 nextflowPlugin {
     nextflowVersion = '25.04.0'
 
-    provider = 'nfcore'
+    provider = 'nf-core'
     className = 'nfcore.plugin.NfUtilsPlugin'
     extensionPoints = [
         'nfcore.plugin.NfUtilsExtension',
         'nfcore.plugin.NfcorePipelineObserverFactory',
     ]
 
-    publishing {
-        github {
-            repository = 'nf-core/nf-core-utils'
-            userName = project.findProperty('github_username')
-            authToken = project.findProperty('github_access_token')
-            email = project.findProperty('github_commit_email')
-
-            indexUrl = 'https://github.com/edmundmiller/plugins/main/plugins.json'
-        }
-    }
 }
 
 dependencies {

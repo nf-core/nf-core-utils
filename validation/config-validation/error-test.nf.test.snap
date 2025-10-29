@@ -9,16 +9,18 @@
                 "Color Formatting Error Test",
                 "==========================================",
                 "Testing profile with trailing comma (expected to fail)",
+                "Pipeline complete! \ud83d\udc4b",
                 "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, [CONTAINER]`.",
                 " -- Check script '[PATH]/config-validation/error-test.nf' at line: 24 or see '[PATH]/tests/[NFT_HASH]/meta/nextflow.log' file for more details",
-                "ERROR ~ ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!"
+                "ERROR ~ ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!",
+                "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info."
             ]
         ],
         "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
+            "nf-test": "0.9.3",
+            "nextflow": "25.10.0"
         },
-        "timestamp": "2025-09-08T18:18:26.66798259"
+        "timestamp": "2025-10-29T09:37:52.569185136"
     },
     "Error output - Color": {
         "content": [
@@ -30,15 +32,17 @@
                 "Color Formatting Error Test",
                 "==========================================",
                 "Testing profile with trailing comma (expected to fail)",
+                "Pipeline complete! \ud83d\udc4b",
                 "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, [CONTAINER]`.",
                 " -- Check script '[PATH]/config-validation/error-test.nf' at line: 24 or see '[PATH]/tests/[NFT_HASH]/meta/nextflow.log' file for more details",
-                "ERROR ~ ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!"
+                "ERROR ~ ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!",
+                "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info."
             ]
         ],
         "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
+            "nf-test": "0.9.3",
+            "nextflow": "25.10.0"
         },
-        "timestamp": "2025-09-08T18:18:28.863335117"
+        "timestamp": "2025-10-29T09:37:55.704620501"
     }
 }

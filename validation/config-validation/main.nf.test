@@ -29,4 +29,20 @@ nextflow_pipeline {
             ).match()
         }
     }
+
+    test("monochrome_logs params disabled") {
+
+        when {
+            params {
+                monochrome_logs = false
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert snapshot(
+                filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true)
+            ).match()
+        }
+    }
 }
