@@ -69,6 +69,163 @@ workflow {
 
 ---
 
+### `softwareVersionsToYAML(Object versions, Map options = [:])`
+
+**Description:**  
+Combines software versions from multiple sources into a single YAML string. This is the recommended function for collecting and formatting version information in pipelines. It accepts mixed input types including YAML strings, file paths, topic tuples, and maps, making it ideal for both legacy and modern pipelines.
+
+**Function Signature:**
+
+```nextflow
+// Positional syntax
+String softwareVersionsToYAML(Object versions)
+String softwareVersionsToYAML(Object versions, Map options)
+
+// Named parameter syntax
+String softwareVersionsToYAML(softwareVersions: channel, nextflowVersion: version)
+```
+
+**Parameters:**
+
+- `versions` (Object): Can be a Nextflow channel or list containing:
+  - YAML strings (legacy inline format)
+  - File paths (String), File, or Path objects pointing to `versions.yml`
+  - Topic tuples: `[process, tool, version]`
+  - Maps of `tool -> version`
+  - Any combination of the above
+- `options` (Map, optional):
+  - `nextflowVersion` (String/VersionNumber): Override the detected Nextflow version
+
+**Returns:**
+
+- `String` (if input is a List): Combined YAML string directly
+- `Channel<String>` (if input is a Channel): Channel emitting the combined YAML string
+
+**Usage Examples:**
+
+**Basic usage with a channel:**
+
+```nextflow
+include { softwareVersionsToYAML } from 'plugin/nf-core-utils'
+
+workflow {
+    // Collect versions from multiple sources
+    ch_versions = Channel.empty()
+
+    ch_versions = ch_versions.mix(FASTQC.out.versions)
+    ch_versions = ch_versions.mix(SAMTOOLS.out.versions)
+
+    // Combine into YAML
+    ch_software_versions = softwareVersionsToYAML(ch_versions)
+
+    // Save to file
+    ch_software_versions.collectFile(
+        name: 'software_versions.yml',
+        storeDir: "${params.outdir}/pipeline_info"
+    )
+}
+```
+
+**With custom Nextflow version:**
+
+```nextflow
+// Override the detected Nextflow version
+ch_software_versions = softwareVersionsToYAML(
+    ch_versions,
+    nextflowVersion: '24.10.0'
+)
+
+// Or using named parameters
+ch_software_versions = softwareVersionsToYAML(
+    softwareVersions: ch_versions,
+    nextflowVersion: workflow.nextflow.version
+)
+```
+
+**Mixed input types:**
+
+```nextflow
+workflow {
+    // Mix different version formats
+    ch_mixed = Channel.of(
+        'fastqc: 0.12.1',                              // YAML string
+        ['NFCORE_SAMTOOLS', 'samtools', '1.17'],       // Topic tuple
+        [multiqc: '1.15', python: '3.9.0'],            // Map
+        file('legacy_versions.yml')                     // File path
+    )
+
+    // Function handles all types seamlessly
+    ch_versions_yaml = softwareVersionsToYAML(ch_mixed)
+}
+```
+
+**Direct list processing (no channel):**
+
+```nextflow
+workflow.onComplete {
+    // Collect versions as a list
+    def versionsList = [
+        ['FASTQC', 'fastqc', '0.12.1'],
+        ['SAMTOOLS', 'samtools', '1.17']
+    ]
+
+    // Get YAML string directly
+    def versionsYaml = softwareVersionsToYAML(
+        versionsList,
+        [nextflowVersion: workflow.nextflow.version]
+    )
+
+    file("${params.outdir}/pipeline_info/versions.yml").text = versionsYaml
+}
+```
+
+**Output Format:**
+
+The function generates a structured YAML with processes and tools sorted alphabetically:
+
+```yaml
+FASTQC:
+  fastqc: 0.12.1
+SAMTOOLS:
+  samtools: 1.17
+Software:
+  multiqc: 1.15
+  python: 3.9.0
+Workflow:
+  nf-core/mypipeline: v1.0.0
+  Nextflow: 24.10.0
+```
+
+**Key Features:**
+
+- **Flexible Input**: Accepts any combination of YAML strings, files, tuples, and maps
+- **Process Extraction**: Automatically extracts process names from full paths (e.g., `NFCORE_RNASEQ:TRIMGALORE:FASTQC` → `FASTQC`)
+- **Tool Name Cleaning**: Removes prefixes like `tool:` from tool names
+- **Alphabetical Sorting**: Sorts both processes and tools for consistent output
+- **Graceful Error Handling**: Continues processing even if some entries are invalid
+- **Automatic Merging**: Combines versions from the same tool across different sources
+- **Workflow Metadata**: Automatically includes workflow name, version, and Nextflow version
+
+**Migration Patterns:**
+
+```nextflow
+// Legacy pattern (old versions.yml files)
+ch_versions = Channel.fromPath('**/versions.yml')
+ch_versions_yaml = softwareVersionsToYAML(ch_versions)
+
+// Modern pattern (topic channels)
+ch_versions = PROCESS.out.versions  // [process, tool, version]
+ch_versions_yaml = softwareVersionsToYAML(ch_versions)
+
+// Hybrid pattern (transitioning)
+ch_legacy = Channel.fromPath('legacy/**/versions.yml')
+ch_modern = MODERN_PROCESS.out.versions
+ch_all = ch_legacy.mix(ch_modern)
+ch_versions_yaml = softwareVersionsToYAML(ch_all)
+```
+
+---
+
 ### `processMixedVersionSources(List<List> topicVersions, List<String> versionsFiles)`
 
 **Description:**  
