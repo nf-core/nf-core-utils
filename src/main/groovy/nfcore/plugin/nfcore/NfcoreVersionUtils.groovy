@@ -185,7 +185,7 @@ class NfcoreVersionUtils {
      *   workflow.onComplete {
      *     def all_versions = versions_ch.collect()
      *     def versions_yaml = NfcoreVersionUtils.softwareVersionsToYAML(all_versions, workflow.session)
-     *     println versions_yamllet'
+     *     println versions_yaml
      *   }
      *
      * Accepts mixed inputs:
@@ -205,148 +205,85 @@ class NfcoreVersionUtils {
         Session sess = (session instanceof Session) ? session : null
         def nfVersion = nextflowVersion
 
-        def yaml = new Yaml()
         // Collect nested: process -> tools map
         Map<String, Map<String, Object>> merged = [:].withDefault { [:] as Map<String, Object> }
 
-        Closure<String> cleanKey = { k ->
-            if (k == null) return null
-            def s = k.toString()
-            return (s.contains(':')) ? s.tokenize(':').last() : s
-        }
-
-        Closure mergeProcessMap = { String processName, Map toolsMap ->
-            if (!processName || !toolsMap) return
-            toolsMap.each { tk, tv ->
-                def toolKey = cleanKey(tk)
-                if (toolKey) merged[processName][toolKey] = (tv instanceof CharSequence) ? tv.toString() : tv
-            }
-        }
-
-        Closure mergeParsedYaml = { Map parsed ->
-            if (!parsed) return
-            // If any value is a Map, treat as process blocks
-            def hasNested = parsed.values().any { it instanceof Map }
-            if (hasNested) {
-                parsed.each { pk, pv ->
-                    if (pv instanceof Map) {
-                        def procName = pk?.toString()
-                        mergeProcessMap(procName, pv as Map)
-                    } else if (pk) {
-                        // Top-level scalar, park under 'Software'
-                        mergeProcessMap('Software', [(pk.toString()): pv])
-                    }
-                }
-            } else {
-                // Flat tool->version map, park under 'Software'
-                mergeProcessMap('Software', parsed)
-            }
-        }
-
-        // Helper: safely detect presence of a no-arg toFile() method without relying on Groovy metaClass
-        Closure<Boolean> hasToFileMethod = { Object o ->
-            if (o == null) return false
-            try {
-                def m = o.getClass().getMethod('toFile' as String)
-                return m != null && m.getParameterCount() == 0
-            } catch (NoSuchMethodException ignore) {
-                return false
-            } catch (SecurityException ignore) {
-                return false
-            }
-        }
-
+        // Recursive closure for processing entries (handles nested lists)
         Closure processEntry
-        processEntry = { Object entry ->
+        processEntry = { entry ->
             if (entry == null) return
+
             try {
-                // Strings may be inline YAML or file paths
+                // Handle different input types
                 if (entry instanceof CharSequence) {
+                    // String: inline YAML or file path
                     def s = entry.toString().trim()
-                    if (!s) return
-                    def f = new File(s)
-                    if (f.exists() && f.isFile()) {
-                        def processed = processVersionsFromYAML(f.text)
-                        if (processed) {
-                            def map = yaml.load(processed)
-                            if (map instanceof Map) mergeParsedYaml(map as Map)
-                        }
-                    } else {
-                        def processed = processVersionsFromYAML(s)
-                        if (processed) {
-                            def map = yaml.load(processed)
-                            if (map instanceof Map) mergeParsedYaml(map as Map)
+                    if (s) {
+                        def f = new File(s)
+                        if (f.exists() && f.isFile()) {
+                            processYamlContent(f.text, merged)
+                        } else {
+                            processYamlContent(s, merged)
                         }
                     }
                 }
-                // File path like objects
                 else if (entry instanceof File) {
-                    if (entry.exists()) {
-                        def processed = processVersionsFromYAML(entry.text)
-                        if (processed) {
-                            def map = yaml.load(processed)
-                            if (map instanceof Map) mergeParsedYaml(map as Map)
-                        }
+                    // File object
+                    if (entry.exists() && entry.isFile()) {
+                        processYamlContent(entry.text, merged)
                     }
                 }
-                // Direct map (tool -> version or process blocks)
                 else if (entry instanceof Map) {
-                    mergeParsedYaml(entry as Map)
+                    // Direct map (tool->version or process blocks)
+                    mergeParsedYaml(entry as Map, merged)
                 }
-                // Check if object has toFile() method (works for all Path types)
                 else if (hasToFileMethod(entry)) {
+                    // Path-like object
                     try {
                         def f = entry.toFile()
                         if (f.exists() && f.isFile()) {
-                            def processed = processVersionsFromYAML(f.text)
-                            if (processed) {
-                                def map = yaml.load(processed)
-                                if (map instanceof Map) mergeParsedYaml(map as Map)
-                            }
+                            processYamlContent(f.text, merged)
                         }
                     } catch (Exception e) {
                         // Fallback to string representation
                         def f = new File(entry.toString())
                         if (f.exists() && f.isFile()) {
-                            def processed = processVersionsFromYAML(f.text)
-                            if (processed) {
-                                def map = yaml.load(processed)
-                                if (map instanceof Map) mergeParsedYaml(map as Map)
-                            }
+                            processYamlContent(f.text, merged)
                         }
                     }
                 }
-                // Topic tuple(s)
                 else if (entry instanceof List || entry.getClass().isArray()) {
+                    // List or array: topic tuples or nested lists
                     def list = (entry instanceof List) ? (List) entry : (entry as Object[]).toList()
-                    // If we got a list of lists (e.g. collected channel), recurse
+
                     if (!list.isEmpty() && list[0] instanceof List) {
+                        // Nested lists - recurse (happens with collected channels)
                         list.each { processEntry(it) }
-                    } else if (list.size() >= 3) {
+                    }
+                    else if (list.size() >= 3) {
+                        // Topic tuple: [process, tool, version]
                         def procRaw = list[0]?.toString() ?: ''
-                        def processName = procRaw.contains(':') ? procRaw.substring(procRaw.lastIndexOf(':') + 1) : procRaw
+                        // Extract last component from process path
+                        def processName = procRaw.contains(':') ?
+                            procRaw.substring(procRaw.lastIndexOf(':') + 1) : procRaw
                         def tool = list[1]?.toString()
                         def version = list[2]
-                        if (processName && tool) merged[processName][tool] = version instanceof CharSequence ? version.toString() : version
+
+                        if (processName && tool) {
+                            merged[processName][tool] = version instanceof CharSequence ?
+                                version.toString() : version
+                        }
                     }
                 }
-                // Unknown type - try toString as YAML
                 else {
+                    // Unknown type - try toString as YAML
                     def s = entry.toString()
                     if (s) {
                         def f = new File(s)
                         if (f.exists() && f.isFile()) {
-                            def processed = processVersionsFromYAML(f.text)
-                            if (processed) {
-                                def map = yaml.load(processed)
-                                if (map instanceof Map) mergeParsedYaml(map as Map)
-                            }
+                            processYamlContent(f.text, merged)
                         } else {
-                            def processed = processVersionsFromYAML(s)
-                            if (processed) {
-                                def map = yaml.load(processed)
-                                if (map instanceof Map) mergeParsedYaml(map as Map)
-                            }
+                            processYamlContent(s, merged)
                         }
                     }
                 }
@@ -355,16 +292,90 @@ class NfcoreVersionUtils {
             }
         }
 
+        // Process all entries
         versionsList?.each { processEntry(it) }
 
-        // Sort processes alphabetically, and within each process sort tools alphabetically
+        // Sort processes and tools alphabetically
         Map<String, Map<String, Object>> sortedMerged = merged.sort().collectEntries { processName, toolsMap ->
             [(processName): toolsMap.sort()]
         }
 
-        String versionsYaml = sortedMerged ? yaml.dumpAsMap(sortedMerged).trim() : ''
+        // Format output
+        String versionsYaml = sortedMerged ? new Yaml().dumpAsMap(sortedMerged).trim() : ''
         def workflowYaml = workflowVersionToYAML(sess, nfVersion)
         return ([versionsYaml, workflowYaml].findAll { it && it != '{}' }.join("\n")).trim()
+    }
+
+    /**
+     * Process YAML content and merge into accumulated map
+     * Eliminates duplicate YAML parsing logic used across multiple entry types
+     */
+    private static void processYamlContent(String yamlContent, Map<String, Map<String, Object>> merged) {
+        def processed = processVersionsFromYAML(yamlContent)
+        if (processed) {
+            def map = new Yaml().load(processed)
+            if (map instanceof Map) {
+                mergeParsedYaml(map as Map, merged)
+            }
+        }
+    }
+
+    /**
+     * Merge parsed YAML map into accumulated map
+     * Handles both nested (process blocks) and flat (tool->version) formats
+     */
+    private static void mergeParsedYaml(Map parsed, Map<String, Map<String, Object>> merged) {
+        if (!parsed) return
+
+        // Check if this is nested (process blocks) or flat (tool->version)
+        def hasNested = parsed.values().any { it instanceof Map }
+
+        if (hasNested) {
+            // Process blocks: { FASTQC: { fastqc: '0.12.1' } }
+            parsed.each { pk, pv ->
+                if (pv instanceof Map) {
+                    mergeProcessMap(pk?.toString(), pv as Map, merged)
+                } else if (pk) {
+                    // Top-level scalar, park under 'Software'
+                    mergeProcessMap('Software', [(pk.toString()): pv], merged)
+                }
+            }
+        } else {
+            // Flat tool->version map, park under 'Software'
+            mergeProcessMap('Software', parsed, merged)
+        }
+    }
+
+    /**
+     * Merge a process's tools map into accumulated map
+     * Cleans tool keys by extracting last component after ':'
+     */
+    private static void mergeProcessMap(String processName, Map toolsMap, Map<String, Map<String, Object>> merged) {
+        if (!processName || !toolsMap) return
+
+        toolsMap.each { tk, tv ->
+            // Clean key: extract last component after ':'
+            def toolKey = tk ? (tk.toString().contains(':') ?
+                tk.toString().tokenize(':').last() : tk.toString()) : null
+
+            if (toolKey) {
+                merged[processName][toolKey] = (tv instanceof CharSequence) ? tv.toString() : tv
+            }
+        }
+    }
+
+    /**
+     * Safely detect if object has a no-arg toFile() method
+     * Used for identifying Path-like objects without direct imports
+     */
+    private static boolean hasToFileMethod(Object o) {
+        if (o == null) return false
+        try {
+            def m = o.getClass().getMethod('toFile' as String)
+            return m != null && m.getParameterCount() == 0
+        } catch (NoSuchMethodException | SecurityException ignore) {
+            return false
+        }
     }
 
     /**
