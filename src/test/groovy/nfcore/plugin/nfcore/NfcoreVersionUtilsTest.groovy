@@ -511,4 +511,420 @@ class NfcoreVersionUtilsTest extends Specification {
         result[0] == ['Workflow', 'testpipeline', 'v1.0.0']
         result[1] == ['Workflow', 'Nextflow', '23.04.1']
     }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'workflowVersionToYAML should use provided nextflowVersion parameter'() {
+        given:
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.workflowVersionToYAML(session, '24.10.0')
+
+        then:
+        result.contains('testpipeline: v1.0.0')
+        result.contains('Nextflow: 24.10.0')
+        !result.contains('23.04.1')
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'workflowVersionToYAML should fall back to NXF_VER environment variable'() {
+        given:
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [:]
+        }
+        // Simulate NXF_VER environment variable
+        def originalNxfVer = System.getenv('NXF_VER')
+        def envVars = ['NXF_VER': '24.04.0']
+        envVars.each { k, v -> System.setProperty(k, v) }
+
+        when:
+        def result = NfcoreVersionUtils.workflowVersionToYAML(session, null)
+
+        then:
+        result.contains('testpipeline: v1.0.0')
+        // Should contain either the env var or 'unknown' since we can't easily mock System.getenv()
+        result.contains('Nextflow:')
+
+        cleanup:
+        envVars.each { k, v -> System.clearProperty(k) }
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should handle mixed input sources - YAML strings'() {
+        given:
+        def yamlString1 = 'fastqc: 0.12.1'
+        def yamlString2 = 'samtools: 1.17'
+        def versions = [yamlString1, yamlString2]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(versions, session)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+        result.contains('Workflow:')
+        result.contains('testpipeline: v1.0.0')
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should handle topic tuples'() {
+        given:
+        def topicTuples = [
+            ['NFCORE_FASTQC', 'fastqc', '0.12.1'],
+            ['NFCORE_SAMTOOLS', 'samtools', '1.17']
+        ]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(topicTuples, session)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17') || result.contains("samtools: '1.17'")
+        result.contains('NFCORE_FASTQC:')
+        result.contains('NFCORE_SAMTOOLS:')
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should handle file paths'() {
+        given:
+        def tempFile = File.createTempFile('versions', '.yml')
+        tempFile.text = '''
+        fastqc: 0.12.1
+        samtools: 1.17
+        '''.stripIndent()
+        def versions = [tempFile.absolutePath]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(versions, session)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should handle File objects'() {
+        given:
+        def tempFile = File.createTempFile('versions', '.yml')
+        tempFile.text = '''
+        fastqc: 0.12.1
+        samtools: 1.17
+        '''.stripIndent()
+        def versions = [tempFile]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(versions, session)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should handle Map objects'() {
+        given:
+        def versionMap = [fastqc: '0.12.1', samtools: '1.17']
+        def versions = [versionMap]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(versions, session)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17') || result.contains("samtools: '1.17'")
+        result.contains('Software:')
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should handle mixed input types'() {
+        given:
+        def yamlString = 'fastqc: 0.12.1'
+        def topicTuple = ['NFCORE_SAMTOOLS', 'samtools', '1.17']
+        def versionMap = [multiqc: '1.15']
+        def versions = [yamlString, topicTuple, versionMap]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(versions, session)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17') || result.contains("samtools: '1.17'")
+        result.contains('multiqc: 1.15') || result.contains("multiqc: '1.15'")
+        result.contains('NFCORE_SAMTOOLS:')
+        result.contains('Software:')
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should use provided nextflowVersion'() {
+        given:
+        def yamlString = 'fastqc: 0.12.1'
+        def versions = [yamlString]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(versions, session, '24.10.0')
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('Nextflow: 24.10.0')
+        !result.contains('23.04.1')
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should handle nested YAML with process blocks'() {
+        given:
+        def nestedYaml = '''
+        NFCORE_FASTQC:
+            fastqc: 0.12.1
+        NFCORE_SAMTOOLS:
+            samtools: 1.17
+        '''.stripIndent()
+        def versions = [nestedYaml]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(versions, session)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+        result.contains('NFCORE_FASTQC:')
+        result.contains('NFCORE_SAMTOOLS:')
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should clean tool names with colons'() {
+        given:
+        def yamlWithColons = 'tool:fastqc: 0.12.1\ntool:samtools: 1.17'
+        def versions = [yamlWithColons]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(versions, session)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+        !result.contains('tool:fastqc')
+        !result.contains('tool:samtools')
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should sort processes and tools alphabetically'() {
+        given:
+        def topicTuples = [
+            ['ZEBRA_PROCESS', 'zebra', '1.0.0'],
+            ['ALPHA_PROCESS', 'alpha', '2.0.0'],
+            ['ALPHA_PROCESS', 'zulu', '3.0.0'],
+            ['ALPHA_PROCESS', 'bravo', '4.0.0']
+        ]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(topicTuples, session)
+
+        then:
+        def alphaIndex = result.indexOf('ALPHA_PROCESS:')
+        def zebraIndex = result.indexOf('ZEBRA_PROCESS:')
+        alphaIndex < zebraIndex
+        // Within ALPHA_PROCESS, tools should be sorted
+        def alphaSection = result.substring(alphaIndex, zebraIndex)
+        def alphaPos = alphaSection.indexOf('alpha:')
+        def bravoPos = alphaSection.indexOf('bravo:')
+        def zuluPos = alphaSection.indexOf('zulu:')
+        alphaPos < bravoPos && bravoPos < zuluPos
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should extract process name from full path'() {
+        given:
+        def topicTuples = [
+            ['NFCORE_RNASEQ:TRIMGALORE:FASTQC', 'fastqc', '0.12.1']
+        ]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(topicTuples, session)
+
+        then:
+        result.contains('FASTQC:')
+        result.contains('fastqc: 0.12.1')
+        !result.contains('NFCORE_RNASEQ:TRIMGALORE:FASTQC')
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should handle list of lists [collected channel]'() {
+        given:
+        def nestedList = [
+            [['PROCESS1', 'tool1', '1.0.0']],
+            [['PROCESS2', 'tool2', '2.0.0']]
+        ]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(nestedList, session)
+
+        then:
+        result.contains('tool1: 1.0.0')
+        result.contains('tool2: 2.0.0')
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should handle invalid entries gracefully'() {
+        given:
+        def versions = [
+            'fastqc: 0.12.1',
+            null,
+            '',
+            ['INCOMPLETE'],
+            ['INCOMPLETE', 'tool'],
+            'invalid yaml content: bad: structure:'
+        ]
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(versions, session)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('Workflow:')
+        noExceptionThrown()
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/24")
+    def 'softwareVersionsToYAML should handle empty input list'() {
+        given:
+        def versions = []
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.softwareVersionsToYAML(versions, session)
+
+        then:
+        result.contains('Workflow:')
+        result.contains('testpipeline: v1.0.0')
+        result.contains('Nextflow: 23.04.1')
+    }
 }

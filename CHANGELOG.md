@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Enhanced `softwareVersionsToYAML()` to support mixed input sources including YAML strings, file paths, topic tuples, and maps ([#24](https://github.com/nf-core/nf-core-utils/pull/24))
+- Improved Nextflow version detection in `workflowVersionToYAML()` with fallback to `NXF_VER` environment variable
+
 ### Fixed
 
 - Fix versions needed for build and tests
