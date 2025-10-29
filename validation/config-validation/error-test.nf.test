@@ -1,8 +1,8 @@
 nextflow_pipeline {
 
     name "Test nf-core-utils color formatting error messages"
-    script "../config-validation/error-test.nf"
-    config "../config-validation/nextflow.config"
+    script "../error-test.nf"
+    config "../nextflow.config"
 
     test("Error output - Monochrome") {
 

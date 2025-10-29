@@ -3,43 +3,33 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/notification-system/../notification-system/main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Launching `[PATH]/notification-system/../main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
                 "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
-                "Notification System Validation Test",
+                "nf-utils Plugin Integration Test",
                 "==========================================",
-                "Testing notification functions import and availability...",
-                "\u2705 completionEmail function available: true",
-                "\u2705 completionSummary function available: true",
-                "\u2705 imNotification function available: true",
-                "Notification functions imported successfully",
-                "Pipeline execution complete - notification functions will be tested in completion handlers",
-                "Pipeline complete! \ud83d\udc4b",
-                "===========================================",
-                "Testing notification functions in completion handler",
-                "===========================================",
-                "=== Testing completionSummary() function ===",
-                "\u2705 completionSummary(colored) completed successfully",
-                "\u2705 completionSummary(monochrome) completed successfully",
-                "=== Testing completionEmail() function ===",
-                "=== Testing imNotification() function ===",
-                "===========================================",
-                "Notification System Validation Results",
-                "===========================================",
-                "\u2705 completionSummary() - Pipeline completion logging tested",
-                "\u2705 completionEmail() - Email notification functionality tested",
-                "\u2705 imNotification() - Instant messenger integration tested",
-                "Notification system functions tested successfully! \ud83d\ude80",
-                "===========================================",
-                "Pipeline complete! \ud83d\udc4b",
-                "WARN: completionEmail test: null",
-                "WARN: imNotification test: null"
+                "Testing sayHello function...",
+                "Hello, nf-utils integration test!",
+                "Testing getWorkflowVersion function...",
+                "Workflow version: ",
+                "Testing checkCondaChannels function...",
+                "Conda channels check: true",
+                "Testing version processing...",
+                "Version report generated successfully",
+                "Testing citation processing...",
+                "Testing mixed version sources...",
+                "Mixed versions processed successfully",
+                "Testing completion summary...",
+                "==========================================",
+                "All integration tests completed!",
+                "==========================================",
+                "Pipeline complete! \ud83d\udc4b"
             ]
         ],
         "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
+            "nf-test": "0.9.3",
+            "nextflow": "25.10.0"
         },
-        "timestamp": "2025-09-08T17:39:55.802603907"
+        "timestamp": "2025-10-29T10:14:38.604561038"
     }
 }

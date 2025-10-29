@@ -1,8 +1,8 @@
 nextflow_pipeline {
 
     name "Test nf-core-utils version utilities migration"
-    script "../version-topic-channels/main.nf"
-    config "../version-topic-channels/nextflow.config"
+    script "../main.nf"
+    config "../nextflow.config"
 
     test("Version utilities") {
 

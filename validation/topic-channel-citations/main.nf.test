@@ -1,8 +1,8 @@
 nextflow_pipeline {
 
     name "Test nf-core-utils topic channel citations functions"
-    script "../topic-channel-citations/main.nf"
-    config "../topic-channel-citations/nextflow.config"
+    script "../main.nf"
+    config "../nextflow.config"
 
     test("Save citations outputs") {
 
