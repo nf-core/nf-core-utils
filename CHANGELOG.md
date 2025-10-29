@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Simplify and improve validation tests by using nft-utils for snapshots
+
 ### Fixed
 
 - Fix versions needed for build and tests
