@@ -1,25 +1,16 @@
 nextflow_pipeline {
 
     name "Test nf-core-utils version utilities migration"
-    script "../version-topic-channels/main.nf"
-    config "../version-topic-channels/nextflow.config"
+    script "./main.nf"
+    config "./nextflow.config"
 
     test("Version utilities") {
 
 
         then {
             assert workflow.success
-            assert workflow.exitStatus == 0
-
-            // Verify basic pipeline execution markers (stdout is a list)
-            assert workflow.stdout.any { it.contains("Pipeline is starting") }
-            assert workflow.stdout.any { it.contains("Pipeline complete") }
-
-            // Snapshot core version testing outputs
             assert snapshot(
-                // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
-                workflow.exitStatus,
-                workflow.success
+                filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true),
             ).match()
         }
     }

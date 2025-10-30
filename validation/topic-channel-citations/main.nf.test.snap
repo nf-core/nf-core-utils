@@ -1,8 +1,57 @@
 {
     "Save citations outputs": {
         "content": [
-            0,
-            true,
+            [
+                "N E X T F L O W  ~  version [VERSION]",
+                "Launching `[PATH]/topic-channel-citations/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Pipeline is starting! \ud83d\ude80",
+                "==========================================",
+                "nf-core-utils Plugin Topic Channel Citation E2E Test",
+                "==========================================",
+                "This test demonstrates automatic citation collection using:",
+                "1. Runtime citation extraction via getCitation()",
+                "2. Topic channel emission from processes",
+                "3. Automatic aggregation and formatting",
+                "4. Zero-maintenance citation management",
+                "=== Collected 7 citation emissions ===",
+                "Citation: [VIEW, samtools, [description:Tools for dealing with SAM, BAM and CRAM files, homepage:http://www.htslib.org/, documentation:http://www.htslib.org/doc/samtools.html, tool_dev_url:https://github.com/samtools/samtools, doi:10.1093/bioinformatics/btp352, licence:MIT]]",
+                "Citation: [FASTQC, fastqc, [description:A quality control tool for high throughput sequence data., homepage:https://www.bioinformatics.babraham.ac.uk/projects/fastqc/, documentation:https://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/, tool_dev_url:https://www.bioinformatics.babraham.ac.uk/projects/fastqc/, doi:10.1093/bioinformatics/btw354, licence:GPL v3]]",
+                "Citation: [MULTIQC, multiqc, [description:MultiQC searches a given directory for analysis logs and compiles a HTML report., homepage:https://multiqc.info/, documentation:https://multiqc.info/docs/, tool_dev_url:https://github.com/ewels/MultiQC, doi:10.1093/bioinformatics/btw354, licence:GPL v3]]",
+                "==========================================",
+                "AUTOMATIC CITATION RESULTS",
+                "==========================================",
+                "Citation Text:",
+                "Tools used in the workflow included: samtools (DOI: 10.1093/bioinformatics/btp352), fastqc (DOI: 10.1093/bioinformatics/btw354), multiqc (DOI: 10.1093/bioinformatics/btw354).",
+                "Bibliography:",
+                "<li>samtools. doi: 10.1093/bioinformatics/btp352. <a href='http://www.htslib.org/'>http://www.htslib.org/</a></li> <li>fastqc. doi: 10.1093/bioinformatics/btw354. <a href='https://www.bioinformatics.babraham.ac.uk/projects/fastqc/'>https://www.bioinformatics.babraham.ac.uk/projects/fastqc/</a></li> <li>multiqc. doi: 10.1093/bioinformatics/btw354. <a href='https://multiqc.info/'>https://multiqc.info/</a></li>",
+                "==========================================",
+                "\u2705 Auto-generated citations written to: [PATH]/tests/[NFT_HASH]/output/",
+                "\u2705 Citation text: [PATH]/tests/[NFT_HASH]/output/auto_citations.txt",
+                "\u2705 Bibliography: [PATH]/tests/[NFT_HASH]/output/auto_bibliography.html",
+                "==========================================",
+                "Topic Channel Citation Management Test Complete!",
+                "==========================================",
+                "\u2705 Processes automatically emitted citations to topic channel",
+                "\u2705 Citations collected and processed without manual configuration",
+                "\u2705 Final citation text and bibliography generated automatically",
+                "\u2705 Zero maintenance required - citations reflect actual tool usage",
+                "Key Benefits Demonstrated:",
+                "\u2022 No manual citation configuration needed",
+                "\u2022 Only executed tools appear in citations",
+                "\u2022 Automatic formatting and aggregation",
+                "\u2022 Clean separation of concerns",
+                "\u2022 Runtime accuracy",
+                "The future of nf-core citation management! \ud83d\ude80",
+                "==========================================",
+                "Pipeline complete! \ud83d\udc4b",
+                "[NXF_HASH] Submitted process > FASTQC (sample1)",
+                "[NXF_HASH] Submitted process > FASTQC (sample2)",
+                "[NXF_HASH] Submitted process > FASTQC (sample3)",
+                "[NXF_HASH] Submitted process > MULTIQC",
+                "[NXF_HASH] Submitted process > SAMTOOLS_VIEW (sample1)",
+                "[NXF_HASH] Submitted process > SAMTOOLS_VIEW (sample2)",
+                "[NXF_HASH] Submitted process > SAMTOOLS_VIEW (sample3)"
+            ],
             [
                 "auto_bibliography.html:md5,f36cf075e91a7ea08b184370db54b239",
                 "auto_citations.txt:md5,b6f87ba7390abff3a0bc0da48443ab7b"
@@ -12,6 +61,6 @@
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-09-01T18:56:56.823698538"
+        "timestamp": "2025-09-08T18:19:02.521834523"
     }
 }

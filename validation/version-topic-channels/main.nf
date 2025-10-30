@@ -54,7 +54,7 @@ workflow {
     ch_processed_versions = ch_version_files
         .unique()
         .map { version_file ->
-            log.info("Processing version file: ${version_file}")
+            log.info("Processing version file: ${version_file.fileName}")
             processVersionsFromFile([version_file.toString()])
         }
         .unique()

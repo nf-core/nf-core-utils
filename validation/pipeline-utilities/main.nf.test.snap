@@ -1,13 +1,47 @@
 {
     "Pipeline utilities": {
         "content": [
-            0,
-            true
+            [
+                "N E X T F L O W  ~  version [VERSION]",
+                "Launching `[PATH]/pipeline-utilities/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Pipeline is starting! \ud83d\ude80",
+                "==========================================",
+                "Pipeline Utilities Validation Test",
+                "==========================================",
+                "=== Testing getWorkflowVersion() function ===",
+                "Default workflow version: v1.12.0",
+                "Explicit version (2.1.0): v2.1.0",
+                "Version with commit (2.1.0, abc123): v2.1.0-gabc123d",
+                "Version with v prefix (v3.0.0): v3.0.0",
+                "Null version with commit: v1.12.0-gxyz789a",
+                "=== Testing dumpParametersToJSON() function ===",
+                "Dumping parameters to JSON in: [PATH]/tests/[NFT_HASH]/work/validation_output",
+                "\u2705 Parameters dumped successfully",
+                "=== Testing edge cases ===",
+                "\u2705 Null output directory handled correctly",
+                "=== Validating outputs ===",
+                "=== Validating version strings ===",
+                "\u2705 All version string validations passed",
+                "==========================================",
+                "Pipeline Utilities Validation Complete",
+                "==========================================",
+                "Pipeline Utilities Validation Results",
+                "==========================================",
+                "\u2705 getWorkflowVersion() function tested successfully",
+                "\u2705 dumpParametersToJSON() function tested successfully",
+                "\u2705 Edge cases handled properly",
+                "\u2705 Output validation completed",
+                "Functions ready for use in fetchngs pipeline! \ud83d\ude80",
+                "==========================================",
+                "Pipeline complete! \ud83d\udc4b",
+                "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info.",
+                "WARN: JSON file not found at: [PATH]/tests/[NFT_HASH]/work/validation_output/params.json"
+            ]
         ],
         "meta": {
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-09-01T18:53:47.192116437"
+        "timestamp": "2025-09-08T18:18:56.487587663"
     }
 }
