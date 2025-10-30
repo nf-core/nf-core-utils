@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New `getGenomeAttribute()` function to retrieve genome attributes from `params.genomes` for the selected genome
+
 ### Changed
 
 - Simplify and improve validation tests by using nft-utils for snapshots
