@@ -4,7 +4,6 @@
             [
                 "N E X T F L O W  ~  version [VERSION]",
                 "Launching `[PATH]/notification-system/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
-                "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "Notification System Validation Test",
                 "==========================================",
@@ -22,7 +21,6 @@
                 "\u2705 completionSummary(monochrome) completed successfully",
                 "=== Testing completionEmail() function ===",
                 " -- Check script '[PATH]/notification-system/main.nf' at line: 84 or see '[PATH]/tests/[NFT_HASH]/meta/nextflow.log' file for more details",
-                "Pipeline complete! \ud83d\udc4b",
                 "ERROR ~ Failed to invoke `workflow.onComplete` event handler"
             ]
         ],
