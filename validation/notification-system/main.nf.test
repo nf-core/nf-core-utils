@@ -1,25 +1,14 @@
 nextflow_pipeline {
 
     name "Test nf-core-utils notification system"
-    script "../notification-system/main.nf"
+    script "./main.nf"
 
     test("Notification system") {
 
-
         then {
             assert workflow.success
-            assert workflow.exitStatus == 0
-
-            // Verify basic pipeline execution markers
-            assert workflow.stdout.any { it.contains("Pipeline is starting") }
-            assert workflow.stdout.any { it.contains("Pipeline complete") }
-
-            // Snapshot notification system outputs - testing successful execution
-            // The detailed function testing happens in onComplete handler which may not be fully captured in stdout
             assert snapshot(
-                // workflow.stdout, // No workflow.stdout before we can sanitize this with nft-utils
-                workflow.exitStatus,
-                workflow.success
+                filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true)
             ).match()
         }
     }

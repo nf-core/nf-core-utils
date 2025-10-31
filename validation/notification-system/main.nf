@@ -18,7 +18,6 @@ include { imNotification    } from 'plugin/nf-core-utils'
 
 workflow {
 
-    log.info("Pipeline is starting! 🚀")
     log.info("==========================================")
     log.info("Notification System Validation Test")
     log.info("==========================================")
@@ -33,7 +32,6 @@ workflow {
     log.info("Notification functions imported successfully")
     log.info("Pipeline execution complete - notification functions will be tested in completion handlers")
 
-    log.info("Pipeline complete! 👋")
     workflow.onComplete {
         log.info(
             """

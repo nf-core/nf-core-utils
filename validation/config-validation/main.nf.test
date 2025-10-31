@@ -1,8 +1,18 @@
 nextflow_pipeline {
 
     name "Test nf-core-utils config validation functions"
-    script "../config-validation/main.nf"
-    config "../config-validation/nextflow.config"
+    script "./main.nf"
+    config "./nextflow.config"
+
+    test("Validate configuration functions") {
+
+        then {
+            assert workflow.success
+            assert snapshot(
+                filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true)
+            ).match()
+        }
+    }
 
     test("monochrome_logs params enabled") {
 
@@ -14,12 +24,9 @@ nextflow_pipeline {
 
         then {
             assert workflow.success
-
-            // Should complete successfully (the detailed logs are not captured in workflow.stdout by nf-test)
-            assert workflow.stdout.any { it.contains("Pipeline is starting") }
-            assert workflow.stdout.any { it.contains("Pipeline complete") }
-
-            // Snapshot basic successful execution
+            assert snapshot(
+                filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true)
+            ).match()
         }
     }
 
@@ -33,12 +40,9 @@ nextflow_pipeline {
 
         then {
             assert workflow.success
-
-            // Should complete successfully
-            assert workflow.stdout.any { it.contains("Pipeline is starting") }
-            assert workflow.stdout.any { it.contains("Pipeline complete") }
-
-            // Snapshot integration scenario success
+            assert snapshot(
+                filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true)
+            ).match()
         }
     }
 }

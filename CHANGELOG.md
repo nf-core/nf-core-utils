@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New `getGenomeAttribute()` function to retrieve genome attributes from `params.genomes` for the selected genome
+
 ### Changed
 
 - Changed pipeline start/complete messages from `log` to `TRACE` level to reduce console noise in normal operation
+- Simplify and improve validation tests by using nft-utils for snapshots
 - Enhanced `softwareVersionsToYAML()` to support mixed input sources including YAML strings, file paths, topic tuples, and maps ([#24](https://github.com/nf-core/nf-core-utils/pull/24))
 - Improved Nextflow version detection in `workflowVersionToYAML()` with fallback to `NXF_VER` environment variable
 

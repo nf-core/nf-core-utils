@@ -25,6 +25,7 @@ import nfcore.plugin.nfcore.NfcoreConfigValidator
 import nfcore.plugin.nfcore.NfcoreVersionUtils
 import nfcore.plugin.nfcore.NfcoreCitationUtils
 import nfcore.plugin.nfcore.NfcoreReportingOrchestrator
+import nfcore.plugin.ReferencesUtils
 
 /**
  * Implements a custom function which can be imported by
@@ -47,6 +48,20 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     void sayHello(String target) {
         println "Hello, ${target}!"
+    }
+
+    /**
+     * Get a genome attribute from params.genomes for the selected genome.
+     * Delegates to ReferencesUtils.getGenomeAttribute().
+     *
+     * @param attribute The attribute name to retrieve (e.g. 'fasta', 'gtf')
+     * @return The attribute value or null
+     */
+    @Function
+    Object getGenomeAttribute(String attribute) {
+        Map params = session?.getConfig()?.get('params') as Map
+        if (!params) params = session?.params as Map
+        return ReferencesUtils.getGenomeAttribute(params, attribute)
     }
 
     // --- Methods from NfcoreExtension ---

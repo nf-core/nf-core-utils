@@ -1,8 +1,8 @@
 nextflow_pipeline {
 
     name "Test nf-core-utils color formatting error messages"
-    script "../config-validation/error-test.nf"
-    config "../config-validation/nextflow.config"
+    script "./error-test.nf"
+    config "./nextflow.config"
 
     test("Error output - Monochrome") {
 
@@ -15,21 +15,8 @@ nextflow_pipeline {
         then {
             assert workflow.failed
 
-            // Should contain error message without color codes
-            assert workflow.stdout.any { it.contains("Pipeline is starting") }
-
-            // Check stdout for the actual error message (error appears in stdout in nf-test)
-            def errorMessage = workflow.stdout.join('\n')
-            assert errorMessage.contains("trailing comma")
-            assert errorMessage.contains("ERROR")
-            assert errorMessage.contains("HINT")
-
-            // Should NOT contain ANSI color codes
-            assert !errorMessage.contains('\033[')
-
-            // Snapshot monochrome error output
             assert snapshot(
-                workflow.stdout.findAll { it.contains("ERROR") || it.contains("HINT") }
+                filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true)
             ).match()
         }
     }
@@ -45,22 +32,8 @@ nextflow_pipeline {
         then {
             assert workflow.failed
 
-            // Should contain error message with color codes
-            assert workflow.stdout.any { it.contains("Pipeline is starting") }
-
-            // Check stdout for the actual error message (error appears in stdout in nf-test)
-            def errorMessage = workflow.stdout.join('\n')
-            assert errorMessage.contains("trailing comma")
-            assert errorMessage.contains("ERROR")
-            assert errorMessage.contains("HINT")
-
-            // Note: Color codes may not be visible in test output due to nf-test capturing
-            // The important thing is that the function accepts the parameter without errors
-            // In real usage, colors would be displayed based on terminal capabilities
-
-            // Snapshot color error output
             assert snapshot(
-                workflow.stdout.findAll { it.contains("ERROR") || it.contains("HINT") }
+                filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true)
             ).match()
         }
     }

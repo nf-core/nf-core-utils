@@ -1,13 +1,57 @@
 {
     "Version utilities": {
         "content": [
-            0,
-            true
+            [
+                "N E X T F L O W  ~  version [VERSION]",
+                "Launching `[PATH]/version-topic-channels/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Pipeline is starting! \ud83d\ude80",
+                "=== Testing getWorkflowVersion() plugin function ===",
+                "Generated workflow version: v1.0.0",
+                "=== Creating mock version files ===",
+                "=== Testing migrated version processing pipeline ===",
+                "=== Testing additional version utilities ===",
+                "Adding workflow version: v1.0.0",
+                "Processing version file: versions_1117691557.yml",
+                "Processing version file: versions_1202187732.yml",
+                "Processing version file: versions_145567121.yml",
+                "=== Final versions file created ===",
+                "Location: [PATH]/tests/[NFT_HASH]/work/pipeline_info/nf_core_utils_software_mqc_versions.yml",
+                "Content preview:",
+                "FASTQC:",
+                "  fastqc: 0.11.9",
+                "MULTIQC:",
+                "  multiqc: 1.12",
+                "SAMTOOLS:",
+                "  samtools: 1.17",
+                "Workflow:",
+                "    nf-core-utils-validation: v1.0.0",
+                "    Nextflow: 25.10.0",
+                "\u2705 All validation checks passed!",
+                "\u2705 Plugin functions working correctly",
+                "\u2705 Channel logic preserved in pipeline",
+                "\u2705 Migration pattern validated successfully",
+                "==========================================",
+                "nf-core-utils Plugin E2E Validation Complete",
+                "==========================================",
+                "\u2705 Plugin loaded successfully",
+                "\u2705 Version utility functions tested",
+                "\u2705 Channel logic preserved in pipeline",
+                "\u2705 Migration pattern validated",
+                "This test demonstrates:",
+                "1. Successful replacement of local utility functions with plugin imports",
+                "2. Channel orchestration remaining visible and controllable in pipeline",
+                "3. Identical functionality to original fetchngs implementation",
+                "4. Proper separation of concerns (utilities vs. workflow logic)",
+                "Ready for production migration! \ud83d\ude80",
+                "==========================================",
+                "Pipeline complete! \ud83d\udc4b",
+                "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info."
+            ]
         ],
         "meta": {
             "nf-test": "0.9.2",
             "nextflow": "25.04.6"
         },
-        "timestamp": "2025-09-01T19:00:15.175128484"
+        "timestamp": "2025-09-08T18:19:07.661622018"
     }
 }

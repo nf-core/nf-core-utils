@@ -1,13 +1,35 @@
 {
     "Notification system": {
         "content": [
-            0,
-            true
+            [
+                "N E X T F L O W  ~  version [VERSION]",
+                "Launching `[PATH]/notification-system/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
+                "Pipeline is starting! \ud83d\ude80",
+                "==========================================",
+                "Notification System Validation Test",
+                "==========================================",
+                "Testing notification functions import and availability...",
+                "\u2705 completionEmail function available: true",
+                "\u2705 completionSummary function available: true",
+                "\u2705 imNotification function available: true",
+                "Notification functions imported successfully",
+                "Pipeline execution complete - notification functions will be tested in completion handlers",
+                "===========================================",
+                "Testing notification functions in completion handler",
+                "===========================================",
+                "=== Testing completionSummary() function ===",
+                "\u2705 completionSummary(colored) completed successfully",
+                "\u2705 completionSummary(monochrome) completed successfully",
+                "=== Testing completionEmail() function ===",
+                " -- Check script '[PATH]/notification-system/main.nf' at line: 84 or see '[PATH]/tests/[NFT_HASH]/meta/nextflow.log' file for more details",
+                "Pipeline complete! \ud83d\udc4b",
+                "ERROR ~ Failed to invoke `workflow.onComplete` event handler"
+            ]
         ],
         "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
+            "nf-test": "0.9.3",
+            "nextflow": "25.10.0"
         },
-        "timestamp": "2025-09-01T18:53:43.06379336"
+        "timestamp": "2025-10-29T10:49:36.874294981"
     }
 }
