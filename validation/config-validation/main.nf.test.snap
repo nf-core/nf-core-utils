@@ -4,7 +4,6 @@
             [
                 "N E X T F L O W  ~  version [VERSION]",
                 "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
-                "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "Configuration Validation Test",
                 "==========================================",
@@ -51,7 +50,6 @@
                 "\u2705 Edge cases - Error handling and boundary conditions tested",
                 "Configuration validation functions ready for fetchngs! \ud83d\ude80",
                 "==========================================",
-                "Pipeline complete! \ud83d\udc4b",
                 "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info."
             ]
         ],
@@ -66,7 +64,6 @@
             [
                 "N E X T F L O W  ~  version [VERSION]",
                 "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
-                "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "Configuration Validation Test",
                 "==========================================",
@@ -113,7 +110,6 @@
                 "\u2705 Edge cases - Error handling and boundary conditions tested",
                 "Configuration validation functions ready for fetchngs! \ud83d\ude80",
                 "==========================================",
-                "Pipeline complete! \ud83d\udc4b",
                 "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info."
             ]
         ],
@@ -128,7 +124,6 @@
             [
                 "N E X T F L O W  ~  version [VERSION]",
                 "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
-                "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "Configuration Validation Test",
                 "==========================================",
@@ -175,7 +170,6 @@
                 "\u2705 Edge cases - Error handling and boundary conditions tested",
                 "Configuration validation functions ready for fetchngs! \ud83d\ude80",
                 "==========================================",
-                "Pipeline complete! \ud83d\udc4b",
                 "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info."
             ]
         ],

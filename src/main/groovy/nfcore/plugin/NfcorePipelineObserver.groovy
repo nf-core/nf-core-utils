@@ -44,12 +44,12 @@ class NfcorePipelineObserver implements TraceObserver {
         }
         configValidator.checkConfigProvided(projectName, config)
         configValidator.checkProfileProvided(session.profile, session.commandLine, true)
-        println "Pipeline is starting! 🚀"
+        log.trace "Pipeline is starting! 🚀"
     }
 
     @Override
     void onFlowComplete() {
-        println "Pipeline complete! 👋"
+        log.trace "Pipeline complete! 👋"
         // TODO dumpParametersToJSON(session.params.outdir, session.params)
     }
 }

@@ -4,7 +4,6 @@
             [
                 "N E X T F L O W  ~  version [VERSION]",
                 "Launching `[PATH]/pipeline-utilities/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
-                "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "Pipeline Utilities Validation Test",
                 "==========================================",
@@ -33,7 +32,6 @@
                 "\u2705 Output validation completed",
                 "Functions ready for use in fetchngs pipeline! \ud83d\ude80",
                 "==========================================",
-                "Pipeline complete! \ud83d\udc4b",
                 "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info.",
                 "WARN: JSON file not found at: [PATH]/tests/[NFT_HASH]/work/validation_output/params.json"
             ]

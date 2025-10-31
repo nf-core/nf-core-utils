@@ -4,7 +4,6 @@
             [
                 "N E X T F L O W  ~  version [VERSION]",
                 "Launching `[PATH]/topic-channel-citations/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
-                "Pipeline is starting! \ud83d\ude80",
                 "==========================================",
                 "nf-core-utils Plugin Topic Channel Citation E2E Test",
                 "==========================================",
@@ -43,7 +42,6 @@
                 "\u2022 Runtime accuracy",
                 "The future of nf-core citation management! \ud83d\ude80",
                 "==========================================",
-                "Pipeline complete! \ud83d\udc4b",
                 "[NXF_HASH] Submitted process > FASTQC (sample1)",
                 "[NXF_HASH] Submitted process > FASTQC (sample2)",
                 "[NXF_HASH] Submitted process > FASTQC (sample3)",
