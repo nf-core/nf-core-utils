@@ -72,13 +72,13 @@ dumpParametersToJSON(params.outdir, params)
 
 ```bash
 # Basic validation
-nextflow run validation/pipeline-utilities/ -plugins nf-core-utils@0.3.0
+nextflow run validation/pipeline-utilities/ -plugins nf-core-utils@0.4.0
 
 # With test profile (faster)
-nextflow run validation/pipeline-utilities/ -plugins nf-core-utils@0.3.0 -profile test
+nextflow run validation/pipeline-utilities/ -plugins nf-core-utils@0.4.0 -profile test
 
 # With debug logging
-nextflow run validation/pipeline-utilities/ -plugins nf-core-utils@0.3.0 -profile debug
+nextflow run validation/pipeline-utilities/ -plugins nf-core-utils@0.4.0 -profile debug
 ```
 
 ### Via Validation Suite
