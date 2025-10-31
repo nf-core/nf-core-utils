@@ -19,3 +19,7 @@ nextflowPlugin {
 dependencies {
     implementation 'org.yaml:snakeyaml:2.2'
 }
+
+tasks.named('compileTestGroovy') {
+    dependsOn(tasks.named('buildSpec'))
+}
