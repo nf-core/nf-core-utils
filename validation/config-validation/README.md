@@ -101,15 +101,15 @@ if (!checkCondaChannels()) {
 
 ```bash
 # Basic validation
-nextflow run validation/config-validation/ -plugins nf-core-utils@0.7.0
+nextflow run validation/config-validation/ -plugins nf-core-utils@0.4.0
 
 # With different profiles to test profile validation
-nextflow run validation/config-validation/ -plugins nf-core-utils@0.7.0 -profile test
-nextflow run validation/config-validation/ -plugins nf-core-utils@0.7.0 -profile docker
-nextflow run validation/config-validation/ -plugins nf-core-utils@0.7.0 -profile test,conda
+nextflow run validation/config-validation/ -plugins nf-core-utils@0.4.0 -profile test
+nextflow run validation/config-validation/ -plugins nf-core-utils@0.4.0 -profile docker
+nextflow run validation/config-validation/ -plugins nf-core-utils@0.4.0 -profile test,conda
 
 # With debug logging
-nextflow run validation/config-validation/ -plugins nf-core-utils@0.7.0 -profile debug
+nextflow run validation/config-validation/ -plugins nf-core-utils@0.4.0 -profile debug
 ```
 
 ### Via Validation Suite
@@ -119,7 +119,7 @@ nextflow run validation/config-validation/ -plugins nf-core-utils@0.7.0 -profile
 ./validation/validate-all.sh
 
 # Run just configuration validation
-nextflow run validation/config-validation/ -plugins nf-core-utils@0.7.0
+nextflow run validation/config-validation/ -plugins nf-core-utils@0.4.0
 ```
 
 ## Expected Outputs
