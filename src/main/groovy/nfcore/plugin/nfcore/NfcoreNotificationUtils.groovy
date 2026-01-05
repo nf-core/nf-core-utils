@@ -164,7 +164,7 @@ class NfcoreNotificationUtils {
                                 boolean monochrome_logs = true, def multiqc_report = null) {
         def session = (Session) nextflow.Nextflow.session
         if (session == null) {
-            System.err.println("ERROR: Cannot send completion email - Nextflow session is null")
+            log.error("Cannot send completion email - Nextflow session is null")
             return
         }
 
@@ -350,7 +350,7 @@ class NfcoreNotificationUtils {
     static void imNotification(Map summary_params, String hook_url) {
         def session = (Session) nextflow.Nextflow.session
         if (session == null) {
-            System.err.println("ERROR: Cannot send IM notification - Nextflow session is null")
+            log.error("Cannot send IM notification - Nextflow session is null")
             return
         }
 

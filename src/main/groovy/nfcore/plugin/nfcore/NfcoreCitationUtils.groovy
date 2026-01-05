@@ -158,7 +158,7 @@ class NfcoreCitationUtils {
                 def citations = generateModuleToolCitation(filePath)
                 allCitations.putAll(citations)
             } catch (Exception e) {
-                System.err.println("Warning: Could not process citation file ${filePath}: ${e.message}")
+                log.warn("Could not process citation file ${filePath}: ${e.message}")
             }
         }
         return allCitations
@@ -226,7 +226,7 @@ class NfcoreCitationUtils {
 
             return result
         } catch (Exception e) {
-            System.err.println("Warning: Could not convert meta.yml to topic format: ${e.message}")
+            log.warn("Could not convert meta.yml to topic format: ${e.message}")
             return []
         }
     }
@@ -323,7 +323,7 @@ class NfcoreCitationUtils {
         try {
             File metaFile = new File(metaYmlPath)
             if (!metaFile.exists()) {
-                System.err.println("Warning: meta.yml not found at ${metaYmlPath}")
+                log.warn("meta.yml not found at ${metaYmlPath}")
                 return []
             }
 
@@ -352,7 +352,7 @@ class NfcoreCitationUtils {
             return citations
 
         } catch (Exception e) {
-            System.err.println("Warning: Failed to extract citation from ${metaYmlPath}: ${e.message}")
+            log.warn("Failed to extract citation from ${metaYmlPath}: ${e.message}")
             return []
         }
     }

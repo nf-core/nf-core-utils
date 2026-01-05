@@ -17,6 +17,7 @@
 package nfcore.plugin.nextflow
 
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import org.yaml.snakeyaml.Yaml
 
 import java.nio.file.Path
@@ -25,6 +26,7 @@ import java.nio.file.Path
  * Implements utility functions for Nextflow pipelines that were previously
  * available in the utils_nextflow_pipeline subworkflow.
  */
+@Slf4j
 @CompileStatic
 class NextflowPipelineUtils {
 
@@ -37,12 +39,12 @@ class NextflowPipelineUtils {
      */
     static void dumpParametersToJSON(Path outdir, Map params) {
         if (outdir == null) {
-            System.err.println("WARN: Cannot dump parameters - output directory is null")
+            log.warn("Cannot dump parameters - output directory is null")
             return
         }
 
         if (params == null) {
-            System.err.println("WARN: Cannot dump parameters - parameters map is null")
+            log.warn("Cannot dump parameters - parameters map is null")
             return
         }
 
@@ -62,7 +64,7 @@ class NextflowPipelineUtils {
             nextflow.extension.FilesEx.copyTo(temp_pf.toPath(), pipeline_info_dir.resolve(filename))
             temp_pf.delete()
         } catch (Exception e) {
-            System.err.println("ERROR: Failed to dump parameters to JSON: ${e.message}")
+            log.error("Failed to dump parameters to JSON: ${e.message}")
         }
     }
 
@@ -81,7 +83,7 @@ class NextflowPipelineUtils {
 
             // Check if conda command was successful
             if (process.exitValue() != 0) {
-                System.err.println("WARN: Conda command failed - conda may not be installed or available in PATH")
+                log.warn("Conda command failed - conda may not be installed or available in PATH")
                 return true  // Return true to not block pipeline if conda is not available
             }
 
@@ -99,13 +101,13 @@ class NextflowPipelineUtils {
             }
         }
         catch (Exception e) {
-            System.err.println("WARN: Could not verify conda channel configuration: ${e.message}")
+            log.warn("Could not verify conda channel configuration: ${e.message}")
             return true  // Return true to not block pipeline on conda config check failures
         }
 
         // If channels is null or empty, return true to avoid blocking
         if (channels == null || channels.isEmpty()) {
-            System.err.println("WARN: No conda channels found - conda configuration may not be set up")
+            log.warn("No conda channels found - conda configuration may not be set up")
             return true
         }
 
@@ -126,7 +128,7 @@ class NextflowPipelineUtils {
         def channel_priority_violation = !channel_subset.equals(required_channels_in_order)
 
         if (channels_missing || channel_priority_violation) {
-            System.err.println("""\
+            log.warn("""\
             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 There is a problem with your Conda configuration!
                 You will need to set-up the conda-forge and bioconda channels correctly.

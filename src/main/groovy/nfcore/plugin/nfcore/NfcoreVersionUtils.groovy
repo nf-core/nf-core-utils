@@ -16,6 +16,7 @@
 
 package nfcore.plugin.nfcore
 
+import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.Const
 import org.yaml.snakeyaml.Yaml
@@ -27,6 +28,7 @@ import org.yaml.snakeyaml.Yaml
  * This class is focused solely on version management and does not handle
  * citation-related functionality (see NfcoreCitationUtils for that).
  */
+@Slf4j
 class NfcoreVersionUtils {
 
     /**
@@ -124,7 +126,7 @@ class NfcoreVersionUtils {
                 }
             } catch (Exception e) {
                 // Log warning but continue processing other files
-                System.err.println("Warning: Could not process versions file ${filePath}: ${e.message}")
+                log.warn("Could not process versions file ${filePath}: ${e.message}")
             }
         }
 
@@ -288,7 +290,7 @@ class NfcoreVersionUtils {
                     }
                 }
             } catch (Exception e) {
-                System.err.println("Warning: Could not process version entry ${entry}: ${e.message}")
+                log.warn("Could not process version entry ${entry}: ${e.message}")
             }
         }
 
@@ -487,7 +489,7 @@ class NfcoreVersionUtils {
 
             return result
         } catch (Exception e) {
-            System.err.println("Warning: Could not convert legacy YAML to eval syntax: ${e.message}")
+            log.warn("Could not convert legacy YAML to eval syntax: ${e.message}")
             return []
         }
     }

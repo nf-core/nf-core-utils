@@ -16,6 +16,7 @@
 
 package nfcore.plugin
 
+import groovy.util.logging.Slf4j
 import groovyx.gpars.dataflow.DataflowReadChannel
 import groovyx.gpars.dataflow.DataflowWriteChannel
 import nextflow.Session
@@ -31,6 +32,7 @@ import nfcore.plugin.ReferencesUtils
  * Implements a custom function which can be imported by
  * Nextflow scripts.
  */
+@Slf4j
 class NfUtilsExtension extends PluginExtensionPoint {
 
     private Session session
@@ -362,7 +364,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
                 def citations = NfcoreCitationUtils.generateModuleToolCitation(metaPath)
                 allCitations.putAll(citations)
             } catch (Exception e) {
-                System.err.println("Warning: Could not process meta.yml at ${metaPath}: ${e.message}")
+                log.warn("Could not process meta.yml at ${metaPath}: ${e.message}")
             }
         }
         return allCitations
