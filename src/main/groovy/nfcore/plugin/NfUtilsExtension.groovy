@@ -182,15 +182,55 @@ class NfUtilsExtension extends PluginExtensionPoint {
         return nfcore.plugin.nextflow.NextflowPipelineUtils.checkCondaChannels()
     }
 
-    // --- Enhanced Version Utilities ---
+    // --- Version Utilities ---
+
+    /**
+     * Collect software versions from various input sources and merge into YAML format.
+     *
+     * This is the recommended method for version collection. It handles all input types
+     * automatically and merges them into a single YAML output with workflow version info.
+     *
+     * <h3>Supported Input Types</h3>
+     * <ul>
+     *   <li><b>String</b>: YAML content or file path (auto-detected)</li>
+     *   <li><b>File/Path</b>: Reads YAML content from file</li>
+     *   <li><b>List&lt;List&gt;</b>: Topic channel tuples [[process, tool, version], ...]</li>
+     *   <li><b>List&lt;String&gt;</b>: File paths to versions.yml files</li>
+     *   <li><b>Map</b>: Direct version data</li>
+     *   <li><b>Mixed List</b>: Any combination of the above</li>
+     * </ul>
+     *
+     * <h3>Example Usage</h3>
+     * <pre>
+     * // From collected channel
+     * ch_versions.collect().map { versions ->
+     *     workflow.collectVersions(versions)
+     * }
+     *
+     * // With custom Nextflow version
+     * workflow.collectVersions(versions, nextflowVersion: workflow.nextflow.version)
+     * </pre>
+     *
+     * @param input Single input or List of mixed inputs
+     * @param nextflowVersion Override Nextflow version (optional, auto-detected if null)
+     * @return YAML string with merged versions, sorted alphabetically
+     */
+    @Function
+    String collectVersions(Object input, Object nextflowVersion = null) {
+        return NfcoreVersionUtils.collectVersions(input, this.session, nextflowVersion)
+    }
+
+    // --- Deprecated Version Utilities ---
+
     /**
      * Process versions from both topic channels and legacy files
-     * Supports progressive migration from versions.yml files to topic channels
      *
      * @param topicVersions List of [process, name, version] from 'versions' topic
      * @param versionsFiles List of file paths from 'versions_file' topic
      * @return Combined YAML string with all versions
+     * @deprecated Use {@link #collectVersions(Object, Object)} instead
      */
+    @Deprecated
     @Function
     String processMixedVersionSources(List<List> topicVersions, List<String> versionsFiles) {
         return NfcoreVersionUtils.processMixedVersionSources(topicVersions, versionsFiles, this.session)
@@ -227,7 +267,9 @@ class NfUtilsExtension extends PluginExtensionPoint {
      *
      * @param topicData List containing [process, name, version] tuples
      * @return YAML string with processed versions
+     * @deprecated Use {@link #collectVersions(Object, Object)} instead
      */
+    @Deprecated
     @Function
     String processVersionsFromTopic(List<List> topicData) {
         return NfcoreVersionUtils.processVersionsFromTopic(topicData)
@@ -238,7 +280,9 @@ class NfUtilsExtension extends PluginExtensionPoint {
      *
      * @param versionsFiles List of file paths to versions.yml files
      * @return YAML string with processed versions
+     * @deprecated Use {@link #collectVersions(Object, Object)} instead
      */
+    @Deprecated
     @Function
     String processVersionsFromFile(List<String> versionsFiles) {
         return NfcoreVersionUtils.processVersionsFromFile(versionsFiles)
@@ -261,15 +305,12 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * When given a channel, returns a channel that emits the combined YAML
      * When given a list, returns the YAML string directly
      *
-     * Supports multiple calling patterns:
-     * 1. Named parameters: softwareVersionsToYAML(softwareVersions: channel, nextflowVersion: workflow.nextflow.version)
-     * 2. Positional: softwareVersionsToYAML(channel)
-     * 3. Mixed: softwareVersionsToYAML(channel, nextflowVersion: workflow.nextflow.version)
-     *
      * @param versionsOrOptions Either a channel/list of versions, or a Map with 'softwareVersions' and optional 'nextflowVersion' keys
      * @param options Optional map with 'nextflowVersion' key
      * @return Channel emitting combined YAML string, or String directly if input is a list
+     * @deprecated Use {@link #collectVersions(Object, Object)} instead
      */
+    @Deprecated
     @Function
     Object softwareVersionsToYAML(Object versionsOrOptions, Map options = [:]) {
         // Extract versions channel/list and nextflowVersion

@@ -27,9 +27,102 @@ import org.yaml.snakeyaml.Yaml
  *
  * This class is focused solely on version management and does not handle
  * citation-related functionality (see NfcoreCitationUtils for that).
+ *
+ * <h2>Recommended API</h2>
+ * Use {@link #collectVersions(Object, Session, Object)} as the primary entry point.
+ * It handles all input types automatically:
+ * <ul>
+ *   <li>YAML strings (inline content)</li>
+ *   <li>File paths (String, File, or Path objects)</li>
+ *   <li>Topic tuples: [process, tool, version]</li>
+ *   <li>Maps of tool->version</li>
+ *   <li>Mixed lists containing any combination of the above</li>
+ * </ul>
+ *
+ * <h2>Deprecated Methods</h2>
+ * The following methods are deprecated and delegate to collectVersions():
+ * <ul>
+ *   <li>{@link #softwareVersionsToYAML} - use collectVersions() instead</li>
+ *   <li>{@link #processVersionsFromYAML} - use collectVersions() instead</li>
+ *   <li>{@link #processVersionsFromTopic} - use collectVersions() instead</li>
+ *   <li>{@link #processVersionsFromFile} - use collectVersions() instead</li>
+ *   <li>{@link #processVersionsFromTopicChannels} - use collectVersions() instead</li>
+ *   <li>{@link #processMixedVersionSources} - use collectVersions() instead</li>
+ * </ul>
  */
 @Slf4j
 class NfcoreVersionUtils {
+
+    // =========================================================================
+    // PRIMARY API
+    // =========================================================================
+
+    /**
+     * Collect software versions from various input sources and merge into YAML format.
+     *
+     * This is the recommended entry point for version collection. It intelligently
+     * handles multiple input types and merges them into a single YAML output.
+     *
+     * <h3>Supported Input Types</h3>
+     * <ul>
+     *   <li><b>String</b>: YAML content or file path (auto-detected)</li>
+     *   <li><b>File/Path</b>: Reads YAML content from file</li>
+     *   <li><b>List&lt;List&gt;</b>: Topic channel tuples [[process, tool, version], ...]</li>
+     *   <li><b>List&lt;String&gt;</b>: File paths to versions.yml files</li>
+     *   <li><b>Map</b>: Direct version data (tool->version or nested process blocks)</li>
+     *   <li><b>Mixed List</b>: Any combination of the above types</li>
+     * </ul>
+     *
+     * <h3>Example Usage</h3>
+     * <pre>
+     * // From collected channel (most common)
+     * ch_versions.collect().map { versions ->
+     *     NfcoreVersionUtils.collectVersions(versions, workflow.session)
+     * }
+     *
+     * // From topic tuples
+     * def tuples = [['FASTQC', 'fastqc', '0.12.1'], ['MULTIQC', 'multiqc', '1.14']]
+     * NfcoreVersionUtils.collectVersions(tuples)
+     *
+     * // From YAML string
+     * NfcoreVersionUtils.collectVersions("fastqc: 0.12.1\nmultiqc: 1.14")
+     * </pre>
+     *
+     * @param input Single input or List of mixed inputs (see supported types above)
+     * @param session Nextflow session (optional). If provided, workflow version is included.
+     * @param nextflowVersion Override Nextflow version (optional). Auto-detected if null.
+     * @return YAML string with merged versions, sorted alphabetically by process and tool
+     */
+    static String collectVersions(Object input, Session session = null, Object nextflowVersion = null) {
+        // Convert input to list for uniform processing
+        List inputList = normalizeInputToList(input)
+
+        // Accumulate versions: process -> tools map
+        Map<String, Map<String, Object>> merged = [:].withDefault { [:] as Map<String, Object> }
+
+        // Process all entries
+        inputList.each { entry -> processVersionEntry(entry, merged) }
+
+        // Sort processes and tools alphabetically
+        Map<String, Map<String, Object>> sortedMerged = merged.sort().collectEntries { processName, toolsMap ->
+            [(processName): toolsMap.sort()]
+        }
+
+        // Format output
+        String versionsYaml = sortedMerged ? new Yaml().dumpAsMap(sortedMerged).trim() : ''
+
+        // Add workflow version if session provided
+        if (session) {
+            def workflowYaml = workflowVersionToYAML(session, nextflowVersion)
+            return ([versionsYaml, workflowYaml].findAll { it && it != '{}' }.join("\n")).trim()
+        }
+
+        return versionsYaml
+    }
+
+    // =========================================================================
+    // WORKFLOW INFO METHODS (not deprecated - different concern)
+    // =========================================================================
 
     /**
      * Generate workflow version string
@@ -61,11 +154,19 @@ class NfcoreVersionUtils {
         return versionString
     }
 
+    // =========================================================================
+    // DEPRECATED METHODS - delegate to collectVersions()
+    // =========================================================================
+
     /**
      * Parses a YAML string of software versions and flattens keys.
      * Example: "tool:foo: 1.0.0\nbar: 2.0.0" -> "foo: 1.0.0\nbar: 2.0.0"
+     *
+     * @deprecated Use {@link #collectVersions(Object, Session, Object)} instead.
      */
+    @Deprecated
     static String processVersionsFromYAML(String yamlFile) {
+        log.debug("processVersionsFromYAML() is deprecated. Use collectVersions() instead.")
         def yaml = new Yaml()
         def loaded = yaml.load(yamlFile)
         if (!(loaded instanceof Map)) return ''
@@ -85,8 +186,11 @@ class NfcoreVersionUtils {
      *
      * @param topicData List containing [process, name, version] tuples
      * @return YAML string with processed versions
+     * @deprecated Use {@link #collectVersions(Object, Session, Object)} instead.
      */
+    @Deprecated
     static String processVersionsFromTopic(List<List> topicData) {
+        log.debug("processVersionsFromTopic() is deprecated. Use collectVersions() instead.")
         // Maintain flat tool->version map for compatibility
         Map<String, Object> versions = [:]
         topicData.each { tuple ->
@@ -107,8 +211,11 @@ class NfcoreVersionUtils {
      *
      * @param versionsFileData List containing file paths to versions.yml files
      * @return YAML string with processed versions
+     * @deprecated Use {@link #collectVersions(Object, Session, Object)} instead.
      */
+    @Deprecated
     static String processVersionsFromFile(List<String> versionsFileData) {
+        log.debug("processVersionsFromFile() is deprecated. Use collectVersions() instead.")
         def allVersions = [:]
         versionsFileData.each { filePath ->
             try {
@@ -176,32 +283,15 @@ class NfcoreVersionUtils {
      * Combines a list of YAML strings (from Nextflow pipeline) into a single YAML string,
      * deduplicating entries and appending workflow version info.
      *
-     * Usage pattern for piecemeal accumulation:
-     *   1. Each process emits a YAML string (e.g., to a channel or list).
-     *   2. Collect all YAMLs at the end (e.g., with `versions_ch.collect()` or accumulating in a list).
-     *   3. Call this function with the collected list and the session.
-     *
-     * Example (Nextflow DSL2):
-     *   versions_ch = Channel.create()
-     *   // ... processes emit YAML strings to versions_ch ...
-     *   workflow.onComplete {
-     *     def all_versions = versions_ch.collect()
-     *     def versions_yaml = NfcoreVersionUtils.softwareVersionsToYAML(all_versions, workflow.session)
-     *     println versions_yaml
-     *   }
-     *
-     * Accepts mixed inputs:
-     * - YAML strings (legacy inline)
-     * - File paths (String), File, or Path objects pointing to legacy versions.yml
-     * - Topic tuples: [process, tool, version]
-     * - Maps of tool->version
-     *
      * @param chVersions List of mixed version entries from the pipeline (can be ArrayBag or other iterable)
      * @param session The Nextflow session
      * @param nextflowVersion Optional Nextflow version to include in output (can be VersionNumber or string)
      * @return Combined YAML string
+     * @deprecated Use {@link #collectVersions(Object, Session, Object)} instead.
      */
+    @Deprecated
     static String softwareVersionsToYAML(Object chVersions, Object session, Object nextflowVersion = null) {
+        log.debug("softwareVersionsToYAML() is deprecated. Use collectVersions() instead.")
         // Convert to proper types
         List versionsList = (chVersions instanceof List) ? chVersions : chVersions?.toList() ?: []
         Session sess = (session instanceof Session) ? session : null
@@ -380,15 +470,144 @@ class NfcoreVersionUtils {
         }
     }
 
+    // =========================================================================
+    // PRIVATE HELPERS FOR collectVersions()
+    // =========================================================================
+
+    /**
+     * Normalize input to a list for uniform processing.
+     * Handles various collection types including ArrayBag.
+     */
+    private static List normalizeInputToList(Object input) {
+        if (input == null) return []
+        // Strings are Iterable in Groovy (over chars) - handle them as single items
+        if (input instanceof CharSequence) return [input.toString()]
+        if (input instanceof List) return input
+        if (input.getClass().isArray()) return (input as Object[]).toList()
+        // Handle ArrayBag and other iterables (but not String which we handled above)
+        if (input instanceof Iterable) return input.toList()
+        // Try toList() method if available
+        if (input.metaClass.respondsTo(input, 'toList')) {
+            return input.toList()
+        }
+        // Single item - wrap in list
+        return [input]
+    }
+
+    /**
+     * Process a single version entry and merge into accumulated map.
+     * Handles all supported input types via type dispatch.
+     */
+    private static void processVersionEntry(Object entry, Map<String, Map<String, Object>> merged) {
+        if (entry == null) return
+
+        try {
+            if (entry instanceof CharSequence) {
+                processStringEntry(entry.toString().trim(), merged)
+            }
+            else if (entry instanceof File) {
+                processFileEntry(entry, merged)
+            }
+            else if (entry instanceof Map) {
+                mergeParsedYaml(entry as Map, merged)
+            }
+            else if (hasToFileMethod(entry)) {
+                processPathLikeEntry(entry, merged)
+            }
+            else if (entry instanceof List || entry.getClass().isArray()) {
+                processListEntry(entry, merged)
+            }
+            else {
+                // Unknown type - try toString as YAML or file path
+                processStringEntry(entry.toString(), merged)
+            }
+        } catch (Exception e) {
+            log.warn("Could not process version entry ${entry}: ${e.message}")
+        }
+    }
+
+    /**
+     * Process a string entry - could be YAML content or file path.
+     */
+    private static void processStringEntry(String s, Map<String, Map<String, Object>> merged) {
+        if (!s) return
+        def f = new File(s)
+        if (f.exists() && f.isFile()) {
+            processYamlContent(f.text, merged)
+        } else {
+            processYamlContent(s, merged)
+        }
+    }
+
+    /**
+     * Process a File entry.
+     */
+    private static void processFileEntry(File file, Map<String, Map<String, Object>> merged) {
+        if (file.exists() && file.isFile()) {
+            processYamlContent(file.text, merged)
+        }
+    }
+
+    /**
+     * Process a Path-like object (has toFile() method).
+     */
+    private static void processPathLikeEntry(Object entry, Map<String, Map<String, Object>> merged) {
+        try {
+            def f = entry.toFile()
+            if (f.exists() && f.isFile()) {
+                processYamlContent(f.text, merged)
+            }
+        } catch (Exception e) {
+            // Fallback to string representation
+            def f = new File(entry.toString())
+            if (f.exists() && f.isFile()) {
+                processYamlContent(f.text, merged)
+            }
+        }
+    }
+
+    /**
+     * Process a list entry - could be topic tuple or nested list.
+     */
+    private static void processListEntry(Object entry, Map<String, Map<String, Object>> merged) {
+        def list = (entry instanceof List) ? (List) entry : (entry as Object[]).toList()
+
+        if (list.isEmpty()) return
+
+        // Check for nested lists (happens with collected channels)
+        if (list[0] instanceof List) {
+            list.each { processVersionEntry(it, merged) }
+            return
+        }
+
+        // Topic tuple: [process, tool, version]
+        if (list.size() >= 3) {
+            def procRaw = list[0]?.toString() ?: ''
+            // Extract last component from process path (NFCORE_RNASEQ:TRIMGALORE:FASTQC -> FASTQC)
+            def processName = procRaw.contains(':') ?
+                procRaw.substring(procRaw.lastIndexOf(':') + 1) : procRaw
+            def tool = list[1]?.toString()
+            def version = list[2]
+
+            if (processName && tool) {
+                merged[processName][tool] = version instanceof CharSequence ?
+                    version.toString() : version
+            }
+        }
+    }
+
     /**
      * Helper to combine YAMLs from a list of version YAMLs.
      *
      * @param versionsList List of YAML strings
      * @param session The Nextflow session
      * @return Combined YAML string
+     * @deprecated Use {@link #collectVersions(Object, Session, Object)} instead.
      */
+    @Deprecated
     static String softwareVersionsToYAMLFromChannel(List<String> versionsList, Session session) {
-        return softwareVersionsToYAML(versionsList, session)
+        log.debug("softwareVersionsToYAMLFromChannel() is deprecated. Use collectVersions() instead.")
+        return collectVersions(versionsList, session)
     }
 
     /**
@@ -399,8 +618,11 @@ class NfcoreVersionUtils {
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @param session The Nextflow session
      * @return Combined YAML string with all versions
+     * @deprecated Use {@link #collectVersions(Object, Session, Object)} instead.
      */
+    @Deprecated
     static String processVersionsFromTopicChannels(List<List> topicVersions, List<String> legacyVersions = [], Session session) {
+        log.debug("processVersionsFromTopicChannels() is deprecated. Use collectVersions() instead.")
         def combinedVersions = []
 
         // Process topic channel versions (new format)
@@ -434,8 +656,11 @@ class NfcoreVersionUtils {
      * @param versionsFiles List of file paths from 'versions_file' topic
      * @param session The Nextflow session
      * @return Combined YAML string with all versions
+     * @deprecated Use {@link #collectVersions(Object, Session, Object)} instead.
      */
+    @Deprecated
     static String processMixedVersionSources(List<List> topicVersions, List<String> versionsFiles, Session session) {
+        log.debug("processMixedVersionSources() is deprecated. Use collectVersions() instead.")
         def combinedVersions = []
 
         // Process new topic format

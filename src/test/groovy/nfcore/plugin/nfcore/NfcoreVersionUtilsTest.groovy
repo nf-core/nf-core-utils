@@ -86,6 +86,294 @@ class NfcoreVersionUtilsTest extends Specification {
         null     | 'abcdef1234567890' | '-gabcdef1'
     }
 
+    // =========================================================================
+    // collectVersions() tests - PRIMARY API
+    // =========================================================================
+
+    def 'collectVersions handles YAML string input'() {
+        given:
+        def yamlString = "fastqc: 0.12.1\nsamtools: 1.17"
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(yamlString)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+    }
+
+    def 'collectVersions handles topic tuples'() {
+        given:
+        def topicTuples = [
+            ['NFCORE_FASTQC', 'fastqc', '0.12.1'],
+            ['NFCORE_SAMTOOLS', 'samtools', '1.17']
+        ]
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(topicTuples)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17') || result.contains("samtools: '1.17'")
+        result.contains('NFCORE_FASTQC:')
+        result.contains('NFCORE_SAMTOOLS:')
+    }
+
+    def 'collectVersions handles file paths'() {
+        given:
+        def tempFile = File.createTempFile('versions', '.yml')
+        tempFile.text = '''
+        fastqc: 0.12.1
+        samtools: 1.17
+        '''.stripIndent()
+        def versions = [tempFile.absolutePath]
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(versions)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    def 'collectVersions handles File objects'() {
+        given:
+        def tempFile = File.createTempFile('versions', '.yml')
+        tempFile.text = '''
+        fastqc: 0.12.1
+        samtools: 1.17
+        '''.stripIndent()
+        def versions = [tempFile]
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(versions)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+
+        cleanup:
+        tempFile.delete()
+    }
+
+    def 'collectVersions handles Map objects'() {
+        given:
+        def versionMap = [fastqc: '0.12.1', samtools: '1.17']
+        def versions = [versionMap]
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(versions)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17') || result.contains("samtools: '1.17'")
+        result.contains('Software:')
+    }
+
+    def 'collectVersions handles mixed input types'() {
+        given:
+        def yamlString = 'fastqc: 0.12.1'
+        def topicTuple = ['NFCORE_SAMTOOLS', 'samtools', '1.17']
+        def versionMap = [multiqc: '1.15']
+        def versions = [yamlString, topicTuple, versionMap]
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(versions)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17') || result.contains("samtools: '1.17'")
+        result.contains('multiqc: 1.15') || result.contains("multiqc: '1.15'")
+        result.contains('NFCORE_SAMTOOLS:')
+        result.contains('Software:')
+    }
+
+    def 'collectVersions handles nested lists (collected channels)'() {
+        given:
+        def nestedList = [
+            [['PROCESS1', 'tool1', '1.0.0']],
+            [['PROCESS2', 'tool2', '2.0.0']]
+        ]
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(nestedList)
+
+        then:
+        result.contains('tool1: 1.0.0')
+        result.contains('tool2: 2.0.0')
+    }
+
+    def 'collectVersions extracts process name from full path'() {
+        given:
+        def topicTuples = [
+            ['NFCORE_RNASEQ:TRIMGALORE:FASTQC', 'fastqc', '0.12.1']
+        ]
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(topicTuples)
+
+        then:
+        result.contains('FASTQC:')
+        result.contains('fastqc: 0.12.1')
+        !result.contains('NFCORE_RNASEQ:TRIMGALORE:FASTQC')
+    }
+
+    def 'collectVersions sorts processes and tools alphabetically'() {
+        given:
+        def topicTuples = [
+            ['ZEBRA_PROCESS', 'zebra', '1.0.0'],
+            ['ALPHA_PROCESS', 'alpha', '2.0.0'],
+            ['ALPHA_PROCESS', 'zulu', '3.0.0'],
+            ['ALPHA_PROCESS', 'bravo', '4.0.0']
+        ]
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(topicTuples)
+
+        then:
+        def alphaIndex = result.indexOf('ALPHA_PROCESS:')
+        def zebraIndex = result.indexOf('ZEBRA_PROCESS:')
+        alphaIndex < zebraIndex
+        // Within ALPHA_PROCESS, tools should be sorted
+        def alphaSection = result.substring(alphaIndex, zebraIndex)
+        def alphaPos = alphaSection.indexOf('alpha:')
+        def bravoPos = alphaSection.indexOf('bravo:')
+        def zuluPos = alphaSection.indexOf('zulu:')
+        alphaPos < bravoPos && bravoPos < zuluPos
+    }
+
+    def 'collectVersions cleans tool names with colons'() {
+        given:
+        def yamlWithColons = "tool:fastqc: 0.12.1\ntool:samtools: 1.17"
+        def versions = [yamlWithColons]
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(versions)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+        !result.contains('tool:fastqc')
+        !result.contains('tool:samtools')
+    }
+
+    def 'collectVersions handles invalid entries gracefully'() {
+        given:
+        def versions = [
+            'fastqc: 0.12.1',
+            null,
+            '',
+            ['INCOMPLETE'],
+            ['INCOMPLETE', 'tool'],
+            'invalid yaml content: bad: structure:'
+        ]
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(versions)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        noExceptionThrown()
+    }
+
+    def 'collectVersions handles empty input'() {
+        when:
+        def result = NfcoreVersionUtils.collectVersions([])
+
+        then:
+        result == ''
+    }
+
+    def 'collectVersions handles null input'() {
+        when:
+        def result = NfcoreVersionUtils.collectVersions(null)
+
+        then:
+        result == ''
+    }
+
+    def 'collectVersions includes workflow version when session provided'() {
+        given:
+        def yamlString = 'fastqc: 0.12.1'
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(yamlString, session)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('Workflow:')
+        result.contains('testpipeline: v1.0.0')
+        result.contains('Nextflow: 23.04.1')
+    }
+
+    def 'collectVersions excludes workflow version when session is null'() {
+        given:
+        def yamlString = 'fastqc: 0.12.1'
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(yamlString, null)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        !result.contains('Workflow:')
+    }
+
+    def 'collectVersions uses provided nextflowVersion override'() {
+        given:
+        def yamlString = 'fastqc: 0.12.1'
+        def manifest = Mock(Manifest) {
+            getName() >> 'testpipeline'
+            getVersion() >> '1.0.0'
+        }
+        def session = Mock(Session) {
+            getManifest() >> manifest
+            getConfig() >> [nextflow: [version: '23.04.1']]
+        }
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(yamlString, session, '24.10.0')
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('Nextflow: 24.10.0')
+        !result.contains('23.04.1')
+    }
+
+    def 'collectVersions handles nested YAML with process blocks'() {
+        given:
+        def nestedYaml = '''
+        NFCORE_FASTQC:
+            fastqc: 0.12.1
+        NFCORE_SAMTOOLS:
+            samtools: 1.17
+        '''.stripIndent()
+        def versions = [nestedYaml]
+
+        when:
+        def result = NfcoreVersionUtils.collectVersions(versions)
+
+        then:
+        result.contains('fastqc: 0.12.1')
+        result.contains('samtools: 1.17')
+        result.contains('NFCORE_FASTQC:')
+        result.contains('NFCORE_SAMTOOLS:')
+    }
+
+    // =========================================================================
+    // DEPRECATED METHOD TESTS (ensure backward compatibility)
+    // =========================================================================
+
     @Issue("https://github.com/nf-core/modules/issues/4517")
     def 'processVersionsFromYAML should parse and flatten YAML keys'() {
         given:

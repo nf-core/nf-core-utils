@@ -3,131 +3,119 @@
 /*
  * E2E validation test for nf-core-utils plugin version utilities
  *
- * This test demonstrates the migration from local utility functions
- * to plugin-based utilities while keeping channel logic in the pipeline.
- * It validates the key functions: getWorkflowVersion and processVersionsFromFile.
+ * This test demonstrates the new simplified collectVersions() API that
+ * handles all input types automatically: YAML strings, file paths, topic tuples,
+ * maps, and mixed inputs.
  */
 
-// Import plugin functions that replace local utilities
-include { getWorkflowVersion      } from 'plugin/nf-core-utils'
-include { processVersionsFromFile } from 'plugin/nf-core-utils'
+// Import plugin functions - collectVersions() is the recommended API
+include { collectVersions } from 'plugin/nf-core-utils'
 
 workflow {
 
-    // Test 1: Basic workflow version generation
-    log.info("=== Testing getWorkflowVersion() plugin function ===")
+    // Test 1: collectVersions with topic tuples (most common pattern)
+    log.info("=== Testing collectVersions() with topic tuples ===")
 
-    workflow_version = getWorkflowVersion()
-    log.info("Generated workflow version: ${workflow_version}")
+    ch_topic_versions = channel.of(
+        ['FASTQC', 'fastqc', '0.11.9'],
+        ['MULTIQC', 'multiqc', '1.12'],
+        ['SAMTOOLS', 'samtools', '1.17'],
+    )
 
-    // Test 2: Create mock version files to simulate pipeline modules
-    log.info("=== Creating mock version files ===")
+    // Collect all versions and process with single call
+    ch_topic_versions
+        .collect()
+        .map { versions ->
+            log.info("Processing ${versions.size()} topic tuples")
+            collectVersions(versions)
+        }
+        .subscribe { yaml ->
+            log.info("=== Topic tuple result ===")
+            log.info(yaml)
+            assert yaml.contains('fastqc')
+            assert yaml.contains('multiqc')
+            assert yaml.contains('samtools')
+            assert yaml.contains('Workflow:')
+            assert yaml.contains('Nextflow:')
+            log.info("✅ Topic tuple test passed")
+        }
 
-    // Create channels with mock version file content (simulating module outputs)
-    ch_mock_versions = channel.of(
+    // Test 2: collectVersions with file paths (legacy pattern)
+    log.info("=== Testing collectVersions() with file paths ===")
+
+    ch_mock_content = channel.of(
         """
-        FASTQC:
-            fastqc: 0.11.9
+        STAR:
+            star: 2.7.10a
         """.stripIndent(),
         """
-        MULTIQC:
-            multiqc: 1.12
-        """.stripIndent(),
-        """
-        SAMTOOLS:
-            samtools: 1.17
+        SALMON:
+            salmon: 1.9.0
         """.stripIndent(),
     )
 
-    // Write mock version files to simulate real pipeline behavior
-    ch_version_files = ch_mock_versions.collectFile { content ->
+    ch_version_files = ch_mock_content.collectFile { content ->
         def filename = "versions_${Math.abs(content.hashCode())}.yml"
         [filename, content]
     }
 
-    // Test 3: Demonstrate the migrated version processing logic
-    log.info("=== Testing migrated version processing pipeline ===")
-
-    // This replicates the migrated pipeline code pattern
-    // Channel logic stays in pipeline
-    // Use plugin utilities to process versions
-    ch_processed_versions = ch_version_files
-        .unique()
-        .map { version_file ->
-            log.info("Processing version file: ${version_file.fileName}")
-            processVersionsFromFile([version_file.toString()])
+    ch_version_files
+        .collect()
+        .map { files ->
+            log.info("Processing ${files.size()} version files")
+            // collectVersions handles File objects directly
+            collectVersions(files)
         }
-        .unique()
-        .mix(
-            channel.of(getWorkflowVersion()).map { workflow_version_ ->
-                log.info("Adding workflow version: ${workflow_version_}")
-                // Format as YAML to match legacy workflowVersionToYAML() output
-                """
-                Workflow:
-                    ${workflow.manifest.name ?: 'nf-core-utils-validation'}: ${workflow_version_}
-                    Nextflow: ${workflow.nextflow.version}
-                """.stripIndent().trim()
-            }
-        )
-
-    // Test 4: Generate the final versions file (similar to fetchngs usage)
-    ch_processed_versions
-        .collectFile(
-            storeDir: "${workflow.workDir}/pipeline_info",
-            name: 'nf_core_utils_software_mqc_versions.yml',
-            sort: true,
-            newLine: true,
-        )
-        .subscribe { versions_file ->
-            log.info("=== Final versions file created ===")
-            log.info("Location: ${versions_file}")
-            log.info("Content preview:")
-            log.info(versions_file.text.readLines().take(10).join('\n'))
-
-            // Validate the file contains expected content
-            def content = versions_file.text
-            assert content.contains('fastqc')
-            assert content.contains('multiqc')
-            assert content.contains('samtools')
-            assert content.contains('Workflow:')
-            assert content.contains('Nextflow:')
-
-            log.info("✅ All validation checks passed!")
-            log.info("✅ Plugin functions working correctly")
-            log.info("✅ Channel logic preserved in pipeline")
-            log.info("✅ Migration pattern validated successfully")
+        .subscribe { yaml ->
+            log.info("=== File path result ===")
+            log.info(yaml)
+            assert yaml.contains('star')
+            assert yaml.contains('salmon')
+            log.info("✅ File path test passed")
         }
 
-    // Test 5: Demonstrate additional utility functions
-    log.info("=== Testing additional version utilities ===")
+    // Test 3: collectVersions with mixed inputs
+    log.info("=== Testing collectVersions() with mixed inputs ===")
 
-    // Test processVersionsFromTopic (for future topic channel migration)
-    mock_topic_data = [
-        ['PROCESS_FASTQC', 'fastqc', '0.11.9'],
-        ['PROCESS_MULTIQC', 'multiqc', '1.12'],
-    ]
+    ch_mixed = channel.of(
+        ['BWA', 'bwa', '0.7.17'],                    // topic tuple
+        'hisat2: 2.2.1',                             // YAML string
+        [bowtie2: '2.4.5'],                          // Map
+    )
 
-    // Note: processVersionsFromTopic would be used here, but we're keeping
-    // the test focused on the immediate migration needs
+    ch_mixed
+        .collect()
+        .map { mixed ->
+            log.info("Processing mixed inputs: ${mixed.size()} items")
+            collectVersions(mixed)
+        }
+        .subscribe { yaml ->
+            log.info("=== Mixed input result ===")
+            log.info(yaml)
+            assert yaml.contains('bwa')
+            assert yaml.contains('hisat2')
+            assert yaml.contains('bowtie2')
+            log.info("✅ Mixed input test passed")
+        }
+
     workflow.onComplete {
         log.info(
             """
             ==========================================
-            nf-core-utils Plugin E2E Validation Complete
+            collectVersions() API Validation Complete
             ==========================================
 
-            ✅ Plugin loaded successfully
-            ✅ Version utility functions tested
-            ✅ Channel logic preserved in pipeline
-            ✅ Migration pattern validated
+            ✅ Topic tuple handling verified
+            ✅ File path handling verified
+            ✅ Mixed input handling verified
+            ✅ Workflow version auto-included
 
-            This test demonstrates:
-            1. Successful replacement of local utility functions with plugin imports
-            2. Channel orchestration remaining visible and controllable in pipeline
-            3. Identical functionality to original fetchngs implementation
-            4. Proper separation of concerns (utilities vs. workflow logic)
+            The new collectVersions() API:
+            - Accepts any input type (tuples, files, strings, maps)
+            - Automatically includes workflow version
+            - Sorts output alphabetically
+            - Replaces all deprecated process* methods
 
-            Ready for production migration! 🚀
             ==========================================
             """.stripIndent().trim()
         )
