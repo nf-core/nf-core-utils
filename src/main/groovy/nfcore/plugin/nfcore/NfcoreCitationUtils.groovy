@@ -358,6 +358,33 @@ class NfcoreCitationUtils {
     }
 
     /**
+     * Flatten nested topic citation structures into a list of [module, tool, data] tuples
+     * Handles both direct tuples and nested lists of tuples from topic channel collection
+     *
+     * @param topicCitations Raw citation data from topic channel
+     * @return Flattened list of [module, tool, data] tuples
+     */
+    private static List<List> flattenTopicCitations(List topicCitations) {
+        def allCitations = []
+        topicCitations.each { item ->
+            if (item instanceof List) {
+                if (item.size() == 3) {
+                    // This is already a [module, tool, data] tuple
+                    allCitations.add(item)
+                } else {
+                    // This might be a list of tuples, flatten it
+                    item.each { subItem ->
+                        if (subItem instanceof List && subItem.size() == 3) {
+                            allCitations.add(subItem)
+                        }
+                    }
+                }
+            }
+        }
+        return allCitations
+    }
+
+    /**
      * Extract module name from meta.yml file path
      * Handles various path patterns commonly used in nf-core
      *
@@ -397,25 +424,7 @@ class NfcoreCitationUtils {
             return "No tools used in the workflow."
         }
 
-        // Flatten and process topic citations - handle nested structures
-        def allCitations = []
-        topicCitations.each { item ->
-            if (item instanceof List) {
-                if (item.size() == 3) {
-                    // This is already a [module, tool, data] tuple
-                    allCitations.add(item)
-                } else {
-                    // This might be a list of tuples, flatten it
-                    item.each { subItem ->
-                        if (subItem instanceof List && subItem.size() == 3) {
-                            allCitations.add(subItem)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Process using existing logic
+        def allCitations = flattenTopicCitations(topicCitations)
         def processedCitations = processCitationsFromTopic(allCitations)
         return toolCitationText(processedCitations)
     }
@@ -432,25 +441,7 @@ class NfcoreCitationUtils {
             return "No bibliography entries found."
         }
 
-        // Flatten and process topic citations - handle nested structures
-        def allCitations = []
-        topicCitations.each { item ->
-            if (item instanceof List) {
-                if (item.size() == 3) {
-                    // This is already a [module, tool, data] tuple
-                    allCitations.add(item)
-                } else {
-                    // This might be a list of tuples, flatten it
-                    item.each { subItem ->
-                        if (subItem instanceof List && subItem.size() == 3) {
-                            allCitations.add(subItem)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Process using existing logic
+        def allCitations = flattenTopicCitations(topicCitations)
         def processedCitations = processCitationsFromTopic(allCitations)
         return toolBibliographyText(processedCitations)
     }
