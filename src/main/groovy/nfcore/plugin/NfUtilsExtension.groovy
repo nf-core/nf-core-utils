@@ -41,16 +41,6 @@ class NfUtilsExtension extends PluginExtensionPoint {
     }
 
     /**
-     * Say hello to the given target.
-     *
-     * @param target
-     */
-    @Function
-    void sayHello(String target) {
-        println "Hello, ${target}!"
-    }
-
-    /**
      * Get a genome attribute from params.genomes for the selected genome.
      * Delegates to ReferencesUtils.getGenomeAttribute().
      *
@@ -63,20 +53,6 @@ class NfUtilsExtension extends PluginExtensionPoint {
         if (!params) params = session?.params as Map
         return ReferencesUtils.getGenomeAttribute(params, attribute)
     }
-
-    // --- Methods from NfcoreExtension ---
-    /**
-     * Generate methods description text for MultiQC report
-     * @param workflow Workflow metadata
-     * @param mqcMethodsYaml Path to MultiQC methods YAML template
-     * @param modulePaths List of paths to module directories containing meta.yml files
-     * @return HTML formatted methods description
-     */
-    // TODO This is still in the works
-    // @Function
-    // String methodsDescriptionText(nextflow.script.WorkflowMetadata workflow, String mqcMethodsYaml, List modulePaths) {
-    //     return NfcoreExtension.methodsDescriptionText(workflow, mqcMethodsYaml, modulePaths)
-    // }
 
     /**
      * Send completion email
