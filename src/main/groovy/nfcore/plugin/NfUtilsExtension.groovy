@@ -544,4 +544,14 @@ class NfUtilsExtension extends PluginExtensionPoint {
         return NfcoreCitationUtils.autoToolBibliographyText(topicCitations)
     }
 
+    /**
+     * Generate workflow summary for MultiQC
+     * @param summaryParams Map of parameter groups and their parameters
+     * @return YAML formatted string for MultiQC
+     */
+    @Function
+    String paramsSummaryMultiqc(Map summaryParams) {
+        return nfcore.plugin.nfcore.NfcoreReportingUtils.paramsSummaryMultiqc(summaryParams)
+    }
+
 }
