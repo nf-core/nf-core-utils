@@ -1,0 +1,7 @@
+Nixpacks Reference (LLM-facing)
+
+This repository currently uses Gradle/Make-driven workflows.
+If Nixpacks is introduced:
+- capture build/start assumptions here,
+- record env vars,
+- and note cache/runtime expectations for CI/CD agents.
