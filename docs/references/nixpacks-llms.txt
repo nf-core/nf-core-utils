@@ -1,0 +1,49 @@
+# Nixpacks Reference — LLMs.txt
+# Quick-reference for autonomous contributors on build/deploy tooling.
+# nf-core-utils is a JVM/Gradle project; Nixpacks is noted here for context
+# if the project ever adopts container-first CI or deployment workflows.
+
+PROJECT: nf-core-utils
+BUILD SYSTEM: Gradle (Groovy DSL) via build.gradle + settings.gradle
+RUNTIME: JVM (Groovy); no persistent server process — this is a Nextflow plugin library
+
+---
+
+## Current Build Toolchain
+
+  Gradle wrapper:   ./gradlew  (do not require global Gradle install)
+  Java target:      JVM 11+ (check build.gradle for sourceCompatibility)
+  Plugin SDK:       io.nextflow.nextflow-plugin (see build.gradle plugins block)
+  Test runner:      Spock Framework (runs via ./gradlew test)
+  Packaging:        ./gradlew assemble → produces ZIP in build/plugins/
+
+## Makefile Shortcuts
+
+  make assemble   → ./gradlew assemble
+  make test       → ./gradlew test
+  make install    → ./gradlew install   (copies plugin to ~/.nextflow/plugins/)
+  make clean      → ./gradlew clean
+  make release    → ./gradlew releasePlugin (needs GitHub creds)
+
+## Container / CI Notes
+
+- There is no application server; the plugin is loaded into a Nextflow JVM process.
+- CI should: (1) cache Gradle dependencies, (2) run `make test`, (3) optionally run
+  a smoke test with `nextflow run hello -plugins nf-core-utils@<version>`.
+- If adopting Nixpacks for CI containers: detect Java, install Gradle wrapper, run
+  `./gradlew assemble test`. No special Nix configuration required beyond a JDK image.
+
+## Dependency Management
+
+- Runtime deps declared in build.gradle `dependencies {}` block.
+- Adding a dep requires: design doc update + tech-debt-tracker note.
+- Current runtime deps: org.yaml:snakeyaml:2.2
+
+## Environment Variables (build time)
+
+  GITHUB_USERNAME        → set in ~/.gradle/gradle.properties for release
+  GITHUB_ACCESS_TOKEN    → set in ~/.gradle/gradle.properties for release
+  GITHUB_COMMIT_EMAIL    → set in ~/.gradle/gradle.properties for release
+
+---
+# END OF REFERENCE

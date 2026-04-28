@@ -1,0 +1,50 @@
+# Design System Reference — LLMs.txt
+# Quick-reference for autonomous contributors on UI/doc conventions in nf-core-utils.
+# Format: plain text, structured for LLM consumption.
+
+PROJECT: nf-core-utils (Nextflow plugin)
+LANGUAGE: Groovy / JVM
+DOCS FORMAT: Markdown (GitHub Flavored + MkDocs admonitions where noted)
+
+---
+
+## Documentation Style
+
+- Use imperative present tense in headings: "Validate conda channels" not "Validating conda channels".
+- Code blocks must specify the language tag: ```groovy, ```nextflow, ```bash, ```yaml, ```json.
+- Use MkDocs admonition syntax for callouts: !!! note / !!! tip / !!! warning / !!! danger
+- Tables: always include a header row; align pipes for readability.
+- Cross-links: use relative Markdown links (e.g. `[ARCHITECTURE](../../ARCHITECTURE.md)`).
+
+## Naming Conventions
+
+- Groovy classes: PascalCase, suffix by role:
+    - *Utils    → stateless utility class (e.g. NfcoreVersionUtils)
+    - *Extension → Nextflow extension point (e.g. NfUtilsExtension)
+    - *Observer  → trace observer (e.g. NfcorePipelineObserver)
+    - *Factory   → observer or plugin factory
+- Public @Function methods: camelCase, verb-noun (e.g. getWorkflowVersion, checkCondaChannels).
+- Nextflow params: lowercase with underscores (e.g. params.outdir, params.genome).
+
+## Code Example Conventions
+
+- Always show import statement at top of code block.
+- For multi-function examples, show all imports in one include{} block.
+- Label code blocks with title attribute where context helps: ```nextflow title="main.nf"
+- Show expected console output in a ```console block immediately after the code block.
+
+## Changelog Format
+
+- Section header: ## [X.Y.Z] - YYYY-MM-DD or ## [Unreleased]
+- Sub-sections: ### Added / ### Changed / ### Fixed / ### Removed / ### Deprecated
+- Items: bullet point starting with verb, past tense: "Added support for…"
+
+## File Structure Conventions
+
+- All public API docs: docs/<FeatureName>.md (PascalCase)
+- Utility class docs: docs/utilities/<ClassName>.md
+- Design decisions: docs/design-docs/<NNN>-<kebab-title>.md
+- Exec plans: docs/exec-plans/active/<YYYY-MM>-<kebab-title>.md
+
+---
+# END OF REFERENCE

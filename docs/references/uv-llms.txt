@@ -1,0 +1,50 @@
+# uv / Python Tooling Reference — LLMs.txt
+# Quick-reference for autonomous contributors.
+# nf-core-utils is a JVM/Groovy project. Python tooling (uv, pre-commit) is used
+# only for developer tooling and linting — NOT for the plugin runtime.
+
+PROJECT: nf-core-utils
+PRIMARY LANGUAGE: Groovy (JVM)
+PYTHON TOOLING ROLE: Dev tooling only (pre-commit hooks, linting, docs generation if added)
+
+---
+
+## pre-commit (Python-based)
+
+Config: .pre-commit-config.yaml (repo root)
+
+Run locally:
+  pre-commit run --all-files    # check everything
+  pre-commit install            # install git hooks
+
+Hooks typically include: trailing whitespace, end-of-file fixer, YAML lint, etc.
+Check .pre-commit-config.yaml for the exact set in use.
+
+## uv (fast Python package manager)
+
+uv is NOT currently a hard dependency of this project. If Python scripts are added
+(e.g. doc generation, schema validators), prefer uv for reproducible Python environments.
+
+Typical usage if adopted:
+  uv venv .venv
+  uv pip install -r requirements.txt   # or: uv sync (with pyproject.toml)
+  source .venv/bin/activate
+
+## nf-core Python CLI (external)
+
+The nf-core community CLI tool (pip install nf-core) provides linting and scaffolding
+for nf-core pipelines. It is EXTERNAL to this plugin repository but relevant context:
+
+  nf-core lint      → validate pipeline against nf-core schema
+  nf-core schema    → manage nextflow_schema.json
+
+This plugin (nf-core-utils) is NOT the same as the nf-core Python CLI.
+
+## Python Version Policy (if scripts are added)
+
+- Minimum: Python 3.11
+- Pin versions in pyproject.toml or requirements.txt using uv lock format.
+- Do not commit .venv/ (already in .gitignore).
+
+---
+# END OF REFERENCE
