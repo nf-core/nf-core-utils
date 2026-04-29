@@ -1,3 +1,5 @@
+default_install_hook_types = ["pre-commit", "pre-push"]
+
 [[repos]]
 repo = "local"
 hooks = [
@@ -9,6 +11,14 @@ hooks = [
     args = ["-format", "-sort-declarations", "-spaces", "4", "-harshil-alignment", "-output", "concise"],
     pass_filenames = true,
     require_serial = true,
+  },
+  { id = "gradle-test",
+    name = "Run unit tests before push",
+    entry = "./gradlew test",
+    language = "system",
+    pass_filenames = false,
+    stages = ["pre-push"],
+    verbose = true,
   },
 ]
 
