@@ -19,3 +19,18 @@ nextflowPlugin {
 dependencies {
     implementation 'org.yaml:snakeyaml:2.2'
 }
+
+test {
+    def isAgent = ['CLAUDECODE', 'REPL_ID', 'AGENT'].any { System.getenv(it) }
+    testLogging {
+        events = isAgent ? ['failed'] : ['passed', 'skipped', 'failed']
+        exceptionFormat = 'full'
+        showStackTraces = true
+        showStandardStreams = !isAgent
+    }
+    afterSuite { desc, result ->
+        if (!desc.parent) {
+            println "Tests: ${result.testCount} total, ${result.successfulTestCount} passed, ${result.failedTestCount} failed, ${result.skippedTestCount} skipped (${result.resultType})"
+        }
+    }
+}
