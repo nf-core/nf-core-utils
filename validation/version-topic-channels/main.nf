@@ -78,9 +78,9 @@ workflow {
     log.info("=== Testing collectVersions() with mixed inputs ===")
 
     ch_mixed = channel.of(
-        ['BWA', 'bwa', '0.7.17'],                    // topic tuple
-        'hisat2: 2.2.1',                             // YAML string
-        [bowtie2: '2.4.5'],                          // Map
+        ['BWA', 'bwa', '0.7.17'],
+        'hisat2: 2.2.1',
+        [bowtie2: '2.4.5'],
     )
 
     ch_mixed
