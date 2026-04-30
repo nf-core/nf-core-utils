@@ -11,4 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: nf-core/setup-nextflow@v2
+        with:
+          version: "25.10.3"
       - uses: j178/prek-action@v2
