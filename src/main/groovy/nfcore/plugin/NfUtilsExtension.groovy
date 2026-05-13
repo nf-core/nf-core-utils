@@ -20,6 +20,7 @@ import groovy.util.logging.Slf4j
 import groovyx.gpars.dataflow.DataflowReadChannel
 import groovyx.gpars.dataflow.DataflowWriteChannel
 import nextflow.Session
+import nextflow.Nextflow
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
 import nfcore.plugin.nfcore.NfcoreConfigValidator
@@ -169,7 +170,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     void dumpParametersToJSON(String outdir, Map params) {
         if (outdir == null) return
-        java.nio.file.Path outdirPath = java.nio.file.Paths.get(outdir)
+        java.nio.file.Path outdirPath = Nextflow.file(outdir)
         nfcore.plugin.nextflow.NextflowPipelineUtils.dumpParametersToJSON(outdirPath, params)
     }
 
