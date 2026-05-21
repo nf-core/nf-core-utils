@@ -24,7 +24,7 @@ workflow {
 
     // Collect all versions and process with single call
     ch_topic_versions
-        .collect()
+        .collect(flat: false)
         .map { versions ->
             log.info("Processing ${versions.size()} topic tuples")
             collectVersions(versions)
@@ -84,7 +84,7 @@ workflow {
     )
 
     ch_mixed
-        .collect()
+        .collect(flat: false)
         .map { mixed ->
             log.info("Processing mixed inputs: ${mixed.size()} items")
             collectVersions(mixed)
