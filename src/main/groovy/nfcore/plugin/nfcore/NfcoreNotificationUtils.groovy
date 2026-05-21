@@ -132,17 +132,21 @@ class NfcoreNotificationUtils {
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
 
+        def toPath = { it instanceof Path ? it : (it != null ? java.nio.file.Paths.get(it.toString()) : null) }
+
         if (multiqc_reports instanceof Path) {
             return multiqc_reports
+        } else if (multiqc_reports instanceof CharSequence) {
+            return toPath(multiqc_reports)
         } else if (multiqc_reports instanceof List) {
             if (multiqc_reports.size() == 0) {
                 log.warn("[${workflowName}] No reports found from process 'MULTIQC'")
                 return null
             } else if (multiqc_reports.size() == 1) {
-                return multiqc_reports.first()
+                return toPath(multiqc_reports.first())
             } else {
                 log.warn("[${workflowName}] Found multiple reports from process 'MULTIQC', will use only one")
-                return multiqc_reports.first()
+                return toPath(multiqc_reports.first())
             }
         } else {
             return null
@@ -171,44 +175,45 @@ class NfcoreNotificationUtils {
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def config = session.config
+        def wf = session.getWorkflowMetadata()
 
         // Set up the e-mail variables
-        def subject = "[${workflowName}] Successful: ${session.runName ?: 'unknown'}"
-        if (!session.success) {
-            subject = "[${workflowName}] FAILED: ${session.runName ?: 'unknown'}"
+        def subject = "[${workflowName}] Successful: ${wf?.runName ?: 'unknown'}"
+        if (!wf?.success) {
+            subject = "[${workflowName}] FAILED: ${wf?.runName ?: 'unknown'}"
         }
 
         def summary = processSummaryParams(summary_params)
 
         def misc_fields = [:]
-        misc_fields['Date Started'] = session.start
-        misc_fields['Date Completed'] = session.complete
-        misc_fields['Pipeline script file path'] = session.scriptFile
-        misc_fields['Pipeline script hash ID'] = session.scriptId
-        if (session.repository) {
-            misc_fields['Pipeline repository Git URL'] = session.repository
+        misc_fields['Date Started'] = wf?.start
+        misc_fields['Date Completed'] = wf?.complete
+        misc_fields['Pipeline script file path'] = wf?.scriptFile
+        misc_fields['Pipeline script hash ID'] = wf?.scriptId
+        if (wf?.repository) {
+            misc_fields['Pipeline repository Git URL'] = wf.repository
         }
-        if (session.commitId) {
-            misc_fields['Pipeline repository Git Commit'] = session.commitId
+        if (wf?.commitId) {
+            misc_fields['Pipeline repository Git Commit'] = wf.commitId
         }
-        if (session.revision) {
-            misc_fields['Pipeline Git branch/tag'] = session.revision
+        if (wf?.revision) {
+            misc_fields['Pipeline Git branch/tag'] = wf.revision
         }
-        misc_fields['Nextflow Version'] = session.nextflow.version
-        misc_fields['Nextflow Build'] = session.nextflow.build
-        misc_fields['Nextflow Compile Timestamp'] = session.nextflow.timestamp
+        misc_fields['Nextflow Version'] = wf?.nextflow?.version
+        misc_fields['Nextflow Build'] = wf?.nextflow?.build
+        misc_fields['Nextflow Compile Timestamp'] = wf?.nextflow?.timestamp
 
         def email_fields = [:]
         email_fields['version'] = NfcoreVersionUtils.getWorkflowVersion(session)
-        email_fields['runName'] = session.runName
-        email_fields['success'] = session.success
-        email_fields['dateComplete'] = session.complete
-        email_fields['duration'] = session.duration
-        email_fields['exitStatus'] = session.exitStatus
-        email_fields['errorMessage'] = (session.errorMessage ?: 'None')
-        email_fields['errorReport'] = (session.errorReport ?: 'None')
-        email_fields['commandLine'] = session.commandLine
-        email_fields['projectDir'] = session.projectDir
+        email_fields['runName'] = wf?.runName
+        email_fields['success'] = wf?.success
+        email_fields['dateComplete'] = wf?.complete
+        email_fields['duration'] = wf?.duration
+        email_fields['exitStatus'] = wf?.exitStatus
+        email_fields['errorMessage'] = (wf?.errorMessage ?: 'None')
+        email_fields['errorReport'] = (wf?.errorReport ?: 'None')
+        email_fields['commandLine'] = wf?.commandLine
+        email_fields['projectDir'] = wf?.projectDir
         email_fields['summary'] = summary << misc_fields
 
         // On success try attach the multiqc report
@@ -216,7 +221,7 @@ class NfcoreNotificationUtils {
 
         // Check if we are only sending emails on failure
         def email_address = email
-        if (!email && email_on_fail && !session.success) {
+        if (!email && email_on_fail && !wf?.success) {
             email_address = email_on_fail
         }
 
@@ -225,7 +230,7 @@ class NfcoreNotificationUtils {
         def email_html = "<html><body>Default email content</body></html>"
 
         try {
-            def tf = new File("${session.projectDir}/assets/email_template.txt")
+            def tf = new File("${wf?.projectDir}/assets/email_template.txt")
             if (tf.exists()) {
                 def txt_template = TEMPLATE_ENGINE.createTemplate(tf).make(email_fields)
                 email_txt = txt_template.toString()
@@ -234,7 +239,7 @@ class NfcoreNotificationUtils {
             }
 
             // Render the HTML template
-            def hf = new File("${session.projectDir}/assets/email_template.html")
+            def hf = new File("${wf?.projectDir}/assets/email_template.html")
             if (hf.exists()) {
                 def html_template = TEMPLATE_ENGINE.createTemplate(hf).make(email_fields)
                 email_html = html_template.toString()
@@ -255,11 +260,11 @@ class NfcoreNotificationUtils {
             }
         }
 
-        def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${session.projectDir}", mqcFile: mqc_report, mqcMaxSize: max_multiqc_email_size]
+        def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${wf?.projectDir}", mqcFile: mqc_report, mqcMaxSize: max_multiqc_email_size]
         def sendmail_html = email_html  // Fallback content
 
         try {
-            def sf = new File("${session.projectDir}/assets/sendmail_template.txt")
+            def sf = new File("${wf?.projectDir}/assets/sendmail_template.txt")
             if (sf.exists()) {
                 def sendmail_template = TEMPLATE_ENGINE.createTemplate(sf).make(smail_fields)
                 sendmail_html = sendmail_template.toString()
@@ -278,7 +283,7 @@ class NfcoreNotificationUtils {
                     new org.codehaus.groovy.GroovyException('Send plaintext e-mail, not HTML')
                 }
                 // Try to send HTML e-mail using sendmail
-                def sendmail_tf = new File(session.launchDir.toString(), ".sendmail_tmp.html")
+                def sendmail_tf = new File(wf?.launchDir.toString(), ".sendmail_tmp.html")
                 sendmail_tf.withWriter { w -> w << sendmail_html }
                 ['sendmail', '-t'].execute() << sendmail_html
                 log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address} (sendmail)-")
@@ -296,7 +301,7 @@ class NfcoreNotificationUtils {
         // Write summary e-mail HTML to a file
         if (outdir != null) {
             try {
-                def output_hf = new File(session.launchDir.toString(), ".pipeline_report.html")
+                def output_hf = new File(wf?.launchDir.toString(), ".pipeline_report.html")
                 output_hf.withWriter { w -> w << email_html }
 
                 // Ensure pipeline_info directory exists
@@ -307,7 +312,7 @@ class NfcoreNotificationUtils {
                 output_hf.delete()
 
                 // Write summary e-mail TXT to a file
-                def output_tf = new File(session.launchDir.toString(), ".pipeline_report.txt")
+                def output_tf = new File(wf?.launchDir.toString(), ".pipeline_report.txt")
                 output_tf.withWriter { w -> w << email_txt }
                 FilesEx.copyTo(output_tf.toPath(), "${outdir}/pipeline_info/pipeline_report.txt")
                 output_tf.delete()
@@ -359,37 +364,38 @@ class NfcoreNotificationUtils {
             return
         }
 
+        def wf = session.getWorkflowMetadata()
         def summary = processSummaryParams(summary_params)
 
         def misc_fields = [:]
-        misc_fields['start'] = session.start
-        misc_fields['complete'] = session.complete
-        misc_fields['scriptfile'] = session.scriptFile
-        misc_fields['scriptid'] = session.scriptId
-        if (session.repository) {
-            misc_fields['repository'] = session.repository
+        misc_fields['start'] = wf?.start
+        misc_fields['complete'] = wf?.complete
+        misc_fields['scriptfile'] = wf?.scriptFile
+        misc_fields['scriptid'] = wf?.scriptId
+        if (wf?.repository) {
+            misc_fields['repository'] = wf.repository
         }
-        if (session.commitId) {
-            misc_fields['commitid'] = session.commitId
+        if (wf?.commitId) {
+            misc_fields['commitid'] = wf.commitId
         }
-        if (session.revision) {
-            misc_fields['revision'] = session.revision
+        if (wf?.revision) {
+            misc_fields['revision'] = wf.revision
         }
-        misc_fields['nxf_version'] = session.nextflow.version
-        misc_fields['nxf_build'] = session.nextflow.build
-        misc_fields['nxf_timestamp'] = session.nextflow.timestamp
+        misc_fields['nxf_version'] = wf?.nextflow?.version
+        misc_fields['nxf_build'] = wf?.nextflow?.build
+        misc_fields['nxf_timestamp'] = wf?.nextflow?.timestamp
 
         def msg_fields = [:]
         msg_fields['version'] = NfcoreVersionUtils.getWorkflowVersion(session)
-        msg_fields['runName'] = session.runName
-        msg_fields['success'] = session.success
-        msg_fields['dateComplete'] = session.complete
-        msg_fields['duration'] = session.duration
-        msg_fields['exitStatus'] = session.exitStatus
-        msg_fields['errorMessage'] = (session.errorMessage ?: 'None')
-        msg_fields['errorReport'] = (session.errorReport ?: 'None')
-        msg_fields['commandLine'] = session.commandLine.replaceFirst(/ +--hook_url +[^ ]+/, "")
-        msg_fields['projectDir'] = session.projectDir
+        msg_fields['runName'] = wf?.runName
+        msg_fields['success'] = wf?.success
+        msg_fields['dateComplete'] = wf?.complete
+        msg_fields['duration'] = wf?.duration
+        msg_fields['exitStatus'] = wf?.exitStatus
+        msg_fields['errorMessage'] = (wf?.errorMessage ?: 'None')
+        msg_fields['errorReport'] = (wf?.errorReport ?: 'None')
+        msg_fields['commandLine'] = wf?.commandLine?.replaceFirst(/ +--hook_url +[^ ]+/, "") ?: ''
+        msg_fields['projectDir'] = wf?.projectDir
         msg_fields['summary'] = summary << misc_fields
 
         // Render the JSON template
@@ -398,7 +404,7 @@ class NfcoreNotificationUtils {
             // Different JSON depending on the service provider
             // Defaults to "Adaptive Cards" (https://adaptivecards.io), except Slack which has its own format
             def json_path = hook_url.contains("hooks.slack.com") ? "slackreport.json" : "adaptivecard.json"
-            def hf = new File("${session.projectDir}/assets/${json_path}")
+            def hf = new File("${wf?.projectDir}/assets/${json_path}")
 
             if (hf.exists()) {
                 def json_template = TEMPLATE_ENGINE.createTemplate(hf).make(msg_fields)
