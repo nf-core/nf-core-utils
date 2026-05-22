@@ -15,10 +15,12 @@ nextflow_pipeline {
 
         then {
             assert workflow.success
-            assert snapshot(
-                filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true),
-                getAllFilesFromDir(params.outdir)
-            ).match()
+            def normalizedOutput = filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true).flatten().findAll { it instanceof String }.collect { line ->
+                line
+                    .replaceAll(/https:\/\/cloud\.seqera\.io\/user\/[^\/\s]+\/watch\/[A-Za-z0-9]+/, 'https://cloud.seqera.io/user/[USER]/watch/[TRACE_ID]')
+                    .replaceAll(/https:\/\/api\.cloud\.seqera\.io\/trace\/[A-Za-z0-9]+\/complete/, 'https://api.cloud.seqera.io/trace/[TRACE_ID]/complete')
+            }
+            assert snapshot(normalizedOutput, getAllFilesFromDir(params.outdir)).match()
         }
     }
 }
