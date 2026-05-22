@@ -4,11 +4,12 @@ Orchestrated comprehensive reporting utilities for nf-core pipelines.
 
 ## Overview
 
-The `NfcoreReportingOrchestrator` utility provides high-level orchestration of reporting functionality by coordinating the `NfcoreVersionUtils` and `NfcoreCitationUtils` classes. This unified approach ensures consistent processing, error handling, and output formatting across version management and citation handling.
+The `NfcoreReportingOrchestrator` utility provides high-level orchestration of reporting functionality by coordinating `SoftwareVersionReport` and `NfcoreCitationUtils`. Public extension functions remain stable, while the internal implementation now uses `PipelineExecutionContext` so report generation receives explicit workflow, manifest, and configuration metadata instead of reading global Nextflow session state.
 
 ### Key Benefits
 
 - **Unified Interface**: Single entry point for comprehensive pipeline reporting
+- **Explicit Context**: Manifest and workflow metadata are passed through `PipelineExecutionContext`, including data used by methods-description templates
 - **Coordinated Processing**: Ensures consistent handling of both versions and citations
 - **Error Resilience**: Robust error handling with graceful degradation
 - **Performance Optimization**: Efficient processing of large datasets

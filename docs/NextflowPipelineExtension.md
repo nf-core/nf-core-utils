@@ -59,7 +59,7 @@ workflow {
 workflow.onComplete {
     // Save parameters for reproducibility
     if (params.outdir) {
-        dumpParametersToJSON(params.outdir, params, workflow.launchDir)
+        dumpParametersToJSON(params.outdir, params)
     }
 }
 ```
@@ -140,7 +140,7 @@ Always use `workflow.manifest.version` and `workflow.commitId` for automatic ver
 
 ### 3.2. dumpParametersToJSON - Parameter Documentation
 
-The `dumpParametersToJSON` function creates JSON documentation of your pipeline run parameters, essential for reproducibility and troubleshooting. It automatically timestamps and organizes parameter files for easy reference.
+The `dumpParametersToJSON` function creates JSON documentation of your pipeline run parameters, essential for reproducibility and troubleshooting. It automatically timestamps and organizes parameter files for easy reference, serializes common Nextflow parameter types, and writes via Nextflow file handling so local and cloud-backed output paths are supported.
 
 #### Understanding Parameter Documentation
 
@@ -177,7 +177,7 @@ workflow {
 workflow.onComplete {
     // Save parameters after successful completion
     if (params.outdir) {
-        dumpParametersToJSON(params.outdir, params, workflow.launchDir)
+        dumpParametersToJSON(params.outdir, params)
     }
 }
 ```
@@ -203,11 +203,10 @@ results/
 
 #### Function Parameters
 
-| Parameter   | Type        | Required | Description                         |
-| ----------- | ----------- | -------- | ----------------------------------- |
-| `outdir`    | Path/String | Yes      | Output directory for parameter file |
-| `params`    | Map         | Yes      | Pipeline parameters to document     |
-| `launchDir` | Path        | Yes      | Temporary file creation directory   |
+| Parameter | Type        | Required | Description                         |
+| --------- | ----------- | -------- | ----------------------------------- |
+| `outdir`  | Path/String | Yes      | Output directory for parameter file |
+| `params`  | Map         | Yes      | Pipeline parameters to document     |
 
 #### File Organization
 
@@ -216,6 +215,8 @@ The function follows nf-core conventions for file organization:
 - **Location**: `${outdir}/pipeline_info/`
 - **Filename**: `params_<timestamp>.json`
 - **Format**: Pretty-printed JSON for readability
+- **Type handling**: `Path`, `Duration`, `MemoryUnit`, and `VersionNumber` parameters are converted to JSON-safe values
+- **Path handling**: files are copied with Nextflow file utilities so remote/cloud output locations behave consistently with other pipeline outputs
 
 !!! warning "Safety Check"
 The function safely handles null `outdir` values by returning immediately without error, preventing pipeline crashes.
@@ -359,7 +360,7 @@ workflow {
 workflow.onComplete {
     // Document run parameters
     if (params.outdir) {
-        dumpParametersToJSON(params.outdir, params, workflow.launchDir)
+        dumpParametersToJSON(params.outdir, params)
         log.info "Parameters saved to ${params.outdir}/pipeline_info/"
     }
 
@@ -423,7 +424,7 @@ workflow {
 workflow.onComplete {
     // Always save parameters for reproducibility
     if (params.outdir && workflow.success) {
-        dumpParametersToJSON(params.outdir, params, workflow.launchDir)
+        dumpParametersToJSON(params.outdir, params)
     }
 }
 

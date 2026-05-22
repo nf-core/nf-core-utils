@@ -1,0 +1,58 @@
+{
+    "Version utilities": {
+        "content": [
+            [
+                "N E X T F L O W  ~  version [VERSION]",
+                "Launching `[PATH]/version-topic-channels/./main.nf` [RUN_NAME] - revision: [REVISION]",
+                "=== Testing collectVersions() with topic tuples ===",
+                "=== Testing collectVersions() with file paths ===",
+                "=== Testing collectVersions() with mixed inputs ===",
+                "=== Topic tuple result ===",
+                "FASTQC:",
+                "  fastqc: 0.11.9",
+                "MULTIQC:",
+                "  multiqc: '1.12'",
+                "SAMTOOLS:",
+                "  samtools: '1.17'",
+                "Workflow:",
+                "    nf-core-utils-validation: v1.0.0",
+                "    Nextflow: unknown",
+                "\u2705 Topic tuple test passed",
+                "=== Mixed input result ===",
+                "BWA:",
+                "  bwa: 0.7.17",
+                "Software:",
+                "  bowtie2: 2.4.5",
+                "  hisat2: 2.2.1",
+                "Workflow:",
+                "    nf-core-utils-validation: v1.0.0",
+                "    Nextflow: unknown",
+                "\u2705 Mixed input test passed",
+                "=== File path result ===",
+                "SALMON:",
+                "  salmon: 1.9.0",
+                "STAR:",
+                "  star: 2.7.10a",
+                "Workflow:",
+                "    nf-core-utils-validation: v1.0.0",
+                "    Nextflow: unknown",
+                "\u2705 File path test passed",
+                "collectVersions() API Validation Complete",
+                "\u2705 Topic tuple handling verified",
+                "\u2705 File path handling verified",
+                "\u2705 Mixed input handling verified",
+                "\u2705 Workflow version auto-included",
+                "The new collectVersions() API:",
+                "- Accepts any input type (tuples, files, strings, maps)",
+                "- Automatically includes workflow version",
+                "- Sorts output alphabetically",
+                "- Replaces all deprecated process* methods"
+            ]
+        ],
+        "timestamp": "2026-05-22T12:34:52.191774",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "25.10.3"
+        }
+    }
+}

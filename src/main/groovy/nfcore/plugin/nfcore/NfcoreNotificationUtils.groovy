@@ -123,15 +123,15 @@ class NfcoreNotificationUtils {
     }
 
     /**
-     * Return a single report from an object that may be a Path or List
+     * Return a single report from an object that may be a Path or List.
+     * Explicit-input overload: accepts workflowName directly, no global session read.
+     *
      * @param multiqc_reports The reports object
+     * @param workflowName Pipeline name for log messages
      * @return A single report Path or null
+     * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §2
      */
-    static Path getSingleReport(def multiqc_reports) {
-        def session = (Session) nextflow.Nextflow.session
-        def manifest = session.getManifest()
-        def workflowName = manifest?.getName() ?: 'unknown'
-
+    static Path getSingleReport(def multiqc_reports, String workflowName) {
         def toPath = { it instanceof Path ? it : (it != null ? java.nio.file.Paths.get(it.toString()) : null) }
 
         if (multiqc_reports instanceof Path) {
@@ -151,6 +151,17 @@ class NfcoreNotificationUtils {
         } else {
             return null
         }
+    }
+
+    /**
+     * @deprecated Use {@link #getSingleReport(Object, String)} with explicit workflowName
+     */
+    @Deprecated
+    static Path getSingleReport(def multiqc_reports) {
+        def session = (Session) nextflow.Nextflow.session
+        def manifest = session.getManifest()
+        def workflowName = manifest?.getName() ?: 'unknown'
+        return getSingleReport(multiqc_reports, workflowName)
     }
 
     /**
@@ -325,19 +336,19 @@ class NfcoreNotificationUtils {
     }
 
     /**
-     * Print pipeline summary on completion
+     * Print pipeline summary on completion.
+     * Explicit-input overload: accepts domain facts directly, no global session read.
+     *
+     * @param workflowName Pipeline name for log messages
+     * @param success Whether the pipeline succeeded
+     * @param ignoredCount Number of errored/ignored processes (0 = fully clean)
      * @param monochrome_logs Whether to use monochrome logs
+     * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §2
      */
-    static void completionSummary(boolean monochrome_logs = true) {
-        def session = (Session) nextflow.Nextflow.session
-        def manifest = session.getManifest()
-        def workflowName = manifest?.getName() ?: 'unknown'
-
+    static void completionSummary(String workflowName, boolean success, int ignoredCount, boolean monochrome_logs = true) {
         def colors = logColours(monochrome_logs) as Map
-        def statsObserver = session.getStatsObserver()
-        def stats = statsObserver ? statsObserver.getStats() : null
-        if (session.success) {
-            if (stats && stats.getIgnoredCount() == 0) {
+        if (success) {
+            if (ignoredCount == 0) {
                 log.info("-${colors.purple}[${workflowName}]${colors.green} Pipeline completed successfully${colors.reset}-")
             } else {
                 log.info("-${colors.purple}[${workflowName}]${colors.yellow} Pipeline completed successfully, but with errored process(es) ${colors.reset}-")
@@ -345,6 +356,23 @@ class NfcoreNotificationUtils {
         } else {
             log.info("-${colors.purple}[${workflowName}]${colors.red} Pipeline completed with errors${colors.reset}-")
         }
+    }
+
+    /**
+     * Print pipeline summary on completion.
+     * Reads global Nextflow session for backward compatibility.
+     * @param monochrome_logs Whether to use monochrome logs
+     * @deprecated Use {@link #completionSummary(String, boolean, int, boolean)} with explicit inputs
+     */
+    @Deprecated
+    static void completionSummary(boolean monochrome_logs = true) {
+        def session = (Session) nextflow.Nextflow.session
+        def manifest = session.getManifest()
+        def workflowName = manifest?.getName() ?: 'unknown'
+        def statsObserver = session.getStatsObserver()
+        def stats = statsObserver ? statsObserver.getStats() : null
+        def ignoredCount = (stats != null) ? stats.getIgnoredCount() : 0
+        completionSummary(workflowName, session.success, ignoredCount, monochrome_logs)
     }
 
     /**

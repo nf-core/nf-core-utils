@@ -24,7 +24,7 @@ High-level architecture of `nf-core-utils`.
 
 ## Related Docs
 
-- Design rationale: `docs/DESIGN.md`
+- Design rationale: `docs/DESIGN.md` and ADRs in `docs/adr/`
 - Quality targets: `docs/QUALITY_SCORE.md`
 - Reliability posture: `docs/RELIABILITY.md`
 - Security posture: `docs/SECURITY.md`
