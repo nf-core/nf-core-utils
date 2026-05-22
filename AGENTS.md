@@ -20,7 +20,7 @@ Guide for autonomous contributors (LLMs and humans).
 - Do not break public `@Function` behavior without migration notes.
 - Add/update tests for any functional change.
 - Update docs when behavior or API shape changes.
-- Avoid adding dependencies without documenting rationale in `docs/design-docs/`.
+- Avoid adding dependencies without documenting rationale in `docs/adr/`.
 
 ## Definition of Done
 

@@ -1,4 +1,18 @@
-# Core Beliefs
+# ADR-0000: Core Beliefs
+
+## Status
+
+Accepted
+
+## Context
+
+This repository needs stable principles for human and autonomous contributors.
+
+## Decision
+
+Adopt these core beliefs as long-lived engineering guidance for `nf-core-utils`.
+
+## Principles
 
 Principles for self-driving development in this repo.
 
