@@ -7,9 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.0]
 
+### Added
+
+- Added a `PipelineExecutionContext` seam and focused validation, version, and reporting adapters to keep Nextflow extension functions thin.
+- Added `SoftwareVersionReport` as the canonical implementation for merging heterogeneous software-version inputs.
+- Added `ReferenceSelection` for genome/reference lookup and `igenomes_base` substitution.
+
+### Changed
+
+- Updated reporting orchestration to use explicit execution context data, including workflow metadata for methods-description templates.
+- Migrated pre-commit configuration to `prek.toml` and added validation snapshot checks.
+
 ### Fixed
 
-- Fixed `dumpParametersToJson()` to be compatible with parameter types and cloud paths
+- Fixed `dumpParametersToJSON()` to serialize Nextflow parameter types and copy parameter reports through Nextflow file handling for cloud/remote paths.
 
 ## [0.4.0] - 2025-10-31
 

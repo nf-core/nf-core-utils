@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted / partially implemented in PR #41
 
 ## Context
 
@@ -32,13 +32,15 @@ Priority order:
 5. Move extension compatibility into focused adapter modules.
 6. Create a reference selection module.
 
+PR #41 implements the first pass of this plan: `PipelineExecutionContext`, explicit-input validation and notification helpers, `SoftwareVersionReport`, context-based reporting adapters, focused extension adapters, and `ReferenceSelection`. Remaining work should continue to preserve public `@Function` compatibility while moving domain behavior behind these deeper modules.
+
 This order is chosen because the execution context seam unlocks safer refactors in reporting, notifications, validation, citations, and tests. Version collection is a major complexity hotspot, but it should be tackled after the runtime-context seam exists. Extension splitting should happen after the deeper domain modules exist, otherwise it risks only rearranging shallow modules.
 
 ## Rationale
 
 ### 1. Pipeline execution context module
 
-Create a module that exposes the nf-core facts needed by the rest of the codebase, such as workflow name, project name, profile, command line, config files, manifest map, workflow metadata, run status, and selected params.
+Create a module that exposes the nf-core facts needed by the rest of the codebase, such as workflow name, project name, profile, command line, config files, manifest map, workflow metadata, run status, and selected params. The initial implementation preserves both manifest data and workflow metadata maps so report templates can continue to reference `manifest_map.*` and `workflow.*`.
 
 `nextflow.Session` should become one adapter behind this seam.
 
