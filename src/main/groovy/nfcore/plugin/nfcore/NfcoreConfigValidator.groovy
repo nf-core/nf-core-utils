@@ -76,25 +76,51 @@ class NfcoreConfigValidator {
     }
 
     /**
-     * Validate nf-core CLI configuration
-     * @param nextflowCliArgs List of positional nextflow CLI args
+     * Validate nf-core CLI configuration with explicit inputs.
+     * No global session read.
+     *
+     * @param profile Active Nextflow profile string
+     * @param commandLine Command line string
+     * @param projectName Pipeline project name
+     * @param config Nextflow config map
+     * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §2
      */
+    static void validateConfig(String profile, String commandLine, String projectName, Map config) {
+        checkProfileProvided(profile, commandLine, true)
+        checkConfigProvided(projectName, config)
+    }
+
+    /**
+     * Validate nf-core CLI configuration from PipelineExecutionContext.
+     *
+     * @param ctx Pipeline execution context
+     * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §2
+     */
+    static void validateConfig(PipelineExecutionContext ctx) {
+        validateConfig(ctx.profile, null, ctx.projectName, ctx.config)
+    }
+
+    /**
+     * Validate nf-core CLI configuration.
+     * Reads global Nextflow session for backward compatibility.
+     *
+     * @param nextflowCliArgs List of positional nextflow CLI args
+     * @deprecated Use {@link #validateConfig(String, String, String, Map)} or
+     *             {@link #validateConfig(PipelineExecutionContext)} with explicit inputs
+     */
+    @Deprecated
     static void validateConfig(List nextflowCliArgs) {
         // Get session info
         def session = (Session) nextflow.Nextflow.session
         def profile = session.profile
         def commandLine = nextflowCliArgs ? nextflowCliArgs.join(' ') : null
 
-        // Check profile
-        checkProfileProvided(profile, commandLine, true)
-
-        // Check config
+        // Extract projectName safely
         def meta = session.getWorkflowMetadata()
-        def config = session.config
         String projectName = null
         if (meta != null && meta.metaClass?.hasProperty(meta, 'projectName')) {
             projectName = meta.projectName
         }
-        checkConfigProvided(projectName, config)
+        validateConfig(profile, commandLine, projectName, session.config)
     }
 }
