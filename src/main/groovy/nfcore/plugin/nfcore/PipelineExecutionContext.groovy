@@ -57,6 +57,9 @@ class PipelineExecutionContext {
     /** Manifest key-value pairs as a plain map. */
     final Map manifestMap
 
+    /** Workflow metadata key-value pairs as a plain map. */
+    final Map workflowMap
+
     /**
      * Construct from explicit properties. Missing keys get safe defaults.
      * Intended for test construction and internal use.
@@ -70,6 +73,7 @@ class PipelineExecutionContext {
         this.config = (props.config as Map) ?: [:]
         this.nextflowVersion = props.nextflowVersion as String
         this.manifestMap = (props.manifestMap as Map) ?: [:]
+        this.workflowMap = (props.workflowMap as Map) ?: [:]
     }
 
     /**
@@ -86,16 +90,18 @@ class PipelineExecutionContext {
         def manifest = session.getManifest()
         def cfg = session.getConfig() ?: [:]
 
+        def workflowMetadata = null
+        try {
+            workflowMetadata = session.getWorkflowMetadata()
+        } catch (Exception ignored) {}
+
         // Extract projectName safely — property may not exist on all metadata versions
         String projectName = null
-        try {
-            def meta = session.getWorkflowMetadata()
-            if (meta instanceof Map) {
-                projectName = meta.get('projectName')?.toString()
-            } else if (meta != null && meta.metaClass?.hasProperty(meta, 'projectName')) {
-                projectName = meta.projectName?.toString()
-            }
-        } catch (Exception ignored) {}
+        if (workflowMetadata instanceof Map) {
+            projectName = workflowMetadata.get('projectName')?.toString()
+        } else if (workflowMetadata != null && workflowMetadata.metaClass?.hasProperty(workflowMetadata, 'projectName')) {
+            projectName = workflowMetadata.projectName?.toString()
+        }
 
         // Nextflow version: config > NXF_VER env var
         def nfVer = (cfg.get('nextflow') as Map)?.get('version')?.toString()
@@ -109,7 +115,8 @@ class PipelineExecutionContext {
             configFiles: (cfg.get('configFiles') instanceof List) ? (List<String>) cfg.get('configFiles') : [],
             config: cfg,
             nextflowVersion: nfVer,
-            manifestMap: safeManifestMap(manifest)
+            manifestMap: safeManifestMap(manifest),
+            workflowMap: safeWorkflowMap(workflowMetadata)
         )
     }
 
@@ -119,6 +126,17 @@ class PipelineExecutionContext {
         }
         try {
             return manifest.toMap() ?: [:]
+        } catch (Exception ignored) {
+            return [:]
+        }
+    }
+
+    private static Map safeWorkflowMap(def meta) {
+        try {
+            if (meta instanceof Map) {
+                return meta as Map
+            }
+            return meta?.toMap() ?: [:]
         } catch (Exception ignored) {
             return [:]
         }

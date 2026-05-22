@@ -200,6 +200,25 @@ class PipelineExecutionContextTest extends Specification {
         ctx.manifestMap.author == 'nf-core'
     }
 
+    def 'fromSession populates workflowMap from workflow metadata'() {
+        given:
+        def workflowMetadata = Mock(nextflow.script.WorkflowMetadata) {
+            toMap() >> [name: 'nf-core/rnaseq', runName: 'test-run']
+        }
+        def session = Mock(Session) {
+            getManifest() >> Mock(Manifest)
+            getConfig() >> [:]
+            getWorkflowMetadata() >> workflowMetadata
+        }
+
+        when:
+        def ctx = PipelineExecutionContext.fromSession(session)
+
+        then:
+        ctx.workflowMap.name == 'nf-core/rnaseq'
+        ctx.workflowMap.runName == 'test-run'
+    }
+
     def 'fromSession tolerates manifest.toMap failures from partial validation manifests'() {
         given:
         def manifest = Mock(Manifest) {

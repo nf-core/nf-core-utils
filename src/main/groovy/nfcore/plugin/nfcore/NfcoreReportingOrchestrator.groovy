@@ -196,7 +196,7 @@ class NfcoreReportingOrchestrator {
         try {
             def meta = [
                 manifest_map: ctx?.manifestMap ?: [:],
-                workflow: [:]
+                workflow: ctx?.workflowMap ?: [:]
             ]
             return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml, allCitations, meta)
         } catch (Exception e) {
