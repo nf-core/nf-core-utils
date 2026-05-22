@@ -27,20 +27,34 @@ import nfcore.plugin.nfcore.NfcoreConfigValidator
 import nfcore.plugin.nfcore.NfcoreVersionUtils
 import nfcore.plugin.nfcore.NfcoreCitationUtils
 import nfcore.plugin.nfcore.NfcoreReportingOrchestrator
+import nfcore.plugin.nfcore.PipelineExecutionContext
+import nfcore.plugin.nfcore.ValidationAdapter
+import nfcore.plugin.nfcore.VersionAdapter
+import nfcore.plugin.nfcore.ReportingAdapter
 import nfcore.plugin.ReferencesUtils
 
 /**
- * Implements a custom function which can be imported by
- * Nextflow scripts.
+ * Thin extension point — delegates to focused adapter modules initialized
+ * with {@link PipelineExecutionContext}.
+ *
+ * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §5
  */
 @Slf4j
 class NfUtilsExtension extends PluginExtensionPoint {
 
     private Session session
+    private PipelineExecutionContext ctx
+    private ValidationAdapter validationAdapter
+    private VersionAdapter versionAdapter
+    private ReportingAdapter reportingAdapter
 
     @Override
     protected void init(Session session) {
         this.session = session
+        this.ctx = PipelineExecutionContext.fromSession(session)
+        this.validationAdapter = new ValidationAdapter(ctx)
+        this.versionAdapter = new VersionAdapter(ctx)
+        this.reportingAdapter = new ReportingAdapter(ctx)
     }
 
     /**
@@ -78,7 +92,14 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void completionSummary(boolean monochromeLogs) {
-        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionSummary(monochromeLogs)
+        def manifest = this.session?.getManifest()
+        def workflowName = manifest?.getName() ?: 'unknown'
+        def statsObserver = this.session?.getStatsObserver()
+        def stats = statsObserver ? statsObserver.getStats() : null
+        def ignoredCount = (stats != null) ? stats.getIgnoredCount() : 0
+        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionSummary(
+            workflowName, this.session?.success ?: false, ignoredCount, monochromeLogs
+        )
     }
 
     /**
@@ -98,15 +119,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void checkProfileProvided(List args, boolean monochromeLogs = true) {
-        String profile = null
-        for (int i = 0; i < args.size(); i++) {
-            if (args[i] == '-profile' && i + 1 < args.size()) {
-                profile = args[i + 1]
-                break
-            }
-        }
-        String commandLine = args.join(' ')
-        NfcoreConfigValidator.checkProfileProvided(profile, commandLine, monochromeLogs)
+        validationAdapter.checkProfileProvided(args, monochromeLogs)
     }
 
     /**
@@ -115,13 +128,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     boolean checkConfigProvided() {
-        def meta = this.session?.getWorkflowMetadata()
-        def config = this.session?.config
-        String projectName = null
-        if (meta != null && meta.metaClass?.hasProperty(meta, 'projectName')) {
-            projectName = meta.projectName
-        }
-        return NfcoreConfigValidator.checkConfigProvided(projectName, config)
+        return validationAdapter.checkConfigProvided()
     }
 
     // --- Methods from ReferencesExtension ---
@@ -430,8 +437,8 @@ class NfUtilsExtension extends PluginExtensionPoint {
         String mqcMethodsYamlPath = null
     ) {
         def mqcFile = mqcMethodsYamlPath ? new File(mqcMethodsYamlPath) : null
-        return NfcoreReportingOrchestrator.generateComprehensiveReport(
-            topicVersions, legacyVersions, metaFilePaths, mqcFile, this.session
+        return reportingAdapter.generateComprehensiveReport(
+            topicVersions, legacyVersions, metaFilePaths, mqcFile
         )
     }
 
@@ -444,7 +451,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     Map generateVersionReport(List<List> topicVersions, List<String> legacyVersions = []) {
-        return NfcoreReportingOrchestrator.generateVersionReport(topicVersions, legacyVersions, this.session)
+        return reportingAdapter.generateVersionReport(topicVersions, legacyVersions)
     }
 
     /**
@@ -457,7 +464,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     Map generateCitationReport(List<String> metaFilePaths, String mqcMethodsYamlPath = null) {
         def mqcFile = mqcMethodsYamlPath ? new File(mqcMethodsYamlPath) : null
-        return NfcoreReportingOrchestrator.generateCitationReport(metaFilePaths, mqcFile, this.session)
+        return reportingAdapter.generateCitationReport(metaFilePaths, mqcFile)
     }
 
     // --- Enhanced Citation Topic Channel Functions ---
