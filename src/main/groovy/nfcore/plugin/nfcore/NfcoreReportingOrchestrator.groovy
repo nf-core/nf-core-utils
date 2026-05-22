@@ -16,57 +16,53 @@
 
 package nfcore.plugin.nfcore
 
+import groovy.util.logging.Slf4j
 import nextflow.Session
 
 /**
- * Orchestration utility that coordinates between version management and citation management
- * to provide comprehensive pipeline reporting capabilities.
+ * Single reporting seam that coordinates version and citation report assembly.
  *
- * This class follows the composition pattern, using NfcoreVersionUtils and NfcoreCitationUtils
- * as focused, single-responsibility services while providing convenient high-level methods
- * for common reporting scenarios.
+ * Primary API accepts {@link PipelineExecutionContext}; Session-based overloads
+ * are kept for backward compatibility.
+ *
+ * Uses {@link SoftwareVersionReport} for version collection and
+ * {@link NfcoreCitationUtils} for citation formatting.
+ *
+ * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §4
  */
+@Slf4j
 class NfcoreReportingOrchestrator {
 
+    // =========================================================================
+    // PRIMARY API — accepts PipelineExecutionContext
+    // =========================================================================
+
     /**
-     * Generate comprehensive version and citation report for a pipeline
+     * Generate comprehensive version and citation report.
      *
-     * This method orchestrates between version and citation utilities to provide
-     * a complete report including versions, citations, bibliography, and methods description.
-     *
+     * @param ctx Pipeline execution context (null for safe defaults)
      * @param topicVersions List of topic channel data [process, name, version]
-     * @param legacyVersions List of legacy YAML version strings (optional)
-     * @param metaFilePaths List of paths to module meta.yml files for citations (optional)
-     * @param mqcMethodsYaml Path to MultiQC methods description template (optional)
-     * @param session The Nextflow session
-     * @return Map containing versions YAML, citations, bibliography, and methods description
+     * @param legacyVersions List of legacy YAML version strings
+     * @param metaFilePaths List of paths to module meta.yml files for citations
+     * @param mqcMethodsYaml MultiQC methods description template file
+     * @return Map with versions_yaml, tool_citations, tool_bibliography, methods_description, citations_map
      */
     static Map generateComprehensiveReport(
+        PipelineExecutionContext ctx,
         List<List> topicVersions,
         List<String> legacyVersions = [],
         List<String> metaFilePaths = [],
-        File mqcMethodsYaml = null,
-        Session session
+        File mqcMethodsYaml = null
     ) {
-        // Generate versions YAML using focused version utility
-        def versionsYaml = NfcoreVersionUtils.processVersionsFromTopicChannels(
-            topicVersions, legacyVersions, session
-        )
+        def versionsYaml = buildVersionsYaml(ctx, topicVersions, legacyVersions)
 
-        // Generate citations if meta files provided using focused citation utility
-        def allCitations = [:]
-        if (metaFilePaths) {
-            allCitations = collectCitationsFromMetaFiles(metaFilePaths)
-        }
-
-        // Generate citation text and bibliography using citation utility
+        def allCitations = metaFilePaths ? collectCitationsFromMetaFiles(metaFilePaths) : [:]
         def toolCitations = NfcoreCitationUtils.toolCitationText(allCitations)
         def toolBibliography = NfcoreCitationUtils.toolBibliographyText(allCitations)
 
-        // Generate methods description if template provided
         def methodsDescription = ""
         if (mqcMethodsYaml && mqcMethodsYaml.exists()) {
-            methodsDescription = generateMethodsDescription(mqcMethodsYaml, allCitations, session)
+            methodsDescription = generateMethodsDescription(mqcMethodsYaml, allCitations, ctx)
         }
 
         return [
@@ -79,49 +75,31 @@ class NfcoreReportingOrchestrator {
     }
 
     /**
-     * Generate a version-only report (no citations)
-     * Useful when citations are not needed or handled separately
-     *
-     * @param topicVersions List of topic channel data [process, name, version]
-     * @param legacyVersions List of legacy YAML version strings (optional)
-     * @param session The Nextflow session
-     * @return Map containing only versions information
+     * Generate version-only report.
      */
     static Map generateVersionReport(
+        PipelineExecutionContext ctx,
         List<List> topicVersions,
-        List<String> legacyVersions = [],
-        Session session
+        List<String> legacyVersions = []
     ) {
-        def versionsYaml = NfcoreVersionUtils.processVersionsFromTopicChannels(
-            topicVersions, legacyVersions, session
-        )
-
-        return [
-            versions_yaml: versionsYaml
-        ]
+        return [versions_yaml: buildVersionsYaml(ctx, topicVersions, legacyVersions)]
     }
 
     /**
-     * Generate a citation-only report (no versions)
-     * Useful when versions are handled separately
-     *
-     * @param metaFilePaths List of paths to module meta.yml files for citations
-     * @param mqcMethodsYaml Path to MultiQC methods description template (optional)
-     * @param session The Nextflow session (optional, used for methods description)
-     * @return Map containing only citation information
+     * Generate citation-only report.
      */
     static Map generateCitationReport(
+        PipelineExecutionContext ctx,
         List<String> metaFilePaths,
-        File mqcMethodsYaml = null,
-        Session session = null
+        File mqcMethodsYaml = null
     ) {
         def allCitations = collectCitationsFromMetaFiles(metaFilePaths)
         def toolCitations = NfcoreCitationUtils.toolCitationText(allCitations)
         def toolBibliography = NfcoreCitationUtils.toolBibliographyText(allCitations)
 
         def methodsDescription = ""
-        if (mqcMethodsYaml && mqcMethodsYaml.exists() && session) {
-            methodsDescription = generateMethodsDescription(mqcMethodsYaml, allCitations, session)
+        if (mqcMethodsYaml && mqcMethodsYaml.exists() && ctx) {
+            methodsDescription = generateMethodsDescription(mqcMethodsYaml, allCitations, ctx)
         }
 
         return [
@@ -132,79 +110,124 @@ class NfcoreReportingOrchestrator {
         ]
     }
 
+    // =========================================================================
+    // COMPATIBILITY — Session-based overloads delegate to context-based API
+    // =========================================================================
+
     /**
-     * Private helper method to collect citations from meta.yml files
-     * Handles error cases gracefully and continues processing other files
-     *
-     * @param metaFilePaths List of paths to meta.yml files
-     * @return Map of all collected citations
+     * @deprecated Use {@link #generateComprehensiveReport(PipelineExecutionContext, List, List, List, File)}
      */
+    @Deprecated
+    static Map generateComprehensiveReport(
+        List<List> topicVersions,
+        List<String> legacyVersions = [],
+        List<String> metaFilePaths = [],
+        File mqcMethodsYaml = null,
+        Session session
+    ) {
+        def ctx = PipelineExecutionContext.fromSession(session)
+        return generateComprehensiveReport(ctx, topicVersions, legacyVersions, metaFilePaths, mqcMethodsYaml)
+    }
+
+    /**
+     * @deprecated Use {@link #generateVersionReport(PipelineExecutionContext, List, List)}
+     */
+    @Deprecated
+    static Map generateVersionReport(
+        List<List> topicVersions,
+        List<String> legacyVersions = [],
+        Session session
+    ) {
+        def ctx = PipelineExecutionContext.fromSession(session)
+        return generateVersionReport(ctx, topicVersions, legacyVersions)
+    }
+
+    /**
+     * @deprecated Use {@link #generateCitationReport(PipelineExecutionContext, List, File)}
+     */
+    @Deprecated
+    static Map generateCitationReport(
+        List<String> metaFilePaths,
+        File mqcMethodsYaml = null,
+        Session session = null
+    ) {
+        def ctx = session ? PipelineExecutionContext.fromSession(session) : null
+        return generateCitationReport(ctx, metaFilePaths, mqcMethodsYaml)
+    }
+
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
+
+    private static String buildVersionsYaml(
+        PipelineExecutionContext ctx,
+        List<List> topicVersions,
+        List<String> legacyVersions
+    ) {
+        def report = new SoftwareVersionReport()
+
+        if (topicVersions) report.addInput(topicVersions)
+        if (legacyVersions) report.addInput(legacyVersions)
+
+        if (ctx) {
+            def wfVersion = NfcoreVersionUtils.getWorkflowVersion(
+                null, ctx.workflowVersion
+            )
+            report.addWorkflowVersion(ctx.workflowName, wfVersion, ctx.nextflowVersion)
+        }
+
+        return report.renderYaml()
+    }
+
     private static Map collectCitationsFromMetaFiles(List<String> metaFilePaths) {
         def allCitations = [:]
-
         metaFilePaths.each { metaPath ->
             try {
                 def citations = NfcoreCitationUtils.generateModuleToolCitation(metaPath)
                 allCitations.putAll(citations)
             } catch (Exception e) {
-                // Log warning but continue processing other files
-                println "Warning: Could not process meta.yml at ${metaPath}: ${e.message}"
+                log.warn("Could not process meta.yml at ${metaPath}: ${e.message}")
             }
         }
-
         return allCitations
     }
 
-    /**
-     * Private helper method to generate methods description
-     * Handles session metadata preparation for template processing
-     *
-     * @param mqcMethodsYaml MultiQC methods template file
-     * @param allCitations Map of collected citations
-     * @param session Nextflow session
-     * @return Methods description HTML string
-     */
-    private static String generateMethodsDescription(File mqcMethodsYaml, Map allCitations, Session session) {
+    private static String generateMethodsDescription(File mqcMethodsYaml, Map allCitations, PipelineExecutionContext ctx) {
         try {
-            // Prepare metadata for template processing
-            def meta = prepareMetadataForTemplate(session)
+            def meta = [
+                manifest_map: ctx?.manifestMap ?: [:],
+                workflow: [:]
+            ]
             return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml, allCitations, meta)
         } catch (Exception e) {
-            println "Warning: Could not generate methods description: ${e.message}"
+            log.warn("Could not generate methods description: ${e.message}")
             return ""
         }
     }
 
-    /**
-     * Private helper method to prepare metadata for template processing
-     * Centralizes the metadata preparation logic
-     *
-     * @param session Nextflow session
-     * @return Map containing prepared metadata
-     */
+    /** @deprecated kept for Session-based overload */
+    @Deprecated
+    private static String generateMethodsDescription(File mqcMethodsYaml, Map allCitations, Session session) {
+        try {
+            def meta = prepareMetadataForTemplate(session)
+            return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml, allCitations, meta)
+        } catch (Exception e) {
+            log.warn("Could not generate methods description: ${e.message}")
+            return ""
+        }
+    }
+
+    /** @deprecated kept for Session-based overload */
+    @Deprecated
     private static Map prepareMetadataForTemplate(Session session) {
         def meta = [:]
-
-        // Add manifest information
         def manifest = session?.getManifest()
-        if (manifest) {
-            meta["manifest_map"] = manifest.toMap() ?: [:]
-        } else {
-            meta["manifest_map"] = [:]
-        }
-
-        // Add workflow metadata
+        meta["manifest_map"] = manifest?.toMap() ?: [:]
         try {
-            if (session) {
-                meta.workflow = session.getWorkflowMetadata()?.toMap() ?: [:]
-            } else {
-                meta.workflow = [:]
-            }
+            meta.workflow = session?.getWorkflowMetadata()?.toMap() ?: [:]
         } catch (Exception e) {
-            // Handle case where getWorkflowMetadata() is not available
             meta.workflow = [:]
         }
-
         return meta
     }
 }
