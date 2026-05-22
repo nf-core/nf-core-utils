@@ -1,3 +1,5 @@
+#:schema https://www.schemastore.org/prek.json
+
 default_install_hook_types = ["pre-commit", "pre-push"]
 
 [[repos]]
@@ -11,6 +13,13 @@ hooks = [
     args = ["-format", "-sort-declarations", "-spaces", "4", "-harshil-alignment", "-output", "concise"],
     pass_filenames = true,
     require_serial = true,
+  },
+  { id = "validation-nf-test-snapshot-guard",
+    name = "Guard validation nf-test snapshots",
+    entry = "scripts/hooks/check_validation_nf_test_snapshots.py",
+    language = "python",
+    pass_filenames = false,
+    files = '\.snap$',
   },
   { id = "gradle-test",
     name = "Run unit tests before push",
