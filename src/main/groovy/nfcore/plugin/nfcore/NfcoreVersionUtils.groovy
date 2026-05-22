@@ -94,30 +94,21 @@ class NfcoreVersionUtils {
      * @return YAML string with merged versions, sorted alphabetically by process and tool
      */
     static String collectVersions(Object input, Session session = null, Object nextflowVersion = null) {
-        // Convert input to list for uniform processing
-        List inputList = normalizeInputToList(input)
+        def report = new SoftwareVersionReport()
+        report.addInput(input)
 
-        // Accumulate versions: process -> tools map
-        Map<String, Map<String, Object>> merged = [:].withDefault { [:] as Map<String, Object> }
-
-        // Process all entries
-        inputList.each { entry -> processVersionEntry(entry, merged) }
-
-        // Sort processes and tools alphabetically
-        Map<String, Map<String, Object>> sortedMerged = merged.sort().collectEntries { processName, toolsMap ->
-            [(processName): toolsMap.sort()]
-        }
-
-        // Format output
-        String versionsYaml = sortedMerged ? new Yaml().dumpAsMap(sortedMerged).trim() : ''
-
-        // Add workflow version if session provided
         if (session) {
-            def workflowYaml = workflowVersionToYAML(session, nextflowVersion)
-            return ([versionsYaml, workflowYaml].findAll { it && it != '{}' }.join("\n")).trim()
+            def manifest = session.getManifest()
+            def wfName = manifest?.getName() ?: 'unknown'
+            def wfVersion = getWorkflowVersion(session)
+            def nfVer = nextflowVersion?.toString() ?:
+                        session?.getConfig()?.get('nextflow')?.get('version') ?:
+                        System.getenv('NXF_VER') ?:
+                        'unknown'
+            report.addWorkflowVersion(wfName, wfVersion, nfVer)
         }
 
-        return versionsYaml
+        return report.renderYaml()
     }
 
     // =========================================================================
