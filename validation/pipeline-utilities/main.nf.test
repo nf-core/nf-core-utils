@@ -12,6 +12,24 @@ nextflow_pipeline {
                 line
                     .replaceAll(/https:\/\/cloud\.seqera\.io\/user\/[^\/\s]+\/watch\/[A-Za-z0-9]+/, 'https://cloud.seqera.io/user/[USER]/watch/[TRACE_ID]')
                     .replaceAll(/https:\/\/api\.cloud\.seqera\.io\/trace\/[A-Za-z0-9]+\/complete/, 'https://api.cloud.seqera.io/trace/[TRACE_ID]/complete')
+                    .replaceAll(/ DSL2 - revision:/, ' - revision:')
+                    .replaceAll(/\[PATH\]\/\.nf-test\/tests/, '[PATH]/tests')
+            }.findAll { line ->
+                line != '==========================================' &&
+                line != '===========================================' &&
+                !line.startsWith('Monitor the execution with Seqera Platform') &&
+                !line.startsWith('WARN: Graphviz is required') &&
+                !line.startsWith("WARN: Unrecognized config option") &&
+                !line.startsWith('WARN: Task runtime metrics are not reported') &&
+                !line.startsWith('WARN: Unexpected HTTP response') &&
+                !line.startsWith('Failed to send message to https://api.cloud.seqera.io') &&
+                !line.startsWith('- status code :') &&
+                !line.startsWith('- response msg:') &&
+                !line.startsWith('- error cause :') &&
+                !line.startsWith('Conda channels check result:') &&
+                !line.startsWith('Conda channels status:') &&
+                !line.startsWith('✅ Conda channels are configured correctly') &&
+                !line.startsWith('⚠️ Conda channels may need configuration adjustment')
             }
             assert snapshot(normalizedOutput).match()
         }

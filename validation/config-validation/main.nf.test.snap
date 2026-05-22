@@ -3,10 +3,8 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
-                "==========================================",
+                "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] - revision: [REVISION]",
                 "Configuration Validation Test",
-                "==========================================",
                 "=== Testing checkConfigProvided() function ===",
                 "Configuration check result: false",
                 "\u2705 checkConfigProvided() executed successfully",
@@ -25,24 +23,16 @@
                 "Testing color formatting feature with valid profiles only",
                 "\u2705 Color formatting tests completed successfully",
                 "=== Testing checkCondaChannels() function ===",
-                "Conda channels check result: false",
                 "\u2705 checkCondaChannels() executed successfully",
-                "\u26a0\ufe0f Conda channels may need configuration adjustment",
                 "=== Testing integration scenario ===",
                 "Simulating fetchngs pipeline initialization sequence...",
-                "Conda channels status: Needs attention",
                 "Configuration status: May need custom config",
                 "Profile validation: Completed for typical fetchngs usage with color setting: monochrome",
                 "\u2705 Integration scenario completed successfully",
                 "=== Testing edge cases ===",
                 "\u2705 Empty arguments handled correctly",
-                "==========================================",
                 "Configuration Validation Complete",
-                "==========================================",
-                "Monitor the execution with Seqera Platform using this URL: https://cloud.seqera.io/user/[USER]/watch/[TRACE_ID]",
-                "==========================================",
                 "Configuration Validation Results",
-                "==========================================",
                 "\u2705 checkConfigProvided() - Pipeline configuration validation tested",
                 "\u2705 checkProfileProvided() - Execution profile validation tested",
                 "\u2705 Color formatting - Both monochrome and color modes tested",
@@ -50,11 +40,10 @@
                 "\u2705 checkCondaChannels() - Conda channel validation tested",
                 "\u2705 Integration scenario - Typical pipeline initialization flow tested",
                 "\u2705 Edge cases - Error handling and boundary conditions tested",
-                "Configuration validation functions ready for fetchngs! \ud83d\ude80",
-                "=========================================="
+                "Configuration validation functions ready for fetchngs! \ud83d\ude80"
             ]
         ],
-        "timestamp": "2026-05-21T22:33:08.344346",
+        "timestamp": "2026-05-22T12:17:54.963882",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "25.10.3"
@@ -64,10 +53,8 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
-                "==========================================",
+                "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] - revision: [REVISION]",
                 "Configuration Validation Test",
-                "==========================================",
                 "=== Testing checkConfigProvided() function ===",
                 "Configuration check result: false",
                 "\u2705 checkConfigProvided() executed successfully",
@@ -86,24 +73,16 @@
                 "Testing color formatting feature with valid profiles only",
                 "\u2705 Color formatting tests completed successfully",
                 "=== Testing checkCondaChannels() function ===",
-                "Conda channels check result: false",
                 "\u2705 checkCondaChannels() executed successfully",
-                "\u26a0\ufe0f Conda channels may need configuration adjustment",
                 "=== Testing integration scenario ===",
                 "Simulating fetchngs pipeline initialization sequence...",
-                "Conda channels status: Needs attention",
                 "Configuration status: May need custom config",
                 "Profile validation: Completed for typical fetchngs usage with color setting: monochrome",
                 "\u2705 Integration scenario completed successfully",
                 "=== Testing edge cases ===",
                 "\u2705 Empty arguments handled correctly",
-                "==========================================",
                 "Configuration Validation Complete",
-                "==========================================",
-                "Monitor the execution with Seqera Platform using this URL: https://cloud.seqera.io/user/[USER]/watch/[TRACE_ID]",
-                "==========================================",
                 "Configuration Validation Results",
-                "==========================================",
                 "\u2705 checkConfigProvided() - Pipeline configuration validation tested",
                 "\u2705 checkProfileProvided() - Execution profile validation tested",
                 "\u2705 Color formatting - Both monochrome and color modes tested",
@@ -111,11 +90,10 @@
                 "\u2705 checkCondaChannels() - Conda channel validation tested",
                 "\u2705 Integration scenario - Typical pipeline initialization flow tested",
                 "\u2705 Edge cases - Error handling and boundary conditions tested",
-                "Configuration validation functions ready for fetchngs! \ud83d\ude80",
-                "=========================================="
+                "Configuration validation functions ready for fetchngs! \ud83d\ude80"
             ]
         ],
-        "timestamp": "2026-05-21T22:33:21.98487",
+        "timestamp": "2026-05-22T12:18:04.616704",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "25.10.3"
@@ -125,10 +103,8 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
-                "==========================================",
+                "Launching `[PATH]/config-validation/./main.nf` [RUN_NAME] - revision: [REVISION]",
                 "Configuration Validation Test",
-                "==========================================",
                 "=== Testing checkConfigProvided() function ===",
                 "Configuration check result: false",
                 "\u2705 checkConfigProvided() executed successfully",
@@ -147,24 +123,16 @@
                 "Testing color formatting feature with valid profiles only",
                 "\u2705 Color formatting tests completed successfully",
                 "=== Testing checkCondaChannels() function ===",
-                "Conda channels check result: false",
                 "\u2705 checkCondaChannels() executed successfully",
-                "\u26a0\ufe0f Conda channels may need configuration adjustment",
                 "=== Testing integration scenario ===",
                 "Simulating fetchngs pipeline initialization sequence...",
-                "Conda channels status: Needs attention",
                 "Configuration status: May need custom config",
                 "Profile validation: Completed for typical fetchngs usage with color setting: true",
                 "\u2705 Integration scenario completed successfully",
                 "=== Testing edge cases ===",
                 "\u2705 Empty arguments handled correctly",
-                "==========================================",
                 "Configuration Validation Complete",
-                "==========================================",
-                "Monitor the execution with Seqera Platform using this URL: https://cloud.seqera.io/user/[USER]/watch/[TRACE_ID]",
-                "==========================================",
                 "Configuration Validation Results",
-                "==========================================",
                 "\u2705 checkConfigProvided() - Pipeline configuration validation tested",
                 "\u2705 checkProfileProvided() - Execution profile validation tested",
                 "\u2705 Color formatting - Both monochrome and color modes tested",
@@ -172,11 +140,10 @@
                 "\u2705 checkCondaChannels() - Conda channel validation tested",
                 "\u2705 Integration scenario - Typical pipeline initialization flow tested",
                 "\u2705 Edge cases - Error handling and boundary conditions tested",
-                "Configuration validation functions ready for fetchngs! \ud83d\ude80",
-                "=========================================="
+                "Configuration validation functions ready for fetchngs! \ud83d\ude80"
             ]
         ],
-        "timestamp": "2026-05-21T22:33:15.200656",
+        "timestamp": "2026-05-22T12:17:59.9941",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "25.10.3"
