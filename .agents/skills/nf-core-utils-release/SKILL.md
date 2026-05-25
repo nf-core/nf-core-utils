@@ -52,6 +52,7 @@ grep -E 'github_|npr\.apiKey|pluginRegistry' ~/.gradle/gradle.properties | sed '
 ```
 
 Important:
+
 - Do not write tokens into the repository.
 - Do not print the token.
 - Redact `~/.gradle/gradle.properties` output.
@@ -95,6 +96,7 @@ Plugin 'nf-core-utils' version X.Y.Z has been successfully released to Nextflow 
 ```
 
 If release fails with `HTTP 401`:
+
 - Check that `~/.gradle/gradle.properties` contains `npr.apiKey=<redacted>`.
 - If only `pluginRegistry.accessToken` is present, add `npr.apiKey`; the Gradle plugin expects `npr.apiKey` or `NPR_API_KEY`.
 - Re-run `make release` from the clean worktree.
@@ -146,6 +148,7 @@ python "<path-to-skill>/scripts/compare_release_surfaces.py"
 ```
 
 Known historical state after releasing `0.5.0`:
+
 - GitHub releases: `0.1.0`, `0.2.0`, `0.3.0`, `0.3.1`, `0.4.0`, `0.5.0`
 - Registry releases: `0.2.0`, `0.3.0`, `0.3.1`, `0.4.0`, `0.5.0`
 - `0.1.0` exists on GitHub but not in the registry.
