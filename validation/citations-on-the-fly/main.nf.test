@@ -1,0 +1,37 @@
+nextflow_pipeline {
+
+    name "Test nf-core-utils citations on the fly (versions-topic-driven)"
+    script "./main.nf"
+    config "./nextflow.config"
+
+    test("Citations reflect only the tools that ran") {
+
+        when {
+            params {
+                validate_params = false
+                outdir = "$outputDir"
+            }
+        }
+
+        then {
+            assert workflow.success
+
+            def citations = path("${params.outdir}/auto_citations.txt").text
+            def bibliography = path("${params.outdir}/auto_bibliography.html").text
+
+            // Tools that ran (have a versions emission + a meta.yml) are cited
+            assert citations.contains('fastqc')
+            assert citations.contains('multiqc')
+            assert citations.contains('samtools')
+
+            // STAR has a meta.yml but did NOT run, so it must not be cited
+            assert !citations.toLowerCase().contains('star')
+            assert !bibliography.contains('bts635') // STAR DOI absent
+
+            assert snapshot(
+                path("${params.outdir}/auto_citations.txt").text,
+                path("${params.outdir}/auto_bibliography.html").text,
+            ).match()
+        }
+    }
+}

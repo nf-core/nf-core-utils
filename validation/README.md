@@ -69,6 +69,19 @@ Tests essential pipeline utility functions:
 - `getWorkflowVersion()` - Version string generation
 - `dumpParametersToJSON()` - Parameter file creation
 
+### 📚 citations-on-the-fly/
+
+**Citations on the Fly (versions-topic-driven)**
+
+Tests `citationsOnTheFly()` — citations built from the tools that actually ran
+(the `versions` topic) with metadata resolved from each module's `meta.yml`.
+
+**Key validations:**
+
+- `citationsOnTheFly(topicVersions, metaFilePaths)` cites only the tools that ran
+- `toolCitationText()` / `toolBibliographyText()` render the selected citations
+- A tool with a `meta.yml` that did not run (`STAR_ALIGN`, gated off) is not cited
+
 ### 🚧 Future Validation Tests
 
 Additional validation tests can be added following the same pattern:
