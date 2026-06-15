@@ -212,10 +212,10 @@ Citation management comes in two flavors: modern topic-channel based (recommende
 
 The lowest-friction option: derive citations from the tools that actually ran (the `versions` topic every nf-core module already emits) and resolve their metadata from each module's `meta.yml`. No per-module changes, no hand-maintained tool list.
 
-| Function                                            | Purpose                                                | Usage Context       |
-| --------------------------------------------------- | ------------------------------------------------------ | ------------------- |
-| `toolsFromVersionsTopic(topicVersions)`             | Tool names that actually ran, from the `versions` data | Workflow completion |
-| `citationsOnTheFly(topicVersions, metaFilePaths)`   | Citations for only the tools that ran, from `meta.yml` | Workflow completion |
+| Function                                          | Purpose                                                | Usage Context       |
+| ------------------------------------------------- | ------------------------------------------------------ | ------------------- |
+| `toolsFromVersionsTopic(topicVersions)`           | Tool names that actually ran, from the `versions` data | Workflow completion |
+| `citationsOnTheFly(topicVersions, metaFilePaths)` | Citations for only the tools that ran, from `meta.yml` | Workflow completion |
 
 ```nextflow title="Citations on the fly"
 include { citationsOnTheFly; methodsDescriptionText } from 'plugin/nf-core-utils'

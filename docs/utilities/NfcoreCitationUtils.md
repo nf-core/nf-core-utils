@@ -24,10 +24,10 @@ The lowest-friction way to make citations reflect the tools a pipeline actually 
 
 Two functions cover the flow:
 
-| Function                                                   | Purpose                                                 | When to call          |
-| ---------------------------------------------------------- | ------------------------------------------------------- | --------------------- |
-| `toolsFromVersionsTopic(topicVersions)`                    | Reduce collected `versions` data to the tool names used | Workflow completion   |
-| `citationsOnTheFly(topicVersions, metaFilePaths)`          | Citations for only the tools that ran, from `meta.yml`  | Workflow completion   |
+| Function                                          | Purpose                                                 | When to call        |
+| ------------------------------------------------- | ------------------------------------------------------- | ------------------- |
+| `toolsFromVersionsTopic(topicVersions)`           | Reduce collected `versions` data to the tool names used | Workflow completion |
+| `citationsOnTheFly(topicVersions, metaFilePaths)` | Citations for only the tools that ran, from `meta.yml`  | Workflow completion |
 
 ---
 

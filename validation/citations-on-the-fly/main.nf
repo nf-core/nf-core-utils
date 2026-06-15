@@ -61,7 +61,7 @@ workflow {
             log.info("=== Cited tools (ran + have meta.yml): ${citations.keySet().sort().join(', ')} ===")
             [
                 citation_text: toolCitationText(citations),
-                bibliography : toolBibliographyText(citations),
+                bibliography: toolBibliographyText(citations),
             ]
         }
 

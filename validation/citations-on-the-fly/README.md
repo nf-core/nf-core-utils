@@ -3,7 +3,7 @@
 **Pattern: Citations on the Fly (versions-topic-driven)**
 
 Demonstrates `citationsOnTheFly()` — citations generated from the tools that
-*actually ran*, with their metadata resolved from each module's `meta.yml`.
+_actually ran_, with their metadata resolved from each module's `meta.yml`.
 
 Unlike [`topic-channel-citations/`](../topic-channel-citations/), the modules
 here do **not** emit a dedicated `citation` topic. They only emit the standard
