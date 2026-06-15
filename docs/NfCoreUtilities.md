@@ -230,7 +230,7 @@ ch_methods_description = channel.topic('versions')
     }
 ```
 
-See [NfcoreCitationUtils](utilities/NfcoreCitationUtils.md#citations-on-the-fly-recommended) for the full walkthrough. The descriptive alias `citationsForToolsUsed(...)` is also available.
+See [NfcoreCitationUtils](utilities/NfcoreCitationUtils.md#citations-on-the-fly-recommended) for the full walkthrough.
 
 #### Modern Topic Channel Citations
 

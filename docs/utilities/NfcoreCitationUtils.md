@@ -34,7 +34,7 @@ Two functions cover the flow:
 #### `citationsOnTheFly(List topicVersions, List<String> metaFilePaths)`
 
 **Description:**
-Builds a citations map for **only the tools that ran**, by intersecting the `versions` topic (what executed) with citations parsed from the supplied `meta.yml` files (the citation source). The returned map plugs directly into `toolCitationText()`, `toolBibliographyText()`, and `methodsDescriptionText()`. A descriptive alias, `citationsForToolsUsed(...)`, is also available.
+Builds a citations map for **only the tools that ran**, by intersecting the `versions` topic (what executed) with citations parsed from the supplied `meta.yml` files (the citation source). The returned map plugs directly into `toolCitationText()`, `toolBibliographyText()`, and `methodsDescriptionText()`.
 
 **Function Signature:**
 

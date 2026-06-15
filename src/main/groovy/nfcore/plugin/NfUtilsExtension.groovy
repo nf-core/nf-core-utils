@@ -583,18 +583,6 @@ class NfUtilsExtension extends PluginExtensionPoint {
     }
 
     /**
-     * Descriptive alias for {@link #citationsOnTheFly}.
-     *
-     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect()
-     * @param metaFilePaths Paths to module meta.yml files
-     * @return Citations map (tool -> [citation, bibliography]) for tools that ran
-     */
-    @Function
-    Map citationsForToolsUsed(List topicVersions, List<String> metaFilePaths) {
-        return NfcoreCitationUtils.citationsOnTheFly(topicVersions, metaFilePaths)
-    }
-
-    /**
      * Generate workflow summary for MultiQC
      * @param summaryParams Map of parameter groups and their parameters
      * @return YAML formatted string for MultiQC
