@@ -839,6 +839,16 @@ ${tool_bibliography}
         NfcoreCitationUtils.toolsFromVersionsTopic(null) == []
     }
 
+    def "toolsFromVersionsTopic returns empty for a flattened versions list"() {
+        given:
+        // Plain channel.topic('versions').collect() flattens tuples into loose
+        // scalars; only .collect(flat: false) preserves [process, tool, version].
+        def flattened = ['NFCORE_FASTQC:FASTQC', 'fastqc', '0.12.1', 'NFCORE_PIPELINE:MULTIQC', 'multiqc', '1.21']
+
+        expect:
+        NfcoreCitationUtils.toolsFromVersionsTopic(flattened) == []
+    }
+
     def "filterCitationsByTools keeps only tools that ran, matching case-insensitively"() {
         given:
         def allCitations = [
@@ -855,6 +865,22 @@ ${tool_bibliography}
         then:
         result.keySet() == ['fastqc', 'samtools'] as Set
         !result.containsKey('multiqc')
+    }
+
+    def "filterCitationsByTools omits tools that ran but have no citation entry"() {
+        given:
+        def allCitations = [
+            'fastqc': [citation: 'fastqc (...)', bibliography: '<li>FastQC</li>']
+        ]
+        // mysterytool ran but has no meta.yml citation entry
+        def toolsUsed = ['fastqc', 'mysterytool']
+
+        when:
+        def result = NfcoreCitationUtils.filterCitationsByTools(allCitations, toolsUsed)
+
+        then:
+        result.keySet() == ['fastqc'] as Set
+        !result.containsKey('mysterytool')
     }
 
     def "citationsOnTheFly intersects versions topic with meta.yml citations"() {
