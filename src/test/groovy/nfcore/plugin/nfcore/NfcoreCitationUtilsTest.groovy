@@ -796,6 +796,103 @@ ${tool_bibliography}
         bibliography.split('<li>').size() > 3  // Should have multiple bibliography entries
     }
 
+    // --- Versions-topic-driven citations (automatic, runtime-accurate) ---
+
+    def "toolsFromVersionsTopic extracts unique sorted tool names from versions tuples"() {
+        given:
+        def topicVersions = [
+            ['NFCORE_FASTQC:FASTQC', 'fastqc', '0.12.1'],
+            ['NFCORE_PIPELINE:MULTIQC', 'multiqc', '1.21'],
+            ['NFCORE_FASTQC:FASTQC', 'fastqc', '0.12.1'] // duplicate process/tool
+        ]
+
+        when:
+        def result = NfcoreCitationUtils.toolsFromVersionsTopic(topicVersions)
+
+        then:
+        result == ['fastqc', 'multiqc']
+    }
+
+    def "toolsFromVersionsTopic handles nested collected structures"() {
+        given:
+        // channel.topic('versions').collect() can hand back nested tuple lists
+        def nested = [
+            [
+                ['PROC_A', 'samtools', '1.21'],
+                ['PROC_B', 'bwa', '0.7.18']
+            ],
+            [
+                ['PROC_C', 'multiqc', '1.21']
+            ]
+        ]
+
+        when:
+        def result = NfcoreCitationUtils.toolsFromVersionsTopic(nested)
+
+        then:
+        result == ['bwa', 'multiqc', 'samtools']
+    }
+
+    def "toolsFromVersionsTopic handles empty and null input"() {
+        expect:
+        NfcoreCitationUtils.toolsFromVersionsTopic([]) == []
+        NfcoreCitationUtils.toolsFromVersionsTopic(null) == []
+    }
+
+    def "filterCitationsByTools keeps only tools that ran, matching case-insensitively"() {
+        given:
+        def allCitations = [
+            'fastqc'  : [citation: 'fastqc (...)', bibliography: '<li>FastQC</li>'],
+            'multiqc' : [citation: 'multiqc (...)', bibliography: '<li>MultiQC</li>'],
+            'samtools': [citation: 'samtools (...)', bibliography: '<li>SAMtools</li>']
+        ]
+        // multiqc did not run; FastQC differs from the meta.yml key only in case
+        def toolsUsed = ['FastQC', 'samtools']
+
+        when:
+        def result = NfcoreCitationUtils.filterCitationsByTools(allCitations, toolsUsed)
+
+        then:
+        result.keySet() == ['fastqc', 'samtools'] as Set
+        !result.containsKey('multiqc')
+    }
+
+    def "citationsOnTheFly intersects versions topic with meta.yml citations"() {
+        given:
+        def fastqcMeta = new File(tempDir.toFile(), 'fastqc_meta.yml')
+        fastqcMeta << '''
+        name: fastqc
+        tools:
+          - fastqc:
+              doi: "10.1093/bioinformatics/btv033"
+              homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+        '''.stripIndent()
+        def samtoolsMeta = new File(tempDir.toFile(), 'samtools_meta.yml')
+        samtoolsMeta << '''
+        name: samtools
+        tools:
+          - samtools:
+              doi: "10.1093/bioinformatics/btp352"
+        '''.stripIndent()
+
+        // Only FASTQC actually ran in this pipeline execution
+        def topicVersions = [
+            ['NFCORE_TEST:FASTQC', 'fastqc', '0.12.1']
+        ]
+        def metaPaths = [fastqcMeta.absolutePath, samtoolsMeta.absolutePath]
+
+        when:
+        def result = NfcoreCitationUtils.citationsOnTheFly(topicVersions, metaPaths)
+
+        then:
+        result.containsKey('fastqc')
+        !result.containsKey('samtools') // present in meta.yml but did not run
+        result.fastqc.citation.contains('fastqc')
+
+        and: 'the descriptive alias delegates to the same behaviour'
+        NfcoreCitationUtils.citationsForToolsUsed(topicVersions, metaPaths) == result
+    }
+
     // Helper method to create mock meta.yml files for testing
     private String createMockMetaYml(String toolName) {
         def tempFile = File.createTempFile("${toolName}_meta", '.yml')

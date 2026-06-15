@@ -445,4 +445,112 @@ class NfcoreCitationUtils {
         def processedCitations = processCitationsFromTopic(allCitations)
         return toolBibliographyText(processedCitations)
     }
+
+    // --- Versions-topic-driven citations (automatic, runtime-accurate) ---
+
+    /**
+     * Extract the unique set of tool names that actually executed, from
+     * collected 'versions' topic data.
+     *
+     * Every nf-core module already emits [process, tool, version] tuples to the
+     * 'versions' topic when it runs, so this yields the tools used in a run with
+     * no per-module changes — the basis for citations that match what ran.
+     *
+     * Robust to the extra nesting that channel.collect() can introduce.
+     *
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @return Sorted, de-duplicated list of tool names (never null)
+     */
+    static List<String> toolsFromVersionsTopic(List topicVersions) {
+        if (!topicVersions) return []
+        def tools = [] as LinkedHashSet
+        flattenVersionTuples(topicVersions).each { tuple ->
+            if (tuple.size() >= 2 && tuple[1] != null) {
+                def tool = tuple[1].toString().trim()
+                if (tool) tools << tool
+            }
+        }
+        return tools.toList().sort()
+    }
+
+    /**
+     * Reduce a citations map to only the tools that actually ran.
+     *
+     * Matching is exact first, then case-insensitive, so versions-topic names
+     * (e.g. "FastQC") line up with meta.yml tool keys (e.g. "fastqc"). Tools that
+     * ran but have no citation entry are logged so authors can add them.
+     *
+     * @param allCitations Citations keyed by tool name (from meta.yml parsing)
+     * @param toolsUsed Tool names that executed (e.g. from {@link #toolsFromVersionsTopic})
+     * @return Citations map containing only entries for tools that ran
+     */
+    static Map filterCitationsByTools(Map allCitations, List<String> toolsUsed) {
+        if (!allCitations || !toolsUsed) return [:]
+
+        def lowerIndex = [:]
+        allCitations.each { name, _entry -> lowerIndex[name.toString().toLowerCase()] = name }
+
+        def selected = [:]
+        toolsUsed.each { tool ->
+            def key = allCitations.containsKey(tool) ? tool : lowerIndex[tool.toString().toLowerCase()]
+            if (key != null) {
+                selected[key] = allCitations[key]
+            } else {
+                log.warn("No citation metadata found for tool '${tool}' — add it to the module's meta.yml 'tools:' section")
+            }
+        }
+        return selected
+    }
+
+    /**
+     * Citations on the fly: build citations for ONLY the tools that ran,
+     * resolved from module meta.yml.
+     *
+     * Intersects the 'versions' topic (what executed) with citations parsed from
+     * the supplied meta.yml files (the citation source). The result plugs directly
+     * into {@link #toolCitationText}, {@link #toolBibliographyText} and
+     * {@link #methodsDescriptionText}.
+     *
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @param metaFilePaths Paths to module meta.yml files
+     * @return Citations map (tool -> [citation, bibliography]) for tools that ran
+     */
+    static Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths) {
+        def toolsUsed = toolsFromVersionsTopic(topicVersions)
+        def allCitations = processCitationsFromFile(metaFilePaths)
+        return filterCitationsByTools(allCitations, toolsUsed)
+    }
+
+    /**
+     * Descriptive alias for {@link #citationsOnTheFly}.
+     *
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @param metaFilePaths Paths to module meta.yml files
+     * @return Citations map (tool -> [citation, bibliography]) for tools that ran
+     */
+    static Map citationsForToolsUsed(List topicVersions, List<String> metaFilePaths) {
+        return citationsOnTheFly(topicVersions, metaFilePaths)
+    }
+
+    /**
+     * Flatten 'versions' topic data into a flat list of [process, tool, version]
+     * tuples. A tuple is identified by a non-list first element (the process
+     * name); a list-of-lists is treated as a container and recursed into.
+     *
+     * @param data Raw versions-topic data, possibly nested
+     * @return Flat list of version tuples
+     */
+    private static List<List> flattenVersionTuples(List data) {
+        def out = []
+        data.each { item ->
+            if (item instanceof List) {
+                if (!item.isEmpty() && item[0] instanceof List) {
+                    out.addAll(flattenVersionTuples(item))
+                } else if (item.size() >= 2) {
+                    out << item
+                }
+            }
+        }
+        return out
+    }
 }
