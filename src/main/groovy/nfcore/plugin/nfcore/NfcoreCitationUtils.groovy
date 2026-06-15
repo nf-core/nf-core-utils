@@ -456,7 +456,8 @@ class NfcoreCitationUtils {
      * 'versions' topic when it runs, so this yields the tools used in a run with
      * no per-module changes — the basis for citations that match what ran.
      *
-     * Robust to the extra nesting that channel.collect() can introduce.
+     * Expects each entry to be a [process, tool, version] tuple, i.e. the topic
+     * collected with {@code .collect(flat: false)}.
      *
      * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
      * @return Sorted, de-duplicated list of tool names (never null)
@@ -464,9 +465,9 @@ class NfcoreCitationUtils {
     static List<String> toolsFromVersionsTopic(List topicVersions) {
         if (!topicVersions) return []
         def tools = [] as LinkedHashSet
-        flattenVersionTuples(topicVersions).each { tuple ->
-            if (tuple.size() >= 2 && tuple[1] != null) {
-                def tool = tuple[1].toString().trim()
+        topicVersions.each { entry ->
+            if (entry instanceof List && entry.size() >= 2 && entry[1] != null) {
+                def tool = entry[1].toString().trim()
                 if (tool) tools << tool
             }
         }
@@ -530,27 +531,5 @@ class NfcoreCitationUtils {
      */
     static Map citationsForToolsUsed(List topicVersions, List<String> metaFilePaths) {
         return citationsOnTheFly(topicVersions, metaFilePaths)
-    }
-
-    /**
-     * Flatten 'versions' topic data into a flat list of [process, tool, version]
-     * tuples. A tuple is identified by a non-list first element (the process
-     * name); a list-of-lists is treated as a container and recursed into.
-     *
-     * @param data Raw versions-topic data, possibly nested
-     * @return Flat list of version tuples
-     */
-    private static List<List> flattenVersionTuples(List data) {
-        def out = []
-        data.each { item ->
-            if (item instanceof List) {
-                if (!item.isEmpty() && item[0] instanceof List) {
-                    out.addAll(flattenVersionTuples(item))
-                } else if (item.size() >= 2) {
-                    out << item
-                }
-            }
-        }
-        return out
     }
 }

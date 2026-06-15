@@ -813,26 +813,6 @@ ${tool_bibliography}
         result == ['fastqc', 'multiqc']
     }
 
-    def "toolsFromVersionsTopic handles nested collected structures"() {
-        given:
-        // channel.topic('versions').collect() can hand back nested tuple lists
-        def nested = [
-            [
-                ['PROC_A', 'samtools', '1.21'],
-                ['PROC_B', 'bwa', '0.7.18']
-            ],
-            [
-                ['PROC_C', 'multiqc', '1.21']
-            ]
-        ]
-
-        when:
-        def result = NfcoreCitationUtils.toolsFromVersionsTopic(nested)
-
-        then:
-        result == ['bwa', 'multiqc', 'samtools']
-    }
-
     def "toolsFromVersionsTopic handles empty and null input"() {
         expect:
         NfcoreCitationUtils.toolsFromVersionsTopic([]) == []
