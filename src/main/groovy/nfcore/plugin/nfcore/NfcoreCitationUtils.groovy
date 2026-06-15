@@ -465,11 +465,16 @@ class NfcoreCitationUtils {
     static List<String> toolsFromVersionsTopic(List topicVersions) {
         if (!topicVersions) return []
         def tools = [] as LinkedHashSet
+        def sawTuple = false
         topicVersions.each { entry ->
-            if (entry instanceof List && entry.size() >= 2 && entry[1] != null) {
-                def tool = entry[1].toString().trim()
+            if (entry instanceof List && entry.size() >= 2) {
+                sawTuple = true
+                def tool = entry[1]?.toString()?.trim()
                 if (tool) tools << tool
             }
+        }
+        if (!sawTuple) {
+            log.warn("toolsFromVersionsTopic received ${topicVersions.size()} item(s) but no [process, tool, version] tuples — collect the versions topic with .collect(flat: false) to preserve tuples")
         }
         return tools.toList().sort()
     }

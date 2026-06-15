@@ -44,7 +44,7 @@ Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths)
 
 **Parameters:**
 
-- `topicVersions` (List): Collected `versions` topic data — `[process, tool, version]` tuples. Collect with `.collect(flat: false)` so the tuples are preserved (plain `.collect()` flattens them).
+- `topicVersions` (List): Collected `versions` topic data — `[process, tool, version]` tuples. Collect with `.collect(flat: false)` so the tuples are preserved (plain `.collect()` flattens them, and the function logs a warning if it receives flattened data).
 - `metaFilePaths` (List<String>): Paths to module `meta.yml` files to resolve citation metadata from.
 
 **Returns:**

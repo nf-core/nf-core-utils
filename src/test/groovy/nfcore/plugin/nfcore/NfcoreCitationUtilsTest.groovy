@@ -1,8 +1,12 @@
 package nfcore.plugin.nfcore
 
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import nextflow.Session
 import nextflow.config.Manifest
 import nfcore.plugin.nfcore.NfcoreCitationUtils
+import org.slf4j.LoggerFactory
 import spock.lang.PendingFeature
 import spock.lang.Specification
 import spock.lang.TempDir
@@ -829,6 +833,36 @@ ${tool_bibliography}
         NfcoreCitationUtils.toolsFromVersionsTopic(flattened) == []
     }
 
+    def "toolsFromVersionsTopic warns when given a flattened (non-tuple) versions list"() {
+        given:
+        def appender = captureLogsFor(NfcoreCitationUtils)
+        def flattened = ['NFCORE_FASTQC:FASTQC', 'fastqc', '0.12.1']
+
+        when:
+        def result = NfcoreCitationUtils.toolsFromVersionsTopic(flattened)
+
+        then:
+        result == []
+        logMessages(appender).any { it.contains('flat: false') }
+
+        cleanup:
+        detachAppender(appender)
+    }
+
+    def "toolsFromVersionsTopic does not warn for properly collected tuples"() {
+        given:
+        def appender = captureLogsFor(NfcoreCitationUtils)
+
+        when:
+        NfcoreCitationUtils.toolsFromVersionsTopic([['PROC', 'fastqc', '0.12.1']])
+
+        then:
+        logMessages(appender).every { !it.contains('flat: false') }
+
+        cleanup:
+        detachAppender(appender)
+    }
+
     def "filterCitationsByTools keeps only tools that ran, matching case-insensitively"() {
         given:
         def allCitations = [
@@ -897,6 +931,24 @@ ${tool_bibliography}
 
         and: 'the descriptive alias delegates to the same behaviour'
         NfcoreCitationUtils.citationsForToolsUsed(topicVersions, metaPaths) == result
+    }
+
+    // --- log capture helpers ---
+
+    private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {
+        def appender = new ListAppender<ILoggingEvent>()
+        def logger = (Logger) LoggerFactory.getLogger(clazz)
+        appender.start()
+        logger.addAppender(appender)
+        return appender
+    }
+
+    private List<String> logMessages(ListAppender<ILoggingEvent> appender) {
+        appender.list.collect { it.formattedMessage }
+    }
+
+    private void detachAppender(ListAppender<ILoggingEvent> appender) {
+        ((Logger) LoggerFactory.getLogger(NfcoreCitationUtils)).detachAppender(appender)
     }
 
     // Helper method to create mock meta.yml files for testing
