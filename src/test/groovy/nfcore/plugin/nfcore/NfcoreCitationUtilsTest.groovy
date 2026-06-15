@@ -928,9 +928,6 @@ ${tool_bibliography}
         result.containsKey('fastqc')
         !result.containsKey('samtools') // present in meta.yml but did not run
         result.fastqc.citation.contains('fastqc')
-
-        and: 'the descriptive alias delegates to the same behaviour'
-        NfcoreCitationUtils.citationsForToolsUsed(topicVersions, metaPaths) == result
     }
 
     // --- log capture helpers ---

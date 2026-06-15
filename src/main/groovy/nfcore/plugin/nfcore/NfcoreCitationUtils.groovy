@@ -464,19 +464,12 @@ class NfcoreCitationUtils {
      */
     static List<String> toolsFromVersionsTopic(List topicVersions) {
         if (!topicVersions) return []
-        def tools = [] as LinkedHashSet
-        def sawTuple = false
-        topicVersions.each { entry ->
-            if (entry instanceof List && entry.size() >= 2) {
-                sawTuple = true
-                def tool = entry[1]?.toString()?.trim()
-                if (tool) tools << tool
-            }
-        }
-        if (!sawTuple) {
+        def tuples = topicVersions.findAll { it instanceof List && it.size() >= 2 }
+        if (tuples.isEmpty()) {
             log.warn("toolsFromVersionsTopic received ${topicVersions.size()} item(s) but no [process, tool, version] tuples — collect the versions topic with .collect(flat: false) to preserve tuples")
+            return []
         }
-        return tools.toList().sort()
+        return tuples.collect { it[1]?.toString()?.trim() }.findAll { it }.unique().sort()
     }
 
     /**
@@ -493,12 +486,11 @@ class NfcoreCitationUtils {
     static Map filterCitationsByTools(Map allCitations, List<String> toolsUsed) {
         if (!allCitations || !toolsUsed) return [:]
 
-        def lowerIndex = [:]
-        allCitations.each { name, _entry -> lowerIndex[name.toString().toLowerCase()] = name }
+        def byLowerName = allCitations.collectEntries { name, _entry -> [name.toString().toLowerCase(), name] }
 
         def selected = [:]
         toolsUsed.each { tool ->
-            def key = allCitations.containsKey(tool) ? tool : lowerIndex[tool.toString().toLowerCase()]
+            def key = allCitations.containsKey(tool) ? tool : byLowerName[tool.toString().toLowerCase()]
             if (key != null) {
                 selected[key] = allCitations[key]
             } else {
@@ -525,16 +517,5 @@ class NfcoreCitationUtils {
         def toolsUsed = toolsFromVersionsTopic(topicVersions)
         def allCitations = processCitationsFromFile(metaFilePaths)
         return filterCitationsByTools(allCitations, toolsUsed)
-    }
-
-    /**
-     * Descriptive alias for {@link #citationsOnTheFly}.
-     *
-     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
-     * @param metaFilePaths Paths to module meta.yml files
-     * @return Citations map (tool -> [citation, bibliography]) for tools that ran
-     */
-    static Map citationsForToolsUsed(List topicVersions, List<String> metaFilePaths) {
-        return citationsOnTheFly(topicVersions, metaFilePaths)
     }
 }
