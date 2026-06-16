@@ -930,6 +930,66 @@ ${tool_bibliography}
         result.fastqc.citation.contains('fastqc')
     }
 
+    // --- Publication-style short citations (version + short author) ---
+
+    def "toolVersionsFromTopic maps tool names to versions"() {
+        given:
+        def topicVersions = [
+            ['NFCORE:FASTQC', 'fastqc', '0.12.1'],
+            ['NFCORE:MULTIQC', 'multiqc', '1.21'],
+            ['NFCORE:FASTQC', 'fastqc', '0.12.1'] // duplicate
+        ]
+
+        expect:
+        NfcoreCitationUtils.toolVersionsFromTopic(topicVersions) == ['fastqc': '0.12.1', 'multiqc': '1.21']
+    }
+
+    def "formatShortCitation includes version and a single short author with year"() {
+        expect:
+        NfcoreCitationUtils.formatShortCitation('fastqc', [author: 'Andrews S', year: 2010], '0.12.1') == 'fastqc (0.12.1, Andrews 2010)'
+    }
+
+    def "formatShortCitation uses 'et al.' for multiple authors"() {
+        expect:
+        NfcoreCitationUtils.formatShortCitation('samtools', [author: 'Danecek P, Bonfield JK, et al.', year: 2021], '1.21') == 'samtools (1.21, Danecek et al. 2021)'
+    }
+
+    def "formatShortCitation falls back to doi then url when no author"() {
+        expect:
+        NfcoreCitationUtils.formatShortCitation('multiqc', [doi: '10.1093/bioinformatics/btw354'], '1.21') == 'multiqc (1.21, doi: 10.1093/bioinformatics/btw354)'
+        NfcoreCitationUtils.formatShortCitation('seqtk', [homepage: 'https://github.com/lh3/seqtk'], '1.4') == 'seqtk (1.4, https://github.com/lh3/seqtk)'
+    }
+
+    def "formatShortCitation omits the version segment when no version is known"() {
+        expect:
+        NfcoreCitationUtils.formatShortCitation('fastqc', [author: 'Andrews S', year: 2010], null) == 'fastqc (Andrews 2010)'
+    }
+
+    def "citationsOnTheFly produces publication-style short citations with version"() {
+        given:
+        def fastqcMeta = new File(tempDir.toFile(), 'fastqc_meta.yml')
+        fastqcMeta << '''
+        name: fastqc
+        tools:
+          - fastqc:
+              author: "Andrews S"
+              year: 2010
+              doi: "10.1093/bioinformatics/btv033"
+              homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+        '''.stripIndent()
+        def topicVersions = [['NFCORE:FASTQC', 'fastqc', '0.12.1']]
+
+        when:
+        def result = NfcoreCitationUtils.citationsOnTheFly(topicVersions, [fastqcMeta.absolutePath])
+
+        then: 'short citation is copy-paste ready: tool (version, Author year)'
+        result.fastqc.citation == 'fastqc (0.12.1, Andrews 2010)'
+
+        and: 'the full bibliography is unchanged'
+        result.fastqc.bibliography.contains('<li>')
+        result.fastqc.bibliography.contains('Andrews S')
+    }
+
     // --- log capture helpers ---
 
     private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {

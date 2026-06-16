@@ -36,6 +36,17 @@ Two functions cover the flow:
 **Description:**
 Builds a citations map for **only the tools that ran**, by intersecting the `versions` topic (what executed) with citations parsed from the supplied `meta.yml` files (the citation source). The returned map plugs directly into `toolCitationText()`, `toolBibliographyText()`, and `methodsDescriptionText()`.
 
+Each **short citation** is formatted for direct copy-paste into a methods paragraph — `tool (version, Author et al. year)` — with the version taken from the `versions` topic and the author/year from `meta.yml`. The reference segment degrades gracefully: short author + year → `doi: …` → homepage url → description. So richer `meta.yml` files produce richer citations:
+
+| `meta.yml` fields present   | Short citation                                       |
+| --------------------------- | ---------------------------------------------------- |
+| `author`, `year`            | `fastqc (0.12.1, Andrews 2010)`                      |
+| `author` (multiple), `year` | `samtools (1.21, Danecek et al. 2021)`               |
+| `doi` only                  | `multiqc (1.21, doi: 10.1093/bioinformatics/btw354)` |
+| `homepage` only             | `seqtk (1.4, https://github.com/lh3/seqtk)`          |
+
+The full `bibliography` entry (author, year, title, journal, doi, url) is unchanged.
+
 **Function Signature:**
 
 ```nextflow
