@@ -11,4 +11,6 @@ tools:
       documentation: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/"
       tool_dev_url: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
       doi: "10.1093/bioinformatics/btw354"
+      author: "Andrews S"
+      year: 2010
       licence: "GPL v3"
