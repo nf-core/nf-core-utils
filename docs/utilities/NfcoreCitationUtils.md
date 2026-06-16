@@ -106,7 +106,7 @@ def citation_text = toolCitationText(citations)
 #### `toolsFromVersionsTopic(List topicVersions)`
 
 **Description:**
-Extracts the unique, sorted set of tool names that actually executed from collected `versions` topic data. Useful on its own (e.g. for conditional logic) or as the selection input to `filterCitationsByTools()`.
+Extracts the unique, sorted set of tool names that actually executed from collected `versions` topic data. Useful on its own — e.g. for conditional logic like `if ('star' in tools)`. (`citationsOnTheFly()` uses it internally to select which citations to emit.)
 
 **Function Signature:**
 

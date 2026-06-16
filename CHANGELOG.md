@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `citationsOnTheFly()` and `toolsFromVersionsTopic()` to build tool citations from the `versions` topic (the tools that actually ran), resolved from module `meta.yml` — no per-module changes or hand-maintained tool list ([#43](https://github.com/nf-core/nf-core-utils/pull/43)).
 - Added a `PipelineExecutionContext` seam and focused validation, version, and reporting adapters to keep Nextflow extension functions thin.
 - Added `SoftwareVersionReport` as the canonical implementation for merging heterogeneous software-version inputs.
 - Added `ReferenceSelection` for genome/reference lookup and `igenomes_base` substitution.
