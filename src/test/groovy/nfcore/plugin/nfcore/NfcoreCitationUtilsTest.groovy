@@ -990,6 +990,39 @@ ${tool_bibliography}
         result.fastqc.bibliography.contains('Andrews S')
     }
 
+    def "citationsOnTheFly can manually add a tool not in the versions topic"() {
+        given:
+        // multiqcsav is a MultiQC plugin: it has a meta.yml but never emits a version
+        def multiqcsavMeta = new File(tempDir.toFile(), 'multiqcsav_meta.yml')
+        multiqcsavMeta << '''
+        name: multiqcsav
+        tools:
+          - multiqcsav:
+              description: "MultiQC plugin for Illumina Sequencing Analysis Viewer"
+              homepage: "https://github.com/MultiQC/MultiQC_SAV/"
+        '''.stripIndent()
+        def fastqcMeta = new File(tempDir.toFile(), 'fastqc_meta.yml')
+        fastqcMeta << '''
+        name: fastqc
+        tools:
+          - fastqc:
+              doi: "10.1093/bioinformatics/btv033"
+        '''.stripIndent()
+        def topicVersions = [['NFCORE:FASTQC', 'fastqc', '0.12.1']]
+
+        when:
+        def result = NfcoreCitationUtils.citationsOnTheFly(
+            topicVersions,
+            [fastqcMeta.absolutePath, multiqcsavMeta.absolutePath],
+            ['multiqcsav']
+        )
+
+        then: 'the manually-added tool is cited (no version segment, resolved from meta.yml)'
+        result.containsKey('fastqc')
+        result.containsKey('multiqcsav')
+        result.multiqcsav.citation == 'multiqcsav (https://github.com/MultiQC/MultiQC_SAV/)'
+    }
+
     // --- log capture helpers ---
 
     private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {

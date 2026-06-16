@@ -553,12 +553,17 @@ class NfcoreCitationUtils {
      * {@link #toolCitationText}, {@link #toolBibliographyText} and
      * {@link #methodsDescriptionText}.
      *
+     * {@code extraTools} lets you add tools that never emit to the versions topic
+     * (e.g. a MultiQC plugin like {@code multiqcsav}); they are resolved from
+     * meta.yml just like the rest, with no version segment.
+     *
      * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
      * @param metaFilePaths Paths to module meta.yml files
+     * @param extraTools Extra tool names to cite even though they did not emit a version
      * @return Citations map (tool -> [citation, bibliography]) for tools that ran
      */
-    static Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths) {
-        def toolsUsed = toolsFromVersionsTopic(topicVersions)
+    static Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<String> extraTools = []) {
+        def toolsUsed = (toolsFromVersionsTopic(topicVersions) + (extraTools ?: [])).unique().sort()
         def versionByLower = toolVersionsFromTopic(topicVersions)
             .collectEntries { tool, ver -> [tool.toString().toLowerCase(), ver] }
         def toolInfo = collectToolInfo(metaFilePaths)

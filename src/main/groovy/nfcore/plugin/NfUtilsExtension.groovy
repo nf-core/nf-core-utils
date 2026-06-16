@@ -573,13 +573,14 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * {@link #toolCitationText}, {@link #toolBibliographyText} and
      * {@link #methodsDescriptionText}.
      *
-     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect()
+     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect(flat: false)
      * @param metaFilePaths Paths to module meta.yml files
+     * @param extraTools Extra tool names to cite even though they did not emit a version (e.g. multiqcsav)
      * @return Citations map (tool -> [citation, bibliography]) for tools that ran
      */
     @Function
-    Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths) {
-        return NfcoreCitationUtils.citationsOnTheFly(topicVersions, metaFilePaths)
+    Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<String> extraTools = []) {
+        return NfcoreCitationUtils.citationsOnTheFly(topicVersions, metaFilePaths, extraTools)
     }
 
     /**

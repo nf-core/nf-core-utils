@@ -57,6 +57,7 @@ Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths)
 
 - `topicVersions` (List): Collected `versions` topic data — `[process, tool, version]` tuples. Collect with `.collect(flat: false)` so the tuples are preserved (plain `.collect()` flattens them, and the function logs a warning if it receives flattened data).
 - `metaFilePaths` (List<String>): Paths to module `meta.yml` files to resolve citation metadata from.
+- `extraTools` (List<String>, optional): Tool names to cite even though they never emit a version — e.g. a MultiQC plugin like `multiqcsav`. They're resolved from `meta.yml` like everything else (with no version segment), so you can still add a tool by hand: `citationsOnTheFly(versions, meta_yml_paths, ['multiqcsav'])`.
 
 **Returns:**
 
