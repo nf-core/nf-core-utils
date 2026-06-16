@@ -445,4 +445,180 @@ class NfcoreCitationUtils {
         def processedCitations = processCitationsFromTopic(allCitations)
         return toolBibliographyText(processedCitations)
     }
+
+    // --- Versions-topic-driven citations (automatic, runtime-accurate) ---
+
+    /**
+     * Extract the unique set of tool names that actually executed, from
+     * collected 'versions' topic data.
+     *
+     * Every nf-core module already emits [process, tool, version] tuples to the
+     * 'versions' topic when it runs, so this yields the tools used in a run with
+     * no per-module changes — the basis for citations that match what ran.
+     *
+     * Expects each entry to be a [process, tool, version] tuple, i.e. the topic
+     * collected with {@code .collect(flat: false)}.
+     *
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @return Sorted, de-duplicated list of tool names (never null)
+     */
+    static List<String> toolsFromVersionsTopic(List topicVersions) {
+        if (!topicVersions) return []
+        def tuples = topicVersions.findAll { it instanceof List && it.size() >= 2 }
+        if (tuples.isEmpty()) {
+            log.warn("toolsFromVersionsTopic received ${topicVersions.size()} item(s) but no [process, tool, version] tuples — collect the versions topic with .collect(flat: false) to preserve tuples")
+            return []
+        }
+        return tuples.collect { it[1]?.toString()?.trim() }.findAll { it }.unique().sort()
+    }
+
+    /**
+     * Map each tool that ran to its version, from collected 'versions' topic data.
+     *
+     * Keeps the first version seen per tool (tool names preserved as emitted).
+     *
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @return Map of tool name -> version (never null)
+     */
+    static Map toolVersionsFromTopic(List topicVersions) {
+        def versions = [:]
+        topicVersions?.each { entry ->
+            if (entry instanceof List && entry.size() >= 3 && entry[1] != null) {
+                def tool = entry[1].toString().trim()
+                def ver = entry[2]?.toString()?.trim()
+                if (tool && ver && !versions.containsKey(tool)) versions[tool] = ver
+            }
+        }
+        return versions
+    }
+
+    /**
+     * Reduce a name-keyed map to only the tools that actually ran.
+     *
+     * Matching is exact first, then case-insensitive, so versions-topic names
+     * (e.g. "FastQC") line up with meta.yml tool keys (e.g. "fastqc"). Tools that
+     * ran but have no entry are logged so authors can add them. Value-agnostic:
+     * works on formatted-citation maps or raw meta.yml info maps alike.
+     *
+     * @param allCitations Map keyed by tool name (formatted citations or raw info)
+     * @param toolsUsed Tool names that executed (e.g. from {@link #toolsFromVersionsTopic})
+     * @return Subset of {@code allCitations} for the tools that ran
+     */
+    static Map filterCitationsByTools(Map allCitations, List<String> toolsUsed) {
+        if (!allCitations || !toolsUsed) return [:]
+
+        def byLowerName = allCitations.collectEntries { name, _entry -> [name.toString().toLowerCase(), name] }
+
+        def selected = [:]
+        toolsUsed.each { tool ->
+            def key = allCitations.containsKey(tool) ? tool : byLowerName[tool.toString().toLowerCase()]
+            if (key != null) {
+                selected[key] = allCitations[key]
+            } else {
+                log.warn("No citation metadata found for tool '${tool}' — add it to the module's meta.yml 'tools:' section")
+            }
+        }
+        return selected
+    }
+
+    /**
+     * Build a publication-style short citation for a single tool:
+     * {@code tool (version, Author et al. year)}.
+     *
+     * The reference segment is the short author + year when meta.yml provides
+     * them, otherwise it falls back to {@code doi: ...}, then the homepage url,
+     * then the description. The version segment is omitted when unknown.
+     *
+     * @param tool Tool name (display)
+     * @param info Raw meta.yml tool info (author, year, doi, homepage, description)
+     * @param version Tool version (optional)
+     * @return Short citation string suitable for a methods paragraph
+     */
+    static String formatShortCitation(String tool, Map info, String version = null) {
+        def parts = []
+        if (version) parts << version
+        def ref = shortReference(info ?: [:])
+        if (ref) parts << ref
+        return parts ? "${tool} (${parts.join(', ')})" : tool.toString()
+    }
+
+    /**
+     * Citations on the fly: build citations for ONLY the tools that ran,
+     * resolved from module meta.yml.
+     *
+     * Intersects the 'versions' topic (what executed) with citations parsed from
+     * the supplied meta.yml files (the citation source). Each short citation is
+     * formatted as {@code tool (version, Author et al. year)} — version from the
+     * topic, author/year/doi/url from meta.yml. The result plugs directly into
+     * {@link #toolCitationText}, {@link #toolBibliographyText} and
+     * {@link #methodsDescriptionText}.
+     *
+     * {@code extraTools} lets you add tools that never emit to the versions topic
+     * (e.g. a MultiQC plugin like {@code multiqcsav}); they are resolved from
+     * meta.yml just like the rest, with no version segment.
+     *
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @param metaFilePaths Paths to module meta.yml files
+     * @param extraTools Extra tool names to cite even though they did not emit a version
+     * @return Citations map (tool -> [citation, bibliography]) for tools that ran
+     */
+    static Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<String> extraTools = []) {
+        def toolsUsed = (toolsFromVersionsTopic(topicVersions) + (extraTools ?: [])).unique().sort()
+        def versionByLower = toolVersionsFromTopic(topicVersions)
+            .collectEntries { tool, ver -> [tool.toString().toLowerCase(), ver] }
+        def toolInfo = collectToolInfo(metaFilePaths)
+        def selected = filterCitationsByTools(toolInfo, toolsUsed)
+
+        return selected.collectEntries { tool, info ->
+            def version = versionByLower[tool.toString().toLowerCase()]
+            [(tool): [
+                citation    : formatShortCitation(tool.toString(), info as Map, version),
+                bibliography: formatBibliographyFromData(tool.toString(), info as Map)
+            ]]
+        }
+    }
+
+    /**
+     * Collect raw meta.yml tool info keyed by tool name, reusing {@link #getCitation}
+     * for parsing (handles missing/malformed files gracefully).
+     */
+    private static Map collectToolInfo(List<String> metaFilePaths) {
+        def info = [:]
+        metaFilePaths?.each { path ->
+            getCitation(path).each { tuple ->
+                if (tuple.size() >= 3 && tuple[2] instanceof Map && !info.containsKey(tuple[1])) {
+                    info[tuple[1]] = tuple[2]
+                }
+            }
+        }
+        return info
+    }
+
+    /**
+     * Short reference for the inline citation: "Surname et al. year" when an
+     * author is known, else "doi: ...", else the homepage url, else description.
+     */
+    private static String shortReference(Map info) {
+        def author = info.author?.toString()?.trim()
+        if (author) {
+            def year = info.year ? info.year.toString().trim() : ''
+            def sa = shortAuthor(author)
+            return year ? "${sa} ${year}" : sa
+        }
+        if (info.doi) return "doi: ${info.doi}"
+        if (info.homepage) return info.homepage.toString()
+        return info.description ? info.description.toString() : ''
+    }
+
+    /**
+     * Reduce an author string to "Surname" (single author) or "Surname et al."
+     * (multiple). Heuristic: first author is the text before the first comma;
+     * its surname is the first whitespace-delimited token.
+     */
+    private static String shortAuthor(String author) {
+        def first = author.split(',')[0].trim()
+        def surname = first.split(/\s+/)[0]
+        def multiple = author.contains(',') || author.toLowerCase().contains('et al')
+        return multiple ? "${surname} et al." : surname
+    }
 }

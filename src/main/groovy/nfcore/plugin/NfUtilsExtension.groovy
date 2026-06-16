@@ -553,6 +553,37 @@ class NfUtilsExtension extends PluginExtensionPoint {
     }
 
     /**
+     * Extract the unique set of tool names that actually ran, from collected
+     * 'versions' topic data ([process, tool, version] tuples).
+     *
+     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect()
+     * @return Sorted, de-duplicated list of tool names
+     */
+    @Function
+    List<String> toolsFromVersionsTopic(List topicVersions) {
+        return NfcoreCitationUtils.toolsFromVersionsTopic(topicVersions)
+    }
+
+    /**
+     * Citations on the fly: build citations for only the tools that ran,
+     * resolved from module meta.yml.
+     *
+     * Intersects the 'versions' topic (what executed) with citations parsed from
+     * the supplied meta.yml files. The returned map feeds directly into
+     * {@link #toolCitationText}, {@link #toolBibliographyText} and
+     * {@link #methodsDescriptionText}.
+     *
+     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect(flat: false)
+     * @param metaFilePaths Paths to module meta.yml files
+     * @param extraTools Extra tool names to cite even though they did not emit a version (e.g. multiqcsav)
+     * @return Citations map (tool -> [citation, bibliography]) for tools that ran
+     */
+    @Function
+    Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<String> extraTools = []) {
+        return NfcoreCitationUtils.citationsOnTheFly(topicVersions, metaFilePaths, extraTools)
+    }
+
+    /**
      * Generate workflow summary for MultiQC
      * @param summaryParams Map of parameter groups and their parameters
      * @return YAML formatted string for MultiQC

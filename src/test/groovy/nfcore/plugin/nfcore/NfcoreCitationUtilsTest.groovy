@@ -1,8 +1,12 @@
 package nfcore.plugin.nfcore
 
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import nextflow.Session
 import nextflow.config.Manifest
 import nfcore.plugin.nfcore.NfcoreCitationUtils
+import org.slf4j.LoggerFactory
 import spock.lang.PendingFeature
 import spock.lang.Specification
 import spock.lang.TempDir
@@ -794,6 +798,247 @@ ${tool_bibliography}
 
         bibliography.contains('<li>')
         bibliography.split('<li>').size() > 3  // Should have multiple bibliography entries
+    }
+
+    // --- Versions-topic-driven citations (automatic, runtime-accurate) ---
+
+    def "toolsFromVersionsTopic extracts unique sorted tool names from versions tuples"() {
+        given:
+        def topicVersions = [
+            ['NFCORE_FASTQC:FASTQC', 'fastqc', '0.12.1'],
+            ['NFCORE_PIPELINE:MULTIQC', 'multiqc', '1.21'],
+            ['NFCORE_FASTQC:FASTQC', 'fastqc', '0.12.1'] // duplicate process/tool
+        ]
+
+        when:
+        def result = NfcoreCitationUtils.toolsFromVersionsTopic(topicVersions)
+
+        then:
+        result == ['fastqc', 'multiqc']
+    }
+
+    def "toolsFromVersionsTopic handles empty and null input"() {
+        expect:
+        NfcoreCitationUtils.toolsFromVersionsTopic([]) == []
+        NfcoreCitationUtils.toolsFromVersionsTopic(null) == []
+    }
+
+    def "toolsFromVersionsTopic returns empty for a flattened versions list"() {
+        given:
+        // Plain channel.topic('versions').collect() flattens tuples into loose
+        // scalars; only .collect(flat: false) preserves [process, tool, version].
+        def flattened = ['NFCORE_FASTQC:FASTQC', 'fastqc', '0.12.1', 'NFCORE_PIPELINE:MULTIQC', 'multiqc', '1.21']
+
+        expect:
+        NfcoreCitationUtils.toolsFromVersionsTopic(flattened) == []
+    }
+
+    def "toolsFromVersionsTopic warns when given a flattened (non-tuple) versions list"() {
+        given:
+        def appender = captureLogsFor(NfcoreCitationUtils)
+        def flattened = ['NFCORE_FASTQC:FASTQC', 'fastqc', '0.12.1']
+
+        when:
+        def result = NfcoreCitationUtils.toolsFromVersionsTopic(flattened)
+
+        then:
+        result == []
+        logMessages(appender).any { it.contains('flat: false') }
+
+        cleanup:
+        detachAppender(appender)
+    }
+
+    def "toolsFromVersionsTopic does not warn for properly collected tuples"() {
+        given:
+        def appender = captureLogsFor(NfcoreCitationUtils)
+
+        when:
+        NfcoreCitationUtils.toolsFromVersionsTopic([['PROC', 'fastqc', '0.12.1']])
+
+        then:
+        logMessages(appender).every { !it.contains('flat: false') }
+
+        cleanup:
+        detachAppender(appender)
+    }
+
+    def "filterCitationsByTools keeps only tools that ran, matching case-insensitively"() {
+        given:
+        def allCitations = [
+            'fastqc'  : [citation: 'fastqc (...)', bibliography: '<li>FastQC</li>'],
+            'multiqc' : [citation: 'multiqc (...)', bibliography: '<li>MultiQC</li>'],
+            'samtools': [citation: 'samtools (...)', bibliography: '<li>SAMtools</li>']
+        ]
+        // multiqc did not run; FastQC differs from the meta.yml key only in case
+        def toolsUsed = ['FastQC', 'samtools']
+
+        when:
+        def result = NfcoreCitationUtils.filterCitationsByTools(allCitations, toolsUsed)
+
+        then:
+        result.keySet() == ['fastqc', 'samtools'] as Set
+        !result.containsKey('multiqc')
+    }
+
+    def "filterCitationsByTools omits tools that ran but have no citation entry"() {
+        given:
+        def allCitations = [
+            'fastqc': [citation: 'fastqc (...)', bibliography: '<li>FastQC</li>']
+        ]
+        // mysterytool ran but has no meta.yml citation entry
+        def toolsUsed = ['fastqc', 'mysterytool']
+
+        when:
+        def result = NfcoreCitationUtils.filterCitationsByTools(allCitations, toolsUsed)
+
+        then:
+        result.keySet() == ['fastqc'] as Set
+        !result.containsKey('mysterytool')
+    }
+
+    def "citationsOnTheFly intersects versions topic with meta.yml citations"() {
+        given:
+        def fastqcMeta = new File(tempDir.toFile(), 'fastqc_meta.yml')
+        fastqcMeta << '''
+        name: fastqc
+        tools:
+          - fastqc:
+              doi: "10.1093/bioinformatics/btv033"
+              homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+        '''.stripIndent()
+        def samtoolsMeta = new File(tempDir.toFile(), 'samtools_meta.yml')
+        samtoolsMeta << '''
+        name: samtools
+        tools:
+          - samtools:
+              doi: "10.1093/bioinformatics/btp352"
+        '''.stripIndent()
+
+        // Only FASTQC actually ran in this pipeline execution
+        def topicVersions = [
+            ['NFCORE_TEST:FASTQC', 'fastqc', '0.12.1']
+        ]
+        def metaPaths = [fastqcMeta.absolutePath, samtoolsMeta.absolutePath]
+
+        when:
+        def result = NfcoreCitationUtils.citationsOnTheFly(topicVersions, metaPaths)
+
+        then:
+        result.containsKey('fastqc')
+        !result.containsKey('samtools') // present in meta.yml but did not run
+        result.fastqc.citation.contains('fastqc')
+    }
+
+    // --- Publication-style short citations (version + short author) ---
+
+    def "toolVersionsFromTopic maps tool names to versions"() {
+        given:
+        def topicVersions = [
+            ['NFCORE:FASTQC', 'fastqc', '0.12.1'],
+            ['NFCORE:MULTIQC', 'multiqc', '1.21'],
+            ['NFCORE:FASTQC', 'fastqc', '0.12.1'] // duplicate
+        ]
+
+        expect:
+        NfcoreCitationUtils.toolVersionsFromTopic(topicVersions) == ['fastqc': '0.12.1', 'multiqc': '1.21']
+    }
+
+    def "formatShortCitation includes version and a single short author with year"() {
+        expect:
+        NfcoreCitationUtils.formatShortCitation('fastqc', [author: 'Andrews S', year: 2010], '0.12.1') == 'fastqc (0.12.1, Andrews 2010)'
+    }
+
+    def "formatShortCitation uses 'et al.' for multiple authors"() {
+        expect:
+        NfcoreCitationUtils.formatShortCitation('samtools', [author: 'Danecek P, Bonfield JK, et al.', year: 2021], '1.21') == 'samtools (1.21, Danecek et al. 2021)'
+    }
+
+    def "formatShortCitation falls back to doi then url when no author"() {
+        expect:
+        NfcoreCitationUtils.formatShortCitation('multiqc', [doi: '10.1093/bioinformatics/btw354'], '1.21') == 'multiqc (1.21, doi: 10.1093/bioinformatics/btw354)'
+        NfcoreCitationUtils.formatShortCitation('seqtk', [homepage: 'https://github.com/lh3/seqtk'], '1.4') == 'seqtk (1.4, https://github.com/lh3/seqtk)'
+    }
+
+    def "formatShortCitation omits the version segment when no version is known"() {
+        expect:
+        NfcoreCitationUtils.formatShortCitation('fastqc', [author: 'Andrews S', year: 2010], null) == 'fastqc (Andrews 2010)'
+    }
+
+    def "citationsOnTheFly produces publication-style short citations with version"() {
+        given:
+        def fastqcMeta = new File(tempDir.toFile(), 'fastqc_meta.yml')
+        fastqcMeta << '''
+        name: fastqc
+        tools:
+          - fastqc:
+              author: "Andrews S"
+              year: 2010
+              doi: "10.1093/bioinformatics/btv033"
+              homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
+        '''.stripIndent()
+        def topicVersions = [['NFCORE:FASTQC', 'fastqc', '0.12.1']]
+
+        when:
+        def result = NfcoreCitationUtils.citationsOnTheFly(topicVersions, [fastqcMeta.absolutePath])
+
+        then: 'short citation is copy-paste ready: tool (version, Author year)'
+        result.fastqc.citation == 'fastqc (0.12.1, Andrews 2010)'
+
+        and: 'the full bibliography is unchanged'
+        result.fastqc.bibliography.contains('<li>')
+        result.fastqc.bibliography.contains('Andrews S')
+    }
+
+    def "citationsOnTheFly can manually add a tool not in the versions topic"() {
+        given:
+        // multiqcsav is a MultiQC plugin: it has a meta.yml but never emits a version
+        def multiqcsavMeta = new File(tempDir.toFile(), 'multiqcsav_meta.yml')
+        multiqcsavMeta << '''
+        name: multiqcsav
+        tools:
+          - multiqcsav:
+              description: "MultiQC plugin for Illumina Sequencing Analysis Viewer"
+              homepage: "https://github.com/MultiQC/MultiQC_SAV/"
+        '''.stripIndent()
+        def fastqcMeta = new File(tempDir.toFile(), 'fastqc_meta.yml')
+        fastqcMeta << '''
+        name: fastqc
+        tools:
+          - fastqc:
+              doi: "10.1093/bioinformatics/btv033"
+        '''.stripIndent()
+        def topicVersions = [['NFCORE:FASTQC', 'fastqc', '0.12.1']]
+
+        when:
+        def result = NfcoreCitationUtils.citationsOnTheFly(
+            topicVersions,
+            [fastqcMeta.absolutePath, multiqcsavMeta.absolutePath],
+            ['multiqcsav']
+        )
+
+        then: 'the manually-added tool is cited (no version segment, resolved from meta.yml)'
+        result.containsKey('fastqc')
+        result.containsKey('multiqcsav')
+        result.multiqcsav.citation == 'multiqcsav (https://github.com/MultiQC/MultiQC_SAV/)'
+    }
+
+    // --- log capture helpers ---
+
+    private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {
+        def appender = new ListAppender<ILoggingEvent>()
+        def logger = (Logger) LoggerFactory.getLogger(clazz)
+        appender.start()
+        logger.addAppender(appender)
+        return appender
+    }
+
+    private List<String> logMessages(ListAppender<ILoggingEvent> appender) {
+        appender.list.collect { it.formattedMessage }
+    }
+
+    private void detachAppender(ListAppender<ILoggingEvent> appender) {
+        ((Logger) LoggerFactory.getLogger(NfcoreCitationUtils)).detachAppender(appender)
     }
 
     // Helper method to create mock meta.yml files for testing
