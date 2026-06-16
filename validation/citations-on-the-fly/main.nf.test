@@ -24,6 +24,9 @@ nextflow_pipeline {
             assert citations.contains('multiqc')
             assert citations.contains('samtools')
 
+            // multiqcsav has no process/version but is added manually via extraTools
+            assert citations.contains('multiqcsav')
+
             // STAR has a meta.yml but did NOT run, so it must not be cited
             assert !citations.toLowerCase().contains('star')
             assert !bibliography.contains('bts635') // STAR DOI absent

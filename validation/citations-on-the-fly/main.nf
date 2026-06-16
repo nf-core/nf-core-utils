@@ -54,11 +54,12 @@ workflow {
 
     // Build citations from the tools that actually ran (the versions topic).
     // collect(flat: false) preserves each [process, tool, version] tuple.
+    // multiqcsav is a MultiQC plugin (no process, no version) — add it manually.
     ch_citations = channel.topic('versions')
         .collect(flat: false)
         .map { versions ->
-            def citations = citationsOnTheFly(versions, meta_yml_paths)
-            log.info("=== Cited tools (ran + have meta.yml): ${citations.keySet().sort().join(', ')} ===")
+            def citations = citationsOnTheFly(versions, meta_yml_paths, ['multiqcsav'])
+            log.info("=== Cited tools: ${citations.keySet().sort().join(', ')} ===")
             [
                 citation_text: toolCitationText(citations),
                 bibliography: toolBibliographyText(citations),
