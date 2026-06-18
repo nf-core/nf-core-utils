@@ -48,7 +48,7 @@ class NfcoreReportingUtils {
                                 .keySet()
                                 .sort()
                                 .each { param ->
-                                    summarySection += "        <dt>${param}</dt><dd><samp>${groupParams.get(param) ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>\n"
+                                    summarySection += "        <dt>${param}</dt><dd><samp>${groupParams.get(param) ?: '<span style=\"color:#999999;\">N/A</span>'}</samp></dd>\n"
                                 }
                         summarySection += "    </dl>\n"
                     }
