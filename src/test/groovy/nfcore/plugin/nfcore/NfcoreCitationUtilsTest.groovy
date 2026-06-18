@@ -957,7 +957,7 @@ ${tool_bibliography}
     def "formatShortCitation falls back to doi then url when no author"() {
         expect:
         NfcoreCitationUtils.formatShortCitation('multiqc', [doi: '10.1093/bioinformatics/btw354'], '1.21') == 'multiqc (1.21, <a href=\'https://doi.org/10.1093/bioinformatics/btw354\'>doi: 10.1093/bioinformatics/btw354</a>)'
-        NfcoreCitationUtils.formatShortCitation('seqtk', [homepage: 'https://github.com/lh3/seqtk'], '1.4') == 'seqtk (1.4, https://github.com/lh3/seqtk)'
+        NfcoreCitationUtils.formatShortCitation('seqtk', [homepage: 'https://github.com/lh3/seqtk'], '1.4') == 'seqtk (1.4, <a href=\'https://github.com/lh3/seqtk\'>https://github.com/lh3/seqtk</a>)'
     }
 
     def "formatShortCitation omits the version segment when no version is known"() {
@@ -1020,7 +1020,7 @@ ${tool_bibliography}
         then: 'the manually-added tool is cited (no version segment, resolved from meta.yml)'
         result.containsKey('fastqc')
         result.containsKey('multiqcsav')
-        result.multiqcsav.citation == 'multiqcsav (https://github.com/MultiQC/MultiQC_SAV/)'
+        result.multiqcsav.citation == 'multiqcsav (<a href=\'https://github.com/MultiQC/MultiQC_SAV/\'>https://github.com/MultiQC/MultiQC_SAV/</a>)'
     }
 
     // --- log capture helpers ---

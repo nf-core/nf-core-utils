@@ -539,9 +539,11 @@ class NfcoreCitationUtils {
         if (version) parts << version
         def ref = shortReference(info ?: [:])
         if (ref) {
-            // Link to DOI if available
+            // Link to DOI if available, else link to homepage
             if (info?.doi) {
                 ref = "<a href='https://doi.org/${info.doi}'>${ref}</a>"
+            } else if (info?.homepage) {
+                ref = "<a href='${info.homepage}'>${ref}</a>"
             }
             parts << ref
         }
