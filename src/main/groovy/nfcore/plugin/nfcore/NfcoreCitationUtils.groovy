@@ -609,7 +609,7 @@ class NfcoreCitationUtils {
         if (author) {
             def year = info.year ? info.year.toString().trim() : ''
             def sa = shortAuthor(author)
-            return year ? "${sa} ${year}" : sa
+            return year ? "${sa}, ${year}" : sa
         }
         if (info.doi) return "doi: ${info.doi}"
         if (info.homepage) return info.homepage.toString()
@@ -617,7 +617,7 @@ class NfcoreCitationUtils {
     }
 
     /**
-     * Reduce an author string to "Surname" (single author) or "Surname et al."
+     * Reduce an author string to "Surname" (single author) or "Surname <em>et al.</em>"
      * (multiple). Heuristic: first author is the text before the first comma;
      * its surname is the first whitespace-delimited token.
      */
@@ -625,6 +625,6 @@ class NfcoreCitationUtils {
         def first = author.split(',')[0].trim()
         def surname = first.split(/\s+/)[0]
         def multiple = author.contains(',') || author.toLowerCase().contains('et al')
-        return multiple ? "${surname} et al." : surname
+        return multiple ? "${surname} <em>et al.</em>" : surname
     }
 }
