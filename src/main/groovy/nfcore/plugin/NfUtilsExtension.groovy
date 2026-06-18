@@ -388,7 +388,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate methods description text using collected citations
      *
-     * @param mqcMethodsYaml MultiQC methods YAML file path
+     * @param mqcMethodsYamlPath MultiQC methods YAML file path as String
      * @param collectedCitations Map containing all tool citations from modules (optional)
      * @param meta Additional metadata (optional)
      * @return Formatted methods description HTML
@@ -397,6 +397,19 @@ class NfUtilsExtension extends PluginExtensionPoint {
     String methodsDescriptionText(String mqcMethodsYamlPath, Map collectedCitations = [:], Map meta = [:]) {
         def mqcFile = new File(mqcMethodsYamlPath)
         return NfcoreCitationUtils.methodsDescriptionText(mqcFile, collectedCitations, meta)
+    }
+
+    /**
+     * Generate methods description text using collected citations
+     *
+     * @param mqcMethodsYaml MultiQC methods YAML file
+     * @param collectedCitations Map containing all tool citations from modules (optional)
+     * @param meta Additional metadata (optional)
+     * @return Formatted methods description HTML
+     */
+    @Function
+    String methodsDescriptionText(File mqcMethodsYaml, Map collectedCitations = [:], Map meta = [:]) {
+        return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml, collectedCitations, meta)
     }
 
     /**
