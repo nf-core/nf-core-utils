@@ -219,12 +219,24 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * workflow.collectVersions(versions, nextflowVersion: workflow.nextflow.version)
      * </pre>
      *
-     * @param input Single input or List of mixed inputs
+     * @param input Single input or List of mixed inputs (channel, list, or YAML string)
      * @param nextflowVersion Override Nextflow version (optional, auto-detected if null)
-     * @return YAML string with merged versions, sorted alphabetically
+     * @return Channel emitting YAML string when input is a channel, or YAML string directly when input is a list
      */
     @Function
-    String collectVersions(Object input, Object nextflowVersion = null) {
+    Object collectVersions(Object input, Object nextflowVersion = null) {
+        // If it's a channel, return a mapped channel
+        if (input instanceof DataflowReadChannel ||
+            input instanceof DataflowWriteChannel) {
+            return input.toList().map { versionsList ->
+                NfcoreVersionUtils.collectVersions(
+                    versionsList as List,
+                    this.session as Session,
+                    nextflowVersion
+                )
+            }
+        }
+
         return NfcoreVersionUtils.collectVersions(input, this.session, nextflowVersion)
     }
 
