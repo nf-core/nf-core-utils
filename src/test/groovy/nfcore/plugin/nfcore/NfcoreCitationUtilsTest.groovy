@@ -118,9 +118,9 @@ class NfcoreCitationUtilsTest extends Specification {
         result.containsKey("samtools")
         result.containsKey("fastqc")
         result.samtools.citation == "samtools (DOI: 10.1093/bioinformatics/btp352)"
-        result.samtools.bibliography.contains("<li>Li H, Handsaker B, Wysoker A, et al.. 2009. The Sequence Alignment/Map format and SAMtools. Bioinformatics. doi: 10.1093/bioinformatics/btp352. <a href='https://www.htslib.org/'>https://www.htslib.org/</a></li>")
+        result.samtools.bibliography.contains("<li>Li H, Handsaker B, Wysoker A, et al. (2009). The Sequence Alignment/Map format and SAMtools. doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li>")
         result.fastqc.citation == "fastqc (Quality control tool for high throughput sequence data)"
-        result.fastqc.bibliography == "<li>fastqc</li>"
+        result.fastqc.bibliography == ""
     }
 
     def "toolCitationText should format citations from collected module citations"() {
@@ -367,7 +367,7 @@ ${tool_bibliography}
         result.containsKey('fastqc')
         result.containsKey('samtools')
         result.fastqc.citation.contains('fastqc (DOI: 10.1093/bioinformatics/btv033)')
-        result.fastqc.bibliography.contains('<li>Andrews S. 2010. FastQC: A Quality Control Tool for High Throughput Sequence Data')
+        result.fastqc.bibliography.contains('<li>Andrews S. (2010). FastQC: A Quality Control Tool for High Throughput Sequence Data. doi: <a href=\'https://doi.org/10.1093/bioinformatics/btv033\'>10.1093/bioinformatics/btv033</a>.</li>')
         result.samtools.citation.contains('samtools (Tools for manipulating next-generation sequencing data)')
     }
 

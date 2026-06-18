@@ -58,16 +58,8 @@ class NfcoreCitationUtils {
                         citation += " (${toolInfo.description})"
                     }
 
-                    // Generate bibliography entry
-                    def author = toolInfo.author ?: ""
-                    def year = toolInfo.year ?: ""
-                    def title = toolInfo.title ?: toolName
-                    def journal = toolInfo.journal ?: ""
-                    def doi = toolInfo.doi ? "doi: ${toolInfo.doi}" : ""
-                    def url = toolInfo.homepage ?: ""
-                    def bibCitation = [author, year, title, journal, doi].findAll { it }.join(". ")
-                    if (url) bibCitation += ". <a href='${url}'>${url}</a>"
-                    bibEntry = "<li>${bibCitation}</li>"
+                    // Generate bibliography entry using shared formatter
+                    bibEntry = formatBibliographyFromData(toolName, toolInfo as Map)
                 }
 
                 moduleCitations[toolName] = [
@@ -256,19 +248,21 @@ class NfcoreCitationUtils {
      * @return Formatted bibliography HTML
      */
     private static String formatBibliographyFromData(String toolName, Map citationData) {
-        def author = citationData.author ?: ""
-        def year = citationData.year ?: ""
-        def title = citationData.title ?: toolName
-        def journal = citationData.journal ?: ""
-        def doi = citationData.doi ? "doi: ${citationData.doi}" : ""
+        def author = citationData.author?.toString()?.replaceAll(/\.\s*$/, '') ?: ""
+        def year = citationData.year ? "(${citationData.year})" : ""
+        def title = citationData.title ?: ""
+        def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
         def url = citationData.homepage ?: ""
 
-        def bibCitation = [author, year, title, journal, doi].findAll { it }.join(". ")
-        if (url) {
-            bibCitation += ". <a href='${url}'>${url}</a>"
-        }
+        // Build parts: author. (year). title. doi: link
+        def parts = []
+        if (author) parts << author
+        if (year) parts << year
+        if (title) parts << title
+        if (doi) parts << doi
+        else if (url) parts << "<a href='${url}'>${url}</a>"
 
-        return "<li>${bibCitation}</li>"
+        return parts ? "<li>${parts.join('. ')}.</li>" : ""
     }
 
     /**
