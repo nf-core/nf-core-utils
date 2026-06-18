@@ -254,15 +254,22 @@ class NfcoreCitationUtils {
         def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
         def url = citationData.homepage ?: ""
 
-        // Build parts: author. (year). title. doi: link
-        def parts = []
-        if (author) parts << author
-        if (year) parts << year
-        if (title) parts << title
-        if (doi) parts << doi
-        else if (url) parts << "<a href='${url}'>${url}</a>"
+        // With DOI: author. (year). title. doi: link
+        if (doi) {
+            def parts = []
+            if (author) parts << author
+            if (year) parts << year
+            if (title) parts << title
+            parts << doi
+            return "<li>${parts.join('. ')}.</li>"
+        }
 
-        return parts ? "<li>${parts.join('. ')}.</li>" : ""
+        // Without DOI: tool name. title. <link>url</link>
+        def parts = [toolName]
+        if (title) parts << title
+        if (url) parts << "<a href='${url}'>${url}</a>"
+
+        return "<li>${parts.join('. ')}.</li>"
     }
 
     /**

@@ -120,7 +120,7 @@ class NfcoreCitationUtilsTest extends Specification {
         result.samtools.citation == "samtools (DOI: 10.1093/bioinformatics/btp352)"
         result.samtools.bibliography.contains("<li>Li H, Handsaker B, Wysoker A, et al. (2009). The Sequence Alignment/Map format and SAMtools. doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li>")
         result.fastqc.citation == "fastqc (Quality control tool for high throughput sequence data)"
-        result.fastqc.bibliography == ""
+        result.fastqc.bibliography == "<li>fastqc.</li>"
     }
 
     def "toolCitationText should format citations from collected module citations"() {
