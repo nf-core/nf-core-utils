@@ -617,13 +617,14 @@ class NfcoreCitationUtils {
     }
 
     /**
-     * Reduce an author string to "Surname et al." format.
-     * Heuristic: first author is the text before the first comma;
+     * Reduce an author string to "Surname" (single author) or "Surname et al."
+     * (multiple). Heuristic: first author is the text before the first comma;
      * its surname is the first whitespace-delimited token.
      */
     private static String shortAuthor(String author) {
         def first = author.split(',')[0].trim()
         def surname = first.split(/\s+/)[0]
-        return "${surname} et al."
+        def multiple = author.contains(',') || author.toLowerCase().contains('et al')
+        return multiple ? "${surname} et al." : surname
     }
 }
