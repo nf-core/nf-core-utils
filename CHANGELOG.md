@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated reporting orchestration to use explicit execution context data, including workflow metadata for methods-description templates.
 - Migrated pre-commit configuration to `prek.toml` and added validation snapshot checks.
+- Improved citation formatting: comma before year (`Andrews, 2010`), italic `<em>et al.</em>`, DOI/homepage linking in short citations, and cleaner bibliography format with year in parentheses and DOI as link ([#51](https://github.com/nf-core/nf-core-utils/pull/51)).
 
 ### Fixed
 
