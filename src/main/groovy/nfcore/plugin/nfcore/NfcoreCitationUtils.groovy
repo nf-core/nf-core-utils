@@ -251,6 +251,7 @@ class NfcoreCitationUtils {
         def author = citationData.author?.toString()?.replaceAll(/\.\s*$/, '') ?: ""
         def year = citationData.year ?: ""
         def title = citationData.title ?: ""
+        def journal = citationData.journal ?: ""
         def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
         def url = citationData.homepage ?: ""
 
