@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed `dumpParametersToJSON()` to serialize Nextflow parameter types and copy parameter reports through Nextflow file handling for cloud/remote paths.
+- Fixed malformed HTML tag (`</a>` → `</span>`) in `paramsSummaryMultiqc()`.
 
 ## [0.4.0] - 2025-10-31
 
