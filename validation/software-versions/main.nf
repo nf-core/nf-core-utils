@@ -24,7 +24,7 @@ workflow {
     // Test 1: YAML strings (legacy format)
     log.info("=== Test 1: YAML strings ===")
 
-    def yaml_strings = Channel.of(
+    def yaml_strings = channel.of(
         'fastqc: 0.12.1',
         'samtools: 1.17',
         'multiqc: 1.15',
@@ -42,7 +42,7 @@ workflow {
     // Test 2: Topic tuples
     log.info("=== Test 2: Topic tuples ===")
 
-    def topic_tuples = Channel.of(
+    def topic_tuples = channel.of(
         ['NFCORE_FASTQC', 'fastqc', '0.12.1'],
         ['NFCORE_SAMTOOLS', 'samtools', '1.17'],
     )
@@ -59,7 +59,7 @@ workflow {
     // Test 3: Mixed inputs
     log.info("=== Test 3: Mixed input types ===")
 
-    def mixed_inputs = Channel.of(
+    def mixed_inputs = channel.of(
         'fastqc: 0.12.1',
         ['NFCORE_SAMTOOLS', 'samtools', '1.17'],
         [multiqc: '1.15', bcftools: '1.16'],
@@ -78,7 +78,7 @@ workflow {
     // Test 4: Custom Nextflow version
     log.info("=== Test 4: Custom Nextflow version ===")
 
-    def versions_ch = Channel.of('fastqc: 0.12.1')
+    def versions_ch = channel.of('fastqc: 0.12.1')
 
     def result4 = softwareVersionsToYAML(
         softwareVersions: versions_ch,
@@ -93,7 +93,7 @@ workflow {
     // Test 5: Named parameters
     log.info("=== Test 5: Named parameters ===")
 
-    def versions_ch5 = Channel.of('samtools: 1.17')
+    def versions_ch5 = channel.of('samtools: 1.17')
 
     def result5 = softwareVersionsToYAML(
         softwareVersions: versions_ch5,
@@ -117,8 +117,7 @@ workflow {
         samtools: 1.17
     """.stripIndent()
 
-    def version_file = Channel
-        .of(version_file_content)
+    def version_file = channel.of(version_file_content)
         .collectFile(name: 'versions.yml', newLine: true)
 
     def result6 = softwareVersionsToYAML(version_file)
@@ -132,7 +131,7 @@ workflow {
     // Test 7: Process name extraction from full path
     log.info("=== Test 7: Process name extraction ===")
 
-    def full_path_tuples = Channel.of(
+    def full_path_tuples = channel.of(
         ['NFCORE_RNASEQ:TRIMGALORE:FASTQC', 'fastqc', '0.12.1']
     )
 
@@ -148,7 +147,7 @@ workflow {
     // Test 8: Sorted output
     log.info("=== Test 8: Alphabetical sorting ===")
 
-    def unsorted = Channel.of(
+    def unsorted = channel.of(
         ['ZEBRA_PROCESS', 'zebra', '1.0.0'],
         ['ALPHA_PROCESS', 'alpha', '2.0.0'],
         ['ALPHA_PROCESS', 'zulu', '3.0.0'],
