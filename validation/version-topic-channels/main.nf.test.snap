@@ -7,7 +7,16 @@
                 "=== Testing collectVersions() with topic tuples ===",
                 "=== Testing collectVersions() with file paths ===",
                 "=== Testing collectVersions() with mixed inputs ===",
+                "=== Mixed input result ===",
                 "=== Topic tuple result ===",
+                "BWA:",
+                "  bwa: 0.7.17",
+                "Software:",
+                "  bowtie2: 2.4.5",
+                "  hisat2: 2.2.1",
+                "Workflow:",
+                "    nf-core-utils-validation: v1.0.0",
+                "    Nextflow: unknown",
                 "FASTQC:",
                 "  fastqc: 0.11.9",
                 "MULTIQC:",
@@ -17,17 +26,8 @@
                 "Workflow:",
                 "    nf-core-utils-validation: v1.0.0",
                 "    Nextflow: unknown",
-                "\u2705 Topic tuple test passed",
-                "=== Mixed input result ===",
-                "BWA:",
-                "  bwa: 0.7.17",
-                "Software:",
-                "  bowtie2: 2.4.5",
-                "  hisat2: 2.2.1",
-                "Workflow:",
-                "    nf-core-utils-validation: v1.0.0",
-                "    Nextflow: unknown",
                 "\u2705 Mixed input test passed",
+                "\u2705 Topic tuple test passed",
                 "=== File path result ===",
                 "SALMON:",
                 "  salmon: 1.9.0",
@@ -49,10 +49,10 @@
                 "- Replaces all deprecated process* methods"
             ]
         ],
-        "timestamp": "2026-05-22T12:34:52.191774",
+        "timestamp": "2026-06-22T17:58:24.118298939",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "25.10.3"
+            "nextflow": "26.04.4"
         }
     }
 }
