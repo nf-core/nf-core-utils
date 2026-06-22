@@ -101,10 +101,11 @@ class NfcoreCitationUtilsTest extends Specification {
           - samtools:
               doi: "10.1093/bioinformatics/btp352"
               homepage: "https://www.htslib.org/"
-              author: "Li H, Handsaker B, Wysoker A, et al."
-              year: 2009
-              title: "The Sequence Alignment/Map format and SAMtools"
-              journal: "Bioinformatics"
+              publication:
+                author: "Li H, Handsaker B, Wysoker A, et al."
+                year: 2009
+                title: "The Sequence Alignment/Map format and SAMtools"
+                source: "Bioinformatics"
           - fastqc:
               description: "Quality control tool for high throughput sequence data"
         """
@@ -253,10 +254,11 @@ ${tool_bibliography}
           - samtools:
               doi: "10.1093/bioinformatics/btp352"
               homepage: "https://www.htslib.org/"
-              author: "Li H, et al."
-              year: 2009
-              title: "The Sequence Alignment/Map format and SAMtools"
-              journal: "Bioinformatics"
+              publication:
+                author: "Li H, et al."
+                year: 2009
+                title: "The Sequence Alignment/Map format and SAMtools"
+                source: "Bioinformatics"
         """
 
         def metaFile2 = new File(tempDir.toFile(), "module2_meta.yml")
@@ -349,9 +351,11 @@ ${tool_bibliography}
         def topicData = [
             ['NFCORE_FASTQC', 'fastqc', [
                 doi: '10.1093/bioinformatics/btv033',
-                author: 'Andrews S',
-                year: 2010,
-                title: 'FastQC: A Quality Control Tool for High Throughput Sequence Data',
+                publication: [
+                    author: 'Andrews S',
+                    year: 2010,
+                    title: 'FastQC: A Quality Control Tool for High Throughput Sequence Data'
+                ],
                 homepage: 'https://www.bioinformatics.babraham.ac.uk/projects/fastqc/'
             ]],
             ['NFCORE_SAMTOOLS', 'samtools', [
@@ -380,9 +384,10 @@ ${tool_bibliography}
           - fastqc:
               doi: "10.1093/bioinformatics/btv033"
               homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
-              author: "Andrews S"
-              year: 2010
-              title: "FastQC: A Quality Control Tool for High Throughput Sequence Data"
+              publication:
+                author: "Andrews S"
+                year: 2010
+                title: "FastQC: A Quality Control Tool for High Throughput Sequence Data"
         '''.stripIndent()
         def filePaths = [tempFile.absolutePath]
 
@@ -414,7 +419,7 @@ ${tool_bibliography}
         def topicCitations = [
             ['NFCORE_FASTQC', 'fastqc', [
                 doi: '10.1093/bioinformatics/btv033',
-                author: 'Andrews S'
+                publication: [author: 'Andrews S']
             ]]
         ]
         def tempFile = File.createTempFile('meta', '.yml')
@@ -423,7 +428,8 @@ ${tool_bibliography}
         tools:
           - samtools:
               doi: "10.1093/bioinformatics/btp352"
-              author: "Li H, et al."
+              publication:
+                author: "Li H, et al."
         '''.stripIndent()
         def citationFiles = [tempFile.absolutePath]
 
@@ -449,7 +455,8 @@ ${tool_bibliography}
         tools:
           - fastqc:
               doi: "10.1093/bioinformatics/btv033"
-              author: "Andrews S"
+              publication:
+                author: "Andrews S"
           - samtools:
               description: "SAM/BAM processing utilities"
         '''.stripIndent()
@@ -460,7 +467,7 @@ ${tool_bibliography}
 
         then:
         result.size() == 2
-        result[0] == [moduleName, 'fastqc', [doi: '10.1093/bioinformatics/btv033', author: 'Andrews S']]
+        result[0] == [moduleName, 'fastqc', [doi: '10.1093/bioinformatics/btv033', publication: [author: 'Andrews S']]]
         result[1] == [moduleName, 'samtools', [description: 'SAM/BAM processing utilities']]
 
         cleanup:
@@ -595,9 +602,10 @@ ${tool_bibliography}
           - fastqc:
               doi: "10.1093/bioinformatics/btv033"
               homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
-              author: "Andrews S"
-              year: 2010
-              title: "FastQC: A Quality Control Tool for High Throughput Sequence Data"
+              publication:
+                author: "Andrews S"
+                year: 2010
+                title: "FastQC: A Quality Control Tool for High Throughput Sequence Data"
         '''.stripIndent()
 
         when:
@@ -608,7 +616,7 @@ ${tool_bibliography}
         result[0].size() == 3  // [module_name, tool_name, citation_data]
         result[0][1] == 'fastqc'  // tool name
         result[0][2].doi == '10.1093/bioinformatics/btv033'
-        result[0][2].author == 'Andrews S'
+        result[0][2].publication.author == 'Andrews S'
 
         cleanup:
         tempFile.delete()
@@ -655,10 +663,12 @@ ${tool_bibliography}
         tools:
           - samtools:
               doi: "10.1093/bioinformatics/btp352"
-              author: "Li H, et al."
+              publication:
+                author: "Li H, et al."
           - bcftools:
               doi: "10.1093/gigascience/giab008"
-              author: "Danecek P, et al."
+              publication:
+                author: "Danecek P, et al."
         '''.stripIndent()
 
         when:
@@ -696,9 +706,11 @@ ${tool_bibliography}
         def topicCitations = [
             ['FASTQC', 'fastqc', [
                 doi: '10.1093/bioinformatics/btv033',
-                author: 'Andrews S',
-                year: 2010,
-                title: 'FastQC: Quality Control Tool',
+                publication: [
+                    author: 'Andrews S',
+                    year: 2010,
+                    title: 'FastQC: Quality Control Tool'
+                ],
                 homepage: 'https://example.com'
             ]]
         ]
@@ -946,12 +958,12 @@ ${tool_bibliography}
 
     def "formatShortCitation includes version and a single short author with year"() {
         expect:
-        NfcoreCitationUtils.formatShortCitation('fastqc', [author: 'Andrews S', year: 2010], '0.12.1') == 'fastqc (0.12.1, Andrews, 2010)'
+        NfcoreCitationUtils.formatShortCitation('fastqc', [publication: [author: 'Andrews S', year: 2010]], '0.12.1') == 'fastqc (0.12.1, Andrews, 2010)'
     }
 
     def "formatShortCitation uses 'et al.' for multiple authors"() {
         expect:
-        NfcoreCitationUtils.formatShortCitation('samtools', [author: 'Danecek P, Bonfield JK, et al.', year: 2021], '1.21') == 'samtools (1.21, Danecek <em>et al.</em>, 2021)'
+        NfcoreCitationUtils.formatShortCitation('samtools', [publication: [author: 'Danecek P, Bonfield JK, et al.', year: 2021]], '1.21') == 'samtools (1.21, Danecek <em>et al.</em>, 2021)'
     }
 
     def "formatShortCitation falls back to doi then url when no author"() {
@@ -962,7 +974,7 @@ ${tool_bibliography}
 
     def "formatShortCitation omits the version segment when no version is known"() {
         expect:
-        NfcoreCitationUtils.formatShortCitation('fastqc', [author: 'Andrews S', year: 2010], null) == 'fastqc (Andrews, 2010)'
+        NfcoreCitationUtils.formatShortCitation('fastqc', [publication: [author: 'Andrews S', year: 2010]], null) == 'fastqc (Andrews, 2010)'
     }
 
     def "citationsOnTheFly produces publication-style short citations with version"() {
@@ -972,8 +984,9 @@ ${tool_bibliography}
         name: fastqc
         tools:
           - fastqc:
-              author: "Andrews S"
-              year: 2010
+              publication:
+                author: "Andrews S"
+                year: 2010
               doi: "10.1093/bioinformatics/btv033"
               homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
         '''.stripIndent()

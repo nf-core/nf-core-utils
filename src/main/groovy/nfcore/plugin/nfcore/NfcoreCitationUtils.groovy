@@ -248,20 +248,21 @@ class NfcoreCitationUtils {
      * @return Formatted bibliography HTML
      */
     private static String formatBibliographyFromData(String toolName, Map citationData) {
-        def author = citationData.author?.toString()?.replaceAll(/\.\s*$/, '') ?: ""
-        def year = citationData.year ? "(${citationData.year})" : ""
-        def title = citationData.title ?: ""
-        def journal = citationData.journal ?: ""
+        def pub = citationData.publication instanceof Map ? citationData.publication : [:]
+        def author = pub.author?.toString()?.replaceAll(/\.\s*$/, '') ?: ""
+        def year = pub.year ? "(${pub.year})" : ""
+        def title = pub.title ?: ""
+        def source = pub.source ?: ""
         def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
         def url = citationData.homepage ?: ""
 
-        // With DOI: author. (year). title. journal. doi: link
+        // With DOI: author. (year). title. source. doi: link
         if (doi) {
             def parts = []
             if (author) parts << author
             if (year) parts << year
             if (title) parts << title
-            if (journal) parts << journal
+            if (source) parts << source
             parts << doi
             return "<li>${parts.join('. ')}.</li>"
         }
@@ -533,7 +534,7 @@ class NfcoreCitationUtils {
      * then the description. The version segment is omitted when unknown.
      *
      * @param tool Tool name (display)
-     * @param info Raw meta.yml tool info (author, year, doi, homepage, description)
+     * @param info Raw meta.yml tool info (doi, homepage, description, publication.author, publication.year)
      * @param version Tool version (optional)
      * @return Short citation string suitable for a methods paragraph
      */
@@ -610,9 +611,10 @@ class NfcoreCitationUtils {
      * author is known, else "doi: ...", else the homepage url, else description.
      */
     private static String shortReference(Map info) {
-        def author = info.author?.toString()?.trim()
+        def pub = info.publication instanceof Map ? info.publication : [:]
+        def author = pub.author?.toString()?.trim()
         if (author) {
-            def year = info.year ? info.year.toString().trim() : ''
+            def year = pub.year ? pub.year.toString().trim() : ''
             def sa = shortAuthor(author)
             return year ? "${sa}, ${year}" : sa
         }
