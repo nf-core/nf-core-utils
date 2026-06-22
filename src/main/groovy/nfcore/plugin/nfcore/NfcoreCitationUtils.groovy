@@ -255,12 +255,13 @@ class NfcoreCitationUtils {
         def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
         def url = citationData.homepage ?: ""
 
-        // With DOI: author. (year). title. doi: link
+        // With DOI: author. (year). title. journal. doi: link
         if (doi) {
             def parts = []
             if (author) parts << author
             if (year) parts << year
             if (title) parts << title
+            if (journal) parts << journal
             parts << doi
             return "<li>${parts.join('. ')}.</li>"
         }
