@@ -11,6 +11,7 @@ tools:
       documentation: "http://www.htslib.org/doc/samtools.html"
       tool_dev_url: "https://github.com/samtools/samtools"
       doi: "10.1093/bioinformatics/btp352"
-      author: "Danecek P, Bonfield JK, Liddle J, et al."
-      year: 2021
       licence: "MIT"
+      publication:
+        author: "Danecek P, Bonfield JK, Liddle J, et al."
+        year: 2021

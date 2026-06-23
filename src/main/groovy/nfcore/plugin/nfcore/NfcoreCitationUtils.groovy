@@ -58,16 +58,8 @@ class NfcoreCitationUtils {
                         citation += " (${toolInfo.description})"
                     }
 
-                    // Generate bibliography entry
-                    def author = toolInfo.author ?: ""
-                    def year = toolInfo.year ?: ""
-                    def title = toolInfo.title ?: toolName
-                    def journal = toolInfo.journal ?: ""
-                    def doi = toolInfo.doi ? "doi: ${toolInfo.doi}" : ""
-                    def url = toolInfo.homepage ?: ""
-                    def bibCitation = [author, year, title, journal, doi].findAll { it }.join(". ")
-                    if (url) bibCitation += ". <a href='${url}'>${url}</a>"
-                    bibEntry = "<li>${bibCitation}</li>"
+                    // Generate bibliography entry using shared formatter
+                    bibEntry = formatBibliographyFromData(toolName, toolInfo as Map)
                 }
 
                 moduleCitations[toolName] = [
@@ -256,19 +248,31 @@ class NfcoreCitationUtils {
      * @return Formatted bibliography HTML
      */
     private static String formatBibliographyFromData(String toolName, Map citationData) {
-        def author = citationData.author ?: ""
-        def year = citationData.year ?: ""
-        def title = citationData.title ?: toolName
-        def journal = citationData.journal ?: ""
-        def doi = citationData.doi ? "doi: ${citationData.doi}" : ""
+        def pub = citationData.publication instanceof Map ? citationData.publication : [:]
+        def author = pub.author?.toString()?.replaceAll(/\.\s*$/, '') ?: ""
+        def year = pub.year ? "(${pub.year})" : ""
+        def title = pub.title ?: ""
+        def source = pub.source ?: ""
+        def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
         def url = citationData.homepage ?: ""
 
-        def bibCitation = [author, year, title, journal, doi].findAll { it }.join(". ")
-        if (url) {
-            bibCitation += ". <a href='${url}'>${url}</a>"
+        // With DOI: author. (year). title. source. doi: link
+        if (doi) {
+            def parts = []
+            if (author) parts << author
+            if (year) parts << year
+            if (title) parts << title
+            if (source) parts << source
+            parts << doi
+            return "<li>${parts.join('. ')}.</li>"
         }
 
-        return "<li>${bibCitation}</li>"
+        // Without DOI: tool name. title. <link>url</link>
+        def parts = [toolName]
+        if (title) parts << title
+        if (url) parts << "<a href='${url}'>${url}</a>"
+
+        return "<li>${parts.join('. ')}.</li>"
     }
 
     /**
@@ -530,7 +534,7 @@ class NfcoreCitationUtils {
      * then the description. The version segment is omitted when unknown.
      *
      * @param tool Tool name (display)
-     * @param info Raw meta.yml tool info (author, year, doi, homepage, description)
+     * @param info Raw meta.yml tool info (doi, homepage, description, publication.author, publication.year)
      * @param version Tool version (optional)
      * @return Short citation string suitable for a methods paragraph
      */
@@ -538,7 +542,15 @@ class NfcoreCitationUtils {
         def parts = []
         if (version) parts << version
         def ref = shortReference(info ?: [:])
-        if (ref) parts << ref
+        if (ref) {
+            // Link to DOI if available, else link to homepage
+            if (info?.doi) {
+                ref = "<a href='https://doi.org/${info.doi}'>${ref}</a>"
+            } else if (info?.homepage) {
+                ref = "<a href='${info.homepage}'>${ref}</a>"
+            }
+            parts << ref
+        }
         return parts ? "${tool} (${parts.join(', ')})" : tool.toString()
     }
 
@@ -595,15 +607,17 @@ class NfcoreCitationUtils {
     }
 
     /**
-     * Short reference for the inline citation: "Surname et al. year" when an
-     * author is known, else "doi: ...", else the homepage url, else description.
+     * Short reference for the inline citation in Harvard style:
+     * "Surname (year)" or "Surname et al. (year)" when an author is known,
+     * else "doi: ...", else the homepage url, else description.
      */
     private static String shortReference(Map info) {
-        def author = info.author?.toString()?.trim()
+        def pub = info.publication instanceof Map ? info.publication : [:]
+        def author = pub.author?.toString()?.trim()
         if (author) {
-            def year = info.year ? info.year.toString().trim() : ''
+            def year = pub.year ? pub.year.toString().trim() : ''
             def sa = shortAuthor(author)
-            return year ? "${sa} ${year}" : sa
+            return year ? "${sa} (${year})" : sa
         }
         if (info.doi) return "doi: ${info.doi}"
         if (info.homepage) return info.homepage.toString()
@@ -611,7 +625,7 @@ class NfcoreCitationUtils {
     }
 
     /**
-     * Reduce an author string to "Surname" (single author) or "Surname et al."
+     * Reduce an author string to "Surname" (single author) or "Surname <em>et al.</em>"
      * (multiple). Heuristic: first author is the text before the first comma;
      * its surname is the first whitespace-delimited token.
      */
@@ -619,6 +633,6 @@ class NfcoreCitationUtils {
         def first = author.split(',')[0].trim()
         def surname = first.split(/\s+/)[0]
         def multiple = author.contains(',') || author.toLowerCase().contains('et al')
-        return multiple ? "${surname} et al." : surname
+        return multiple ? "${surname} <em>et al.</em>" : surname
     }
 }

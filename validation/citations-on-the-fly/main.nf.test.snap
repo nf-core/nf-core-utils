@@ -1,13 +1,13 @@
 {
     "Citations reflect only the tools that ran": {
         "content": [
-            "Tools used in the workflow included: fastqc (0.12.1, Andrews 2010), multiqc (1.21, doi: 10.1093/bioinformatics/btw354), multiqcsav (https://github.com/MultiQC/MultiQC_SAV/), samtools (1.21, Danecek et al. 2021).",
-            "<li>Andrews S. 2010. fastqc. doi: 10.1093/bioinformatics/btw354. <a href='https://www.bioinformatics.babraham.ac.uk/projects/fastqc/'>https://www.bioinformatics.babraham.ac.uk/projects/fastqc/</a></li> <li>multiqc. doi: 10.1093/bioinformatics/btw354. <a href='https://multiqc.info/'>https://multiqc.info/</a></li> <li>multiqcsav. <a href='https://github.com/MultiQC/MultiQC_SAV/'>https://github.com/MultiQC/MultiQC_SAV/</a></li> <li>Danecek P, Bonfield JK, Liddle J, et al.. 2021. samtools. doi: 10.1093/bioinformatics/btp352. <a href='http://www.htslib.org/'>http://www.htslib.org/</a></li>"
+            "Tools used in the workflow included: fastqc (0.12.1, <a href='https://doi.org/10.1093/bioinformatics/btw354'>Andrews (2010)</a>), multiqc (1.21, <a href='https://doi.org/10.1093/bioinformatics/btw354'>doi: 10.1093/bioinformatics/btw354</a>), multiqcsav (<a href='https://github.com/MultiQC/MultiQC_SAV/'>https://github.com/MultiQC/MultiQC_SAV/</a>), samtools (1.21, <a href='https://doi.org/10.1093/bioinformatics/btp352'>Danecek <em>et al.</em> (2021)</a>).",
+            "<li>Andrews S. (2010). doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>multiqcsav. <a href='https://github.com/MultiQC/MultiQC_SAV/'>https://github.com/MultiQC/MultiQC_SAV/</a>.</li> <li>Danecek P, Bonfield JK, Liddle J, et al. (2021). doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li>"
         ],
-        "timestamp": "2026-06-16T08:04:06.469699",
+        "timestamp": "2026-06-23T15:10:13.25862127",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "25.10.3"
+            "nextflow": "26.04.4"
         }
     }
 }
