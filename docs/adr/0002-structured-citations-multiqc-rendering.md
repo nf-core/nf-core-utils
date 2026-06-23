@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted — implementation pending (new MultiQC citations plugin repo + a `nf-core-utils` refactor PR).
 
 ## Context
 
@@ -35,10 +35,10 @@ ADR-0001 already calls for explicit report inputs and deeper reporting seams; AD
 
 (Proposed) Treat **structured citation data as the output contract of `nf-core-utils`**, and move citation *rendering* to MultiQC:
 
-1. `nf-core-utils` collects citations for the tools that actually ran and emits a **structured artifact** (CSL-JSON as the canonical form; optional BibTeX `.bib` export) into the pipeline outputs. It stops at data — no HTML assembly.
-2. A **MultiQC citations plugin** (`multiqc.modules.v1`) discovers that artifact via a search pattern and renders the inline citations, the bibliography, and the methods/citations section — Harvard short form, italics, DOI/homepage links — using a citation style (CSL). This is where the "fancy" formatting lives.
-3. Non-MultiQC consumers get the structured artifact directly (a `.bib` / CSL-JSON is a real, tool-readable deliverable). Optionally `nf-core-utils` keeps a thin plain-text renderer for a `CITATIONS.txt`, but the HTML/styling logic leaves the Nextflow plugin.
-4. Backward compatibility (ADR-0000 #3): keep `methodsDescriptionText()`, `toolCitationText()`, and `toolBibliographyText()` working during migration; deprecate the HTML-string outputs once the MultiQC plugin path is available.
+1. `nf-core-utils` collects citations for the tools that actually ran and emits a **structured artifact** into the pipeline outputs: **CSL-JSON is canonical**, with an **optional BibTeX `.bib`** export. It stops at data — no HTML assembly.
+2. A **MultiQC citations plugin**, living in its **own dedicated repository** (`multiqc.modules.v1`), discovers that artifact via a search pattern and renders the inline citations, the bibliography, and the methods/citations section — Harvard short form, italics, DOI/homepage links — using a citation style (CSL). This is where the "fancy" formatting lives.
+3. The **structured artifact is the only citation deliverable from `nf-core-utils`.** The plugin keeps no text/HTML renderer — we are not splitting presentation across two layers. Non-MultiQC consumers use the CSL-JSON / `.bib` directly (both are real, tool-readable formats).
+4. Backward compatibility (ADR-0000 #3): keep `methodsDescriptionText()`, `toolCitationText()`, and `toolBibliographyText()` working until the MultiQC plugin path lands, then cut over cleanly and deprecate the HTML-string outputs. The cutover is preferred over a long-lived dual path.
 
 ## Rationale
 
@@ -62,13 +62,24 @@ Tradeoffs / costs:
 - A temporary dual path during migration (compat HTML functions + new structured output).
 - Requires choosing a citation-style mechanism (a CSL processor in the MultiQC plugin).
 
-## Open questions
+## Resolved decisions
 
-- **Canonical format:** CSL-JSON (best for programmatic styling) vs BibTeX `.bib` (familiar) — or emit both? (Leaning CSL-JSON canonical + optional `.bib`.)
-- **Plugin home:** a dedicated MultiQC plugin vs extending an existing nf-core MultiQC module/template, and which repo it lives in.
-- **Non-MultiQC pipelines:** does `nf-core-utils` keep a minimal text/HTML renderer, or is the structured file the only non-MultiQC deliverable?
-- **Migration/deprecation timeline** for `methodsDescriptionText` and friends.
-- **Short term:** do we still merge PR #51 (HTML in strings) as an interim step, or hold it given this direction?
+- **Canonical format:** CSL-JSON canonical, with an optional `.bib` export.
+- **Plugin home:** a dedicated MultiQC citations plugin in its own new repository.
+- **Non-MultiQC pipelines:** the structured file is the only deliverable — `nf-core-utils` keeps no text/HTML renderer (avoid mixed-up concerns across layers).
+- **Migration:** keep the existing HTML-string functions working until the MultiQC plugin lands, then cut over cleanly.
+
+## Sequencing
+
+1. Land the PR #51 fix (the two-branch bibliography formatter) as an interim step so `meta.yml` `publication` parsing is correct.
+2. Bootstrap the new MultiQC citations plugin repo (see the handoff brief).
+3. Open a separate `nf-core-utils` refactor PR that switches citation output from HTML strings to CSL-JSON (+ optional `.bib`) and deprecates the HTML-string functions.
+
+## Remaining design questions (for the new repo / refactor PR)
+
+- **Author-name handling:** parse `publication.author` free strings (e.g. `"Li H, Handsaker B, et al."`) into CSL `family`/`given` name objects, or carry them as CSL `literal` and let the renderer derive the short form? The Harvard short form (`Andrews (2010)`, `Danecek et al. (2021)`) needs at least the first surname.
+- **CSL style + processor:** which CSL style, and whether to use `citeproc-py` or implement the (small) Harvard short form directly.
+- **File contract:** the exact filename / MultiQC search pattern, coordinated between `nf-core-utils` output and the plugin's `find_log_files`.
 
 ## Alternatives considered
 
