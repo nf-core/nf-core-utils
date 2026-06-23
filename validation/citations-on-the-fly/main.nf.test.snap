@@ -1,10 +1,10 @@
 {
     "Citations reflect only the tools that ran": {
         "content": [
-            "Tools used in the workflow included: fastqc (0.12.1, <a href='https://doi.org/10.1093/bioinformatics/btw354'>Andrews, 2010</a>), multiqc (1.21, <a href='https://doi.org/10.1093/bioinformatics/btw354'>doi: 10.1093/bioinformatics/btw354</a>), multiqcsav (<a href='https://github.com/MultiQC/MultiQC_SAV/'>https://github.com/MultiQC/MultiQC_SAV/</a>), samtools (1.21, <a href='https://doi.org/10.1093/bioinformatics/btp352'>Danecek <em>et al.</em>, 2021</a>).",
-            "<li>Andrews S. (2010). doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>multiqcsav. <a href='https://github.com/MultiQC/MultiQC_SAV/'>https://github.com/MultiQC/MultiQC_SAV/</a>.</li> <li>Danecek P, Bonfield JK, Liddle J, et al. (2021). doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li>"
+            "Tools used in the workflow included: fastqc (0.12.1, <a href='https://doi.org/10.1093/bioinformatics/btw354'>doi: 10.1093/bioinformatics/btw354</a>), multiqc (1.21, <a href='https://doi.org/10.1093/bioinformatics/btw354'>doi: 10.1093/bioinformatics/btw354</a>), multiqcsav (<a href='https://github.com/MultiQC/MultiQC_SAV/'>https://github.com/MultiQC/MultiQC_SAV/</a>), samtools (1.21, <a href='https://doi.org/10.1093/bioinformatics/btp352'>doi: 10.1093/bioinformatics/btp352</a>).",
+            "<li>doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>multiqcsav. <a href='https://github.com/MultiQC/MultiQC_SAV/'>https://github.com/MultiQC/MultiQC_SAV/</a>.</li> <li>doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li>"
         ],
-        "timestamp": "2026-06-18T17:21:31.524389791",
+        "timestamp": "2026-06-23T13:54:13.221397095",
         "meta": {
             "nf-test": "0.9.5",
             "nextflow": "26.04.4"
