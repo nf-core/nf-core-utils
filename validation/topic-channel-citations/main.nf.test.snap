@@ -18,7 +18,7 @@
                 "Citation Text:",
                 "Tools used in the workflow included: samtools (DOI: 10.1093/bioinformatics/btp352), fastqc (DOI: 10.1093/bioinformatics/btw354), multiqc (DOI: 10.1093/bioinformatics/btw354).",
                 "Bibliography:",
-                "<li>doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li> <li>doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li>",
+                "<li>samtools. doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li> <li>fastqc. doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>multiqc. doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li>",
                 "\u2705 Auto-generated citations written to: [PATH]/tests/[NFT_HASH]/output/",
                 "\u2705 Citation text: [PATH]/tests/[NFT_HASH]/output/auto_citations.txt",
                 "\u2705 Bibliography: [PATH]/tests/[NFT_HASH]/output/auto_bibliography.html",
@@ -43,7 +43,7 @@
                 "[NXF_HASH] Submitted process > SAMTOOLS_VIEW (sample3)"
             ],
             [
-                "auto_bibliography.html:md5,6dcb857b3a1dfadaae27b9c7ac02eed0",
+                "auto_bibliography.html:md5,abcb4df3944f959b1c1ba8909c8704a8",
                 "auto_citations.txt:md5,b6f87ba7390abff3a0bc0da48443ab7b"
             ]
         ],

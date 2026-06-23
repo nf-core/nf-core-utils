@@ -249,29 +249,26 @@ class NfcoreCitationUtils {
      */
     private static String formatBibliographyFromData(String toolName, Map citationData) {
         def pub = citationData.publication instanceof Map ? citationData.publication : [:]
-        def author = pub.author?.toString()?.replaceAll(/\.\s*$/, '') ?: ""
-        def year = pub.year ? "(${pub.year})" : ""
-        def title = pub.title ?: ""
-        def source = pub.source ?: ""
         def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
-        def url = citationData.homepage ?: ""
 
-        // With DOI: author. (year). title. source. doi: link
-        if (doi) {
+        // Publication present: academic-style reference "Author. (year). title. source. doi: link".
+        // The meta-schema treats publication as all-or-nothing; field guards keep entries clean
+        // while modules migrate to the full object (some still carry a partial publication).
+        if (pub) {
+            def author = pub.author?.toString()?.replaceAll(/\.\s*$/, '') ?: ""
             def parts = []
             if (author) parts << author
-            if (year) parts << year
-            if (title) parts << title
-            if (source) parts << source
-            parts << doi
+            if (pub.year) parts << "(${pub.year})"
+            if (pub.title) parts << pub.title
+            if (pub.source) parts << pub.source
+            if (doi) parts << doi
             return "<li>${parts.join('. ')}.</li>"
         }
 
-        // Without DOI: tool name. title. <link>url</link>
+        // No publication object: identify by tool name, linking out via DOI or homepage.
         def parts = [toolName]
-        if (title) parts << title
-        if (url) parts << "<a href='${url}'>${url}</a>"
-
+        if (doi) parts << doi
+        else if (citationData.homepage) parts << "<a href='${citationData.homepage}'>${citationData.homepage}</a>"
         return "<li>${parts.join('. ')}.</li>"
     }
 
