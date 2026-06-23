@@ -33,7 +33,7 @@ nextflow_pipeline {
                 !line.startsWith('⚠️ Conda channels may need configuration adjustment')
             }
             def stableOutput = normalizedOutput.findAll { !it.startsWith('Processing ') }
-            assert snapshot(stableOutput).match()
+            assert snapshot(stableOutput.sort()).match()
         }
     }
 }
