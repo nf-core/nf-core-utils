@@ -39,14 +39,14 @@ Builds a citations map for **only the tools that ran**, by intersecting the `ver
 Each **short citation** is formatted for direct copy-paste into a methods paragraph — `tool (version, Author (year))` — with the version taken from the `versions` topic and the author/year from `meta.yml`. The reference segment degrades gracefully: short author + year → `doi: …` → homepage url → description. So richer `meta.yml` files produce richer citations:
 
 !!! info "Harvard style"
-    Short citations follow the Harvard style recommended by [nf-core/modules](https://github.com/nf-core/modules/blob/master/modules/meta-schema.json) for `meta.yml` author fields: `Last, F. M.` for author names, with `Author (year)` for single authors and `Author et al. (year)` for multiple.
+Short citations follow the Harvard style recommended by [nf-core/modules](https://github.com/nf-core/modules/blob/master/modules/meta-schema.json) for `meta.yml` author fields: `Last, F. M.` for author names, with `Author (year)` for single authors and `Author et al. (year)` for multiple.
 
-| `meta.yml` fields present                           | Short citation                                          |
-| --------------------------------------------------- | ------------------------------------------------------- |
-| `publication.author`, `publication.year`            | `fastqc (0.12.1, Andrews (2010))`                       |
-| `publication.author` (multiple), `publication.year` | `samtools (1.21, Danecek et al. (2021))`                |
-| `doi` only                                          | `multiqc (1.21, doi: 10.1093/bioinformatics/btw354)`    |
-| `homepage` only                                     | `seqtk (1.4, https://github.com/lh3/seqtk)`             |
+| `meta.yml` fields present                           | Short citation                                       |
+| --------------------------------------------------- | ---------------------------------------------------- |
+| `publication.author`, `publication.year`            | `fastqc (0.12.1, Andrews (2010))`                    |
+| `publication.author` (multiple), `publication.year` | `samtools (1.21, Danecek et al. (2021))`             |
+| `doi` only                                          | `multiqc (1.21, doi: 10.1093/bioinformatics/btw354)` |
+| `homepage` only                                     | `seqtk (1.4, https://github.com/lh3/seqtk)`          |
 
 The full `bibliography` entry (author, year, title, source, doi, url) is unchanged.
 
