@@ -7,6 +7,7 @@ import nextflow.Session
 import nextflow.config.Manifest
 import nfcore.plugin.nfcore.NfcoreCitationUtils
 import org.slf4j.LoggerFactory
+import spock.lang.Issue
 import spock.lang.PendingFeature
 import spock.lang.Specification
 import spock.lang.TempDir
@@ -122,6 +123,32 @@ class NfcoreCitationUtilsTest extends Specification {
         result.samtools.bibliography.contains("<li>Li H, Handsaker B, Wysoker A, et al. (2009). The Sequence Alignment/Map format and SAMtools. Bioinformatics. doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li>")
         result.fastqc.citation == "fastqc (Quality control tool for high throughput sequence data)"
         result.fastqc.bibliography == "<li>fastqc.</li>"
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    def "generateModuleToolCitation bibliography names the tool when a DOI entry has no publication title"() {
+        given:
+        def metaFile = new File(tempDir.toFile(), "meta_no_title.yml")
+        metaFile << """
+        name: test_module
+        tools:
+          - bwa:
+              doi: "10.1093/bioinformatics/btp324"
+              publication:
+                author: "Li H"
+                year: 2009
+          - bowtie2:
+              doi: "10.1038/nmeth.1923"
+        """
+
+        when:
+        def result = NfcoreCitationUtils.generateModuleToolCitation(metaFile)
+
+        then: 'a DOI entry with author/year but no title still names the tool'
+        result.bwa.bibliography == "<li>Li H. (2009). bwa. doi: <a href='https://doi.org/10.1093/bioinformatics/btp324'>10.1093/bioinformatics/btp324</a>.</li>"
+
+        and: 'a DOI-only entry is never anonymous'
+        result.bowtie2.bibliography == "<li>bowtie2. doi: <a href='https://doi.org/10.1038/nmeth.1923'>10.1038/nmeth.1923</a>.</li>"
     }
 
     def "toolCitationText should format citations from collected module citations"() {

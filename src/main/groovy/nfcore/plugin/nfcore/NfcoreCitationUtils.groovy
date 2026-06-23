@@ -257,11 +257,12 @@ class NfcoreCitationUtils {
         def url = citationData.homepage ?: ""
 
         // With DOI: author. (year). title. source. doi: link
+        // Fall back to the tool name when no title is given so the entry is never anonymous.
         if (doi) {
             def parts = []
             if (author) parts << author
             if (year) parts << year
-            if (title) parts << title
+            parts << (title ?: toolName)
             if (source) parts << source
             parts << doi
             return "<li>${parts.join('. ')}.</li>"
