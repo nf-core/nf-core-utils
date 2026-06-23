@@ -958,12 +958,12 @@ ${tool_bibliography}
 
     def "formatShortCitation includes version and a single short author with year"() {
         expect:
-        NfcoreCitationUtils.formatShortCitation('fastqc', [publication: [author: 'Andrews S', year: 2010]], '0.12.1') == 'fastqc (0.12.1, Andrews, 2010)'
+        NfcoreCitationUtils.formatShortCitation('fastqc', [publication: [author: 'Andrews S', year: 2010]], '0.12.1') == 'fastqc (0.12.1, Andrews (2010))'
     }
 
     def "formatShortCitation uses 'et al.' for multiple authors"() {
         expect:
-        NfcoreCitationUtils.formatShortCitation('samtools', [publication: [author: 'Danecek P, Bonfield JK, et al.', year: 2021]], '1.21') == 'samtools (1.21, Danecek <em>et al.</em>, 2021)'
+        NfcoreCitationUtils.formatShortCitation('samtools', [publication: [author: 'Danecek P, Bonfield JK, et al.', year: 2021]], '1.21') == 'samtools (1.21, Danecek <em>et al.</em> (2021))'
     }
 
     def "formatShortCitation falls back to doi then url when no author"() {
@@ -974,7 +974,7 @@ ${tool_bibliography}
 
     def "formatShortCitation omits the version segment when no version is known"() {
         expect:
-        NfcoreCitationUtils.formatShortCitation('fastqc', [publication: [author: 'Andrews S', year: 2010]], null) == 'fastqc (Andrews, 2010)'
+        NfcoreCitationUtils.formatShortCitation('fastqc', [publication: [author: 'Andrews S', year: 2010]], null) == 'fastqc (Andrews (2010))'
     }
 
     def "citationsOnTheFly produces publication-style short citations with version"() {
@@ -995,8 +995,8 @@ ${tool_bibliography}
         when:
         def result = NfcoreCitationUtils.citationsOnTheFly(topicVersions, [fastqcMeta.absolutePath])
 
-        then: 'short citation is copy-paste ready: tool (version, Author year) with DOI link'
-        result.fastqc.citation == 'fastqc (0.12.1, <a href=\'https://doi.org/10.1093/bioinformatics/btv033\'>Andrews, 2010</a>)'
+        then: 'short citation is copy-paste ready: tool (version, Author (year)) with DOI link'
+        result.fastqc.citation == 'fastqc (0.12.1, <a href=\'https://doi.org/10.1093/bioinformatics/btv033\'>Andrews (2010)</a>)'
 
         and: 'the full bibliography is unchanged'
         result.fastqc.bibliography.contains('<li>')

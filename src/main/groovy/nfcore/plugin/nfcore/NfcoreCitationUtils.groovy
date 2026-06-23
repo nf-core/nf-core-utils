@@ -607,8 +607,9 @@ class NfcoreCitationUtils {
     }
 
     /**
-     * Short reference for the inline citation: "Surname et al. year" when an
-     * author is known, else "doi: ...", else the homepage url, else description.
+     * Short reference for the inline citation in Harvard style:
+     * "Surname (year)" or "Surname et al. (year)" when an author is known,
+     * else "doi: ...", else the homepage url, else description.
      */
     private static String shortReference(Map info) {
         def pub = info.publication instanceof Map ? info.publication : [:]
@@ -616,7 +617,7 @@ class NfcoreCitationUtils {
         if (author) {
             def year = pub.year ? pub.year.toString().trim() : ''
             def sa = shortAuthor(author)
-            return year ? "${sa}, ${year}" : sa
+            return year ? "${sa} (${year})" : sa
         }
         if (info.doi) return "doi: ${info.doi}"
         if (info.homepage) return info.homepage.toString()
