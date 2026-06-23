@@ -126,29 +126,29 @@ class NfcoreCitationUtilsTest extends Specification {
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
-    def "generateModuleToolCitation bibliography names the tool when a DOI entry has no publication title"() {
+    def "generateModuleToolCitation bibliography: DOI-only entries are named by tool, publication entries are author-led"() {
         given:
-        def metaFile = new File(tempDir.toFile(), "meta_no_title.yml")
+        def metaFile = new File(tempDir.toFile(), "meta_branches.yml")
         metaFile << """
         name: test_module
         tools:
+          - bowtie2:
+              doi: "10.1038/nmeth.1923"
           - bwa:
               doi: "10.1093/bioinformatics/btp324"
               publication:
                 author: "Li H"
                 year: 2009
-          - bowtie2:
-              doi: "10.1038/nmeth.1923"
         """
 
         when:
         def result = NfcoreCitationUtils.generateModuleToolCitation(metaFile)
 
-        then: 'a DOI entry with author/year but no title still names the tool'
-        result.bwa.bibliography == "<li>Li H. (2009). bwa. doi: <a href='https://doi.org/10.1093/bioinformatics/btp324'>10.1093/bioinformatics/btp324</a>.</li>"
-
-        and: 'a DOI-only entry is never anonymous'
+        then: 'a DOI-only entry (no publication) is identified by the tool name rather than rendered anonymously'
         result.bowtie2.bibliography == "<li>bowtie2. doi: <a href='https://doi.org/10.1038/nmeth.1923'>10.1038/nmeth.1923</a>.</li>"
+
+        and: 'an entry with a publication object is author-led and does not inject the tool name'
+        result.bwa.bibliography == "<li>Li H. (2009). doi: <a href='https://doi.org/10.1093/bioinformatics/btp324'>10.1093/bioinformatics/btp324</a>.</li>"
     }
 
     def "toolCitationText should format citations from collected module citations"() {
