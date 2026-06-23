@@ -11,7 +11,7 @@ Accepted — implementation pending (new MultiQC citations plugin repo + a `nf-c
 - It parses module `meta.yml` tool entries — now a nested `publication` object (author, year, title, source) per nf-core/modules#12129 — and intersects them with the tools that actually ran (the `versions`/`citations` topic channels).
 - It then builds inline citation strings and an HTML bibliography, and `methodsDescriptionText()` interpolates `tool_citations` / `tool_bibliography` into a MultiQC methods-description YAML template that becomes MultiQC custom content.
 
-PR #51 pushed presentation concerns further into these strings: `<a href>` DOI links and italic `<em>et al.</em>`. Review flagged that the *same* strings are also written to a plain-text `auto_citations.txt`, where the markup shows up as literal tags. (See the PR #51 review thread.)
+PR #51 pushed presentation concerns further into these strings: `<a href>` DOI links and italic `<em>et al.</em>`. Review flagged that the _same_ strings are also written to a plain-text `auto_citations.txt`, where the markup shows up as literal tags. (See the PR #51 review thread.)
 
 This conflates two responsibilities:
 
@@ -33,7 +33,7 @@ ADR-0001 already calls for explicit report inputs and deeper reporting seams; AD
 
 ## Decision
 
-(Proposed) Treat **structured citation data as the output contract of `nf-core-utils`**, and move citation *rendering* to MultiQC:
+(Proposed) Treat **structured citation data as the output contract of `nf-core-utils`**, and move citation _rendering_ to MultiQC:
 
 1. `nf-core-utils` collects citations for the tools that actually ran and emits a **structured artifact** into the pipeline outputs: **CSL-JSON is canonical**, with an **optional BibTeX `.bib`** export. It stops at data — no HTML assembly.
 2. A **MultiQC citations plugin**, living in its **own dedicated repository** (`multiqc.modules.v1`), discovers that artifact via a search pattern and renders the inline citations, the bibliography, and the methods/citations section — Harvard short form, italics, DOI/homepage links — using a citation style (CSL). This is where the "fancy" formatting lives.
