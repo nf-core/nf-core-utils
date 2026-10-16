@@ -46,8 +46,8 @@ ch_versions
 
 ### Prerequisites
 
-1. Build the plugin: `make assemble`
-2. Install locally: `make install`
+1. Build the plugin: `mise run assemble`
+2. Install locally: `mise run install`
 
 ### Run the Test
 

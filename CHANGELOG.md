@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated reporting orchestration to use explicit execution context data, including workflow metadata for methods-description templates.
 - Migrated pre-commit configuration to `prek.toml` and added validation snapshot checks.
 - Enabled Gradle build caching, managed CI caches with `setup-gradle`, and added cache warming for Amp orbs.
+- Replaced Make commands with `mise run` tasks and a shared, locked Java 21, Nextflow, and nf-test toolchain for development and CI.
 
 ### Fixed
 

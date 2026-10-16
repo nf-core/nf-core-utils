@@ -7,7 +7,7 @@ repo = "local"
 hooks = [
   { id = "nextflow-lint",
     name = "Lint Nextflow scripts and fix formatting",
-    entry = "nextflow lint",
+    entry = "mise exec -- nextflow lint",
     language = "system",
     files = '\.nf$|nextflow\.config$',
     args = ["-format", "-sort-declarations", "-spaces", "4", "-harshil-alignment", "-output", "concise"],
@@ -23,7 +23,7 @@ hooks = [
   },
   { id = "gradle-test",
     name = "Run unit tests before push",
-    entry = "./gradlew test",
+    entry = "mise run test",
     language = "system",
     pass_filenames = false,
     stages = ["pre-push"],

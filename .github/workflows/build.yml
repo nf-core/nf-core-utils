@@ -14,20 +14,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "21"
+      - name: Set up tools
+        uses: jdx/mise-action@v5
 
       - name: Set up Gradle and cache
         uses: gradle/actions/setup-gradle@v5
 
       - name: Build plugin
-        run: ./gradlew assemble
+        run: mise run assemble
 
       - name: Run tests
-        run: ./gradlew test
+        run: mise run test
 
       - name: Upload test results
         if: always()

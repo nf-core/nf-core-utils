@@ -22,6 +22,5 @@ versions reporting modules already do.
 ## Run
 
 ```bash
-make install
-cd validation && nf-test test citations-on-the-fly/main.nf.test
+mise run validate citations-on-the-fly/main.nf.test
 ```
