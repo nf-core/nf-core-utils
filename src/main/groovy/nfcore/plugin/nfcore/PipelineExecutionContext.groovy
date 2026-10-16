@@ -54,7 +54,7 @@ class PipelineExecutionContext {
     /** Full Nextflow config map. */
     final Map config
 
-    /** Nextflow engine version (from config or NXF_VER). */
+    /** Nextflow engine version (from config or NXF_VER, else of the running Nextflow). */
     final String nextflowVersion
 
     /** Manifest key-value pairs as a plain map. */
@@ -102,9 +102,10 @@ class PipelineExecutionContext {
         // Extract projectName safely — property may not exist on all metadata versions
         String projectName = metadataProperty(workflowMetadata, 'projectName')
 
-        // Nextflow version: config > NXF_VER env var
+        // Nextflow version: config > NXF_VER env var > running Nextflow
         def nfVer = (cfg.get('nextflow') as Map)?.get('version')?.toString()
             ?: System.getenv('NXF_VER')
+            ?: NfcoreVersionUtils.runningNextflowVersion()
 
         return new PipelineExecutionContext(
             workflowName: manifest?.getName() ?: 'unknown',

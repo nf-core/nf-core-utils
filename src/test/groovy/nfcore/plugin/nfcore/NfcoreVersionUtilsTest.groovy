@@ -87,6 +87,36 @@ class NfcoreVersionUtilsTest extends Specification {
         null     | 'abcdef1234567890' | '-gabcdef1'
     }
 
+    def 'resolveNextflowVersion falls back to the version of the running Nextflow'() {
+        given:
+        def session = Mock(Session) { getConfig() >> config }
+
+        expect:
+        NfcoreVersionUtils.runningNextflowVersion() ==~ /\d+\.\d+\.\d+.*/
+        NfcoreVersionUtils.resolveNextflowVersion(session, '24.10.0') == '24.10.0'
+        NfcoreVersionUtils.resolveNextflowVersion(session) == expected
+
+        where:
+        config                       || expected
+        [nextflow: [version: '1.0']] || '1.0'
+        [:]                          || (System.getenv('NXF_VER') ?: NfcoreVersionUtils.runningNextflowVersion())
+    }
+
+    def 'collectVersions reports the running Nextflow version, not unknown, when none is given'() {
+        given:
+        def session = Mock(Session) {
+            getManifest() >> Mock(Manifest) { getName() >> 'pipe'; getVersion() >> '1.0.0' }
+            getConfig() >> [:]
+        }
+
+        when:
+        def yaml = NfcoreVersionUtils.collectVersions([], session)
+
+        then:
+        !yaml.contains('unknown')
+        yaml.contains("Nextflow: ${System.getenv('NXF_VER') ?: NfcoreVersionUtils.runningNextflowVersion()}")
+    }
+
     @Issue("https://github.com/nf-core/nf-core-utils/issues/68")
     def 'getWorkflowVersion adds the commit of the run from the Session'() {
         given:
