@@ -171,7 +171,7 @@ class NfcoreReportingOrchestrator {
 
         if (ctx) {
             def wfVersion = NfcoreVersionUtils.getWorkflowVersion(
-                null, ctx.workflowVersion
+                null, ctx.workflowVersion, ctx.workflowCommitId
             )
             report.addWorkflowVersion(ctx.workflowName, wfVersion, ctx.nextflowVersion)
         }

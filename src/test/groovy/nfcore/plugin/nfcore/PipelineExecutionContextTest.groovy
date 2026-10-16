@@ -2,6 +2,7 @@ package nfcore.plugin.nfcore
 
 import nextflow.Session
 import nextflow.config.Manifest
+import nextflow.script.WorkflowMetadata
 import spock.lang.Narrative
 import spock.lang.Issue
 import spock.lang.See
@@ -48,6 +49,22 @@ class PipelineExecutionContextTest extends Specification {
 
         then:
         ctx.workflowVersion == '3.14.0'
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/68")
+    def 'fromSession extracts the commit of the run from workflow metadata'() {
+        given:
+        def session = Mock(Session) {
+            getManifest() >> Mock(Manifest)
+            getConfig() >> [:]
+            getWorkflowMetadata() >> Mock(WorkflowMetadata) { getCommitId() >> '957a0a3ea1f25acaf47420ed1976e34f1cd57cdc' }
+        }
+
+        when:
+        def ctx = PipelineExecutionContext.fromSession(session)
+
+        then:
+        ctx.workflowCommitId == '957a0a3ea1f25acaf47420ed1976e34f1cd57cdc'
     }
 
     def 'fromSession extracts nextflow version from config'() {

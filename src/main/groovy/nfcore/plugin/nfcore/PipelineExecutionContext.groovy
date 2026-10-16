@@ -39,6 +39,9 @@ class PipelineExecutionContext {
     /** Pipeline version from manifest (e.g. "3.14.0"). */
     final String workflowVersion
 
+    /** Git commit of the run from WorkflowMetadata, when run from a repository. */
+    final String workflowCommitId
+
     /** Project name from WorkflowMetadata, when available. */
     final String projectName
 
@@ -67,6 +70,7 @@ class PipelineExecutionContext {
     PipelineExecutionContext(Map props = [:]) {
         this.workflowName = (props.workflowName as String) ?: 'unknown'
         this.workflowVersion = props.workflowVersion as String
+        this.workflowCommitId = props.workflowCommitId as String
         this.projectName = props.projectName as String
         this.profile = props.profile as String
         this.configFiles = (props.configFiles as List<String>) ?: []
@@ -96,12 +100,7 @@ class PipelineExecutionContext {
         } catch (Exception ignored) {}
 
         // Extract projectName safely — property may not exist on all metadata versions
-        String projectName = null
-        if (workflowMetadata instanceof Map) {
-            projectName = workflowMetadata.get('projectName')?.toString()
-        } else if (workflowMetadata != null && workflowMetadata.metaClass?.hasProperty(workflowMetadata, 'projectName')) {
-            projectName = workflowMetadata.projectName?.toString()
-        }
+        String projectName = metadataProperty(workflowMetadata, 'projectName')
 
         // Nextflow version: config > NXF_VER env var
         def nfVer = (cfg.get('nextflow') as Map)?.get('version')?.toString()
@@ -110,6 +109,7 @@ class PipelineExecutionContext {
         return new PipelineExecutionContext(
             workflowName: manifest?.getName() ?: 'unknown',
             workflowVersion: manifest?.getVersion()?.toString(),
+            workflowCommitId: metadataProperty(workflowMetadata, 'commitId'),
             projectName: projectName,
             profile: session.getProfile(),
             configFiles: (cfg.get('configFiles') instanceof List) ? (List<String>) cfg.get('configFiles') : [],
@@ -118,6 +118,16 @@ class PipelineExecutionContext {
             manifestMap: safeManifestMap(manifest),
             workflowMap: safeWorkflowMap(workflowMetadata)
         )
+    }
+
+    private static String metadataProperty(def meta, String name) {
+        if (meta instanceof Map) {
+            return meta.get(name)?.toString()
+        }
+        if (meta != null && meta.metaClass?.hasProperty(meta, name)) {
+            return meta."${name}"?.toString()
+        }
+        return null
     }
 
     private static Map safeManifestMap(def manifest) {

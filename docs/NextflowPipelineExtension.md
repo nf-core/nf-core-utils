@@ -118,6 +118,8 @@ log.info "Full version: ${version_str}"
 Full version: v1.0.0-gabc1234
 ```
 
+Called without arguments, `getWorkflowVersion()` takes both from the running workflow, so it gives the same result.
+
 #### Function Parameters
 
 | Parameter         | Type              | Description                           | Example                 |

@@ -82,6 +82,17 @@ class ExtensionAdaptersTest extends Specification {
         result == 'v3.14.0'
     }
 
+    def 'VersionAdapter.getWorkflowVersion adds the commit of the run from context'() {
+        given:
+        def ctx = new PipelineExecutionContext(workflowVersion: '3.14.0', workflowCommitId: '957a0a3ea1f25acaf47420ed1976e34f1cd57cdc')
+        def adapter = new VersionAdapter(ctx)
+
+        expect:
+        adapter.getWorkflowVersion() == 'v3.14.0-g957a0a3'
+        adapter.getWorkflowVersion(null, 'abcdef1234567890') == 'v3.14.0-gabcdef1'
+        adapter.getWorkflowVersion('2.0.0', null) == 'v2.0.0'
+    }
+
     def 'VersionAdapter.getWorkflowVersion uses explicit version over context'() {
         given:
         def ctx = new PipelineExecutionContext(workflowVersion: '3.14.0')

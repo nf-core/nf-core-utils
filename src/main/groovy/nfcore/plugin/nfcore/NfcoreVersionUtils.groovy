@@ -124,8 +124,11 @@ class NfcoreVersionUtils {
      * @return A formatted version string
      */
     static String getWorkflowVersion(Session session = null, String version = null, String commitId = null) {
-        // Get version from session if not explicitly provided
+        // Get the version, and the commit of the run when neither is given, from the session
         if (session && !version) {
+            if (!commitId) {
+                commitId = session.getWorkflowMetadata()?.commitId
+            }
             def manifest = session.getManifest()
             version = manifest?.getVersion()
         }
@@ -138,7 +141,7 @@ class NfcoreVersionUtils {
 
         // Add git commit information if provided
         if (commitId) {
-            def gitShortsha = commitId.substring(0, 7)
+            def gitShortsha = commitId.take(7)
             versionString += "-g${gitShortsha}"
         }
 

@@ -31,8 +31,10 @@ class VersionAdapter {
     }
 
     String getWorkflowVersion(String version = null, String commitId = null) {
+        // the commit of the run goes with the version of the run, not with an explicit version
         def ver = version ?: ctx.workflowVersion
-        return NfcoreVersionUtils.getWorkflowVersion(null, ver, commitId)
+        def commit = commitId ?: (version ? null : ctx.workflowCommitId)
+        return NfcoreVersionUtils.getWorkflowVersion(null, ver, commit)
     }
 
     String collectVersions(Object input, Object nextflowVersion = null) {

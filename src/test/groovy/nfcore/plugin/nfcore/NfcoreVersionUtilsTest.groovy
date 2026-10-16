@@ -2,6 +2,7 @@ package nfcore.plugin.nfcore
 
 import nextflow.Session
 import nextflow.config.Manifest
+import nextflow.script.WorkflowMetadata
 import spock.lang.Issue
 import spock.lang.Specification
 import spock.lang.TempDir
@@ -84,6 +85,55 @@ class NfcoreVersionUtilsTest extends Specification {
         '1.0.0'  | 'abcdef1234567890' | 'v1.0.0-gabcdef1'
         'v2.1.0' | '1234567890abcdef' | 'v2.1.0-g1234567'
         null     | 'abcdef1234567890' | '-gabcdef1'
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/68")
+    def 'getWorkflowVersion adds the commit of the run from the Session'() {
+        given:
+        def session = Mock(Session) {
+            getManifest() >> Mock(Manifest) { getVersion() >> '1.0.0dev' }
+            getWorkflowMetadata() >> Mock(WorkflowMetadata) { getCommitId() >> '957a0a3ea1f25acaf47420ed1976e34f1cd57cdc' }
+        }
+
+        expect:
+        NfcoreVersionUtils.getWorkflowVersion(session) == 'v1.0.0dev-g957a0a3'
+        // an explicit commit wins, and an explicit version is not the version of the run
+        NfcoreVersionUtils.getWorkflowVersion(session, null, 'abcdef1234567890') == 'v1.0.0dev-gabcdef1'
+        NfcoreVersionUtils.getWorkflowVersion(session, '2.0.0') == 'v2.0.0'
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/68")
+    def 'getWorkflowVersion has no commit for a run outside of a repository'() {
+        given:
+        def session = Mock(Session) {
+            getManifest() >> Mock(Manifest) { getVersion() >> '1.0.0' }
+            getWorkflowMetadata() >> metadata
+        }
+
+        expect:
+        NfcoreVersionUtils.getWorkflowVersion(session) == 'v1.0.0'
+
+        where:
+        metadata << [null, Mock(WorkflowMetadata) { getCommitId() >> null }]
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/68")
+    def 'collectVersions reports the commit of the run'() {
+        given:
+        def session = Mock(Session) {
+            getManifest() >> Mock(Manifest) {
+                getName() >> 'test/repro'
+                getVersion() >> '1.0.0dev'
+            }
+            getWorkflowMetadata() >> Mock(WorkflowMetadata) { getCommitId() >> '957a0a3ea1f25acaf47420ed1976e34f1cd57cdc' }
+            getConfig() >> [:]
+        }
+
+        when:
+        def yaml = NfcoreVersionUtils.collectVersions([], session, '25.10.4')
+
+        then:
+        yaml.contains('test/repro: v1.0.0dev-g957a0a3')
     }
 
     // =========================================================================
