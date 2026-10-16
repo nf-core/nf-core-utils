@@ -155,6 +155,86 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         NfcoreNotificationUtils.getSingleReport(null, 'pipe') == null
     }
 
+    // --- reports on a remote file system (#65): a zip file system stands for object storage ---
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/65")
+    def 'getSingleReport keeps the file system of a report given as a string'() {
+        given:
+        def zip = zipWithReport('<html>report</html>')
+
+        when:
+        def report = NfcoreNotificationUtils.getSingleReport(["jar:${zip.toUri()}!/multiqc_report.html".toString()], 'pipe')
+
+        then:
+        !NfcoreNotificationUtils.isLocal(report)
+        report.text == '<html>report</html>'
+
+        cleanup:
+        report?.fileSystem?.close()
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/65")
+    def 'localReport copies a remote report to a local file'() {
+        given:
+        def zip = zipWithReport('<html>report</html>')
+        def fs = java.nio.file.FileSystems.newFileSystem(zip)
+        def remote = fs.getPath('/multiqc_report.html')
+
+        when:
+        def local = NfcoreNotificationUtils.localReport(remote, 1024)
+
+        then:
+        NfcoreNotificationUtils.isLocal(local)
+        local.toFile().text == '<html>report</html>'
+
+        cleanup:
+        java.nio.file.Files.deleteIfExists(local)
+        fs.close()
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/65")
+    def 'localReport does not download a remote report too large to be attached'() {
+        given:
+        def zip = zipWithReport('<html>report</html>')
+        def fs = java.nio.file.FileSystems.newFileSystem(zip)
+
+        expect:
+        NfcoreNotificationUtils.localReport(fs.getPath('/multiqc_report.html'), 10) == null
+
+        cleanup:
+        fs.close()
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/65")
+    def 'localReport keeps a local report, and warns about a missing remote one'() {
+        given:
+        def local = java.nio.file.Files.createTempFile('report', '.html')
+        def fs = java.nio.file.FileSystems.newFileSystem(zipWithReport('x'))
+        def appender = captureLogsFor(NfcoreNotificationUtils)
+
+        expect:
+        NfcoreNotificationUtils.localReport(local, 0) == local
+        NfcoreNotificationUtils.localReport(null, 1024) == null
+        NfcoreNotificationUtils.localReport(fs.getPath('/missing.html'), 1024) == null
+        logMessages(appender).any { it.contains('Could not read the MultiQC report') }
+
+        cleanup:
+        detachAppender(appender)
+        java.nio.file.Files.deleteIfExists(local)
+        fs.close()
+    }
+
+    private Path zipWithReport(String content) {
+        def zip = java.nio.file.Files.createTempFile('work', '.zip')
+        new java.util.zip.ZipOutputStream(java.nio.file.Files.newOutputStream(zip)).withCloseable { out ->
+            out.putNextEntry(new java.util.zip.ZipEntry('multiqc_report.html'))
+            out.write(content.bytes)
+            out.closeEntry()
+        }
+        zip.toFile().deleteOnExit()
+        return zip
+    }
+
     // --- helpers ---
 
     private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {
