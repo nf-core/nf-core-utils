@@ -25,10 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `dumpParametersToJSON()` to serialize Nextflow parameter types and copy parameter reports through Nextflow file handling for cloud/remote paths.
 - Fixed the startup config checks warning on every run: the profile and config files are read from the session, where Nextflow keeps them, and the positional argument check looks at the arguments of the script instead of the command line, which starts with `nextflow` ([#66](https://github.com/nf-core/nf-core-utils/issues/66)).
 - Fixed the warnings, errors and completion summary of the plugin never reaching the console: the plugin logs under `nextflow.nfcore`, as the console only shows the loggers under `nextflow` ([#67](https://github.com/nf-core/nf-core-utils/issues/67)).
-- Fixed malformed HTML tag (`</a>` → `</span>`) in `paramsSummaryMultiqc()`.
 - Fixed `completionEmail()` never attaching the MultiQC report with an object storage work directory (`s3://`, `gs://`, `az://`): the report is copied locally for the sendmail template, which reads it with `new File()`, and `getSingleReport()` keeps the file system of a report given as a string. A remote `outdir` no longer creates a local `s3:` directory ([#65](https://github.com/nf-core/nf-core-utils/issues/65)).
 - Fixed `Nextflow: unknown` in the version reports without a Nextflow version given or `NXF_VER` set: they fall back to the version of the running Nextflow.
 - Fixed `completionEmail()` ignoring `plaintext_email`: a plaintext e-mail is sent as text with `mail`, and a failure to send the e-mail is a warning instead of an error in `onComplete`.
+- Fixed malformed HTML tag (`</a>` → `</span>`) in `paramsSummaryMultiqc()`.
 
 ## [0.4.0] - 2025-10-31
 
