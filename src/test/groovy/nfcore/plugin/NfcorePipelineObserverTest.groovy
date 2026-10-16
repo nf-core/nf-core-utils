@@ -49,7 +49,7 @@ class NfcorePipelineObserverTest extends Specification {
         'test'     | ['nextflow.config']                    | ['docker'] || false         | true
     }
 
-    def 'onFlowCreate stops a run whose profile ends with a comma'() {
+    def 'onFlowCreate throws when called directly with a profile ending in a comma'() {
         given:
         def session = new Session()
         session.profile = 'test,'
