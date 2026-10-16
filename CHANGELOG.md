@@ -19,10 +19,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed the prek configuration and its CI workflow back to the standard nf-core `.pre-commit-config.yaml` and `pre-commit.yml`, with the same hooks ([#38](https://github.com/nf-core/nf-core-utils/issues/38)).
 - Updated reporting orchestration to use explicit execution context data, including workflow metadata for methods-description templates.
 - Migrated pre-commit configuration to `prek.toml` and added validation snapshot checks.
+- Enabled Gradle build caching, managed CI caches with `setup-gradle`, and added cache warming for Amp orbs.
+- Replaced Make commands with `mise run` tasks and a shared, locked Java 21, Nextflow, and nf-test toolchain for development and CI.
 
 ### Fixed
 
+- Fixed the workflow version of `collectVersions()`, `completionEmail()` and the other version reports missing the `-g<sha>` commit suffix of runs from a repository: `getWorkflowVersion()` without arguments now adds the commit of the run, as the template helpers did ([#68](https://github.com/nf-core/nf-core-utils/issues/68)).
 - Fixed `dumpParametersToJSON()` to serialize Nextflow parameter types and copy parameter reports through Nextflow file handling for cloud/remote paths.
+- Fixed the startup config checks warning on every run: the profile and config files are read from the session, where Nextflow keeps them, and the positional argument check looks at the arguments of the script instead of the command line, which starts with `nextflow` ([#66](https://github.com/nf-core/nf-core-utils/issues/66)).
+- Fixed the warnings, errors and completion summary of the plugin never reaching the console: the plugin logs under `nextflow.nfcore`, as the console only shows the loggers under `nextflow` ([#67](https://github.com/nf-core/nf-core-utils/issues/67)).
+- Fixed `completionEmail()` never attaching the MultiQC report with an object storage work directory (`s3://`, `gs://`, `az://`): the report is copied locally for the sendmail template, which reads it with `new File()`, and `getSingleReport()` keeps the file system of a report given as a string. A remote `outdir` no longer creates a local `s3:` directory ([#65](https://github.com/nf-core/nf-core-utils/issues/65)).
+- Fixed `Nextflow: unknown` in the version reports without a Nextflow version given or `NXF_VER` set: they fall back to the version of the running Nextflow.
+- Fixed `completionEmail()` ignoring `plaintext_email`: a plaintext e-mail is sent as text with `mail`, and a failure to send the e-mail is a warning instead of an error in `onComplete`.
+- Fixed `completionEmail()` aborting on an unwritable, unused `.sendmail_tmp.html` file and reporting success before the mail command finished: it now supplies input through a temporary file, checks the exit status, and terminates commands after 30 seconds before trying the fallback. Reports are saved before delivery, failed attachment copies are cleaned up, and cleanup errors remain warnings ([#71](https://github.com/nf-core/nf-core-utils/pull/71)).
+- Removed webhook URLs and potentially credential-bearing response bodies and exception messages from notification logs. Notification validation no longer depends on real webhook or mail delivery ([#71](https://github.com/nf-core/nf-core-utils/pull/71)).
 - Fixed malformed HTML tag (`</a>` → `</span>`) in `paramsSummaryMultiqc()`.
 - Fixed broken links: the README link to the `NfCorePipelineExtension` docs, deleted with `NfcorePipelineUtils`, and the links to moved pages of the nf-core website in the utility docs.
 

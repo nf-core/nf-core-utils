@@ -15,6 +15,8 @@ nextflow_pipeline {
                     .replaceAll(/https:\/\/api\.cloud\.seqera\.io\/trace\/[A-Za-z0-9]+\/complete/, 'https://api.cloud.seqera.io/trace/[TRACE_ID]/complete')
                     .replaceAll(/ DSL2 - revision:/, ' - revision:')
                     .replaceAll(/\[PATH\]\/\.nf-test\/tests/, '[PATH]/tests')
+                    // the version reports give the running Nextflow version, which changes with the installed one
+                    .replaceAll(/^(\s*Nextflow: )\S+$/, '$1[VERSION]')
             }.findAll { line ->
                 line != '==========================================' &&
                 line != '===========================================' &&

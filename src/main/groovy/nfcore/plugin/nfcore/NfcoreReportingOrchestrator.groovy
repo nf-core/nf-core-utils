@@ -30,7 +30,7 @@ import nextflow.Session
  *
  * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §4
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcoreReportingOrchestrator')
 class NfcoreReportingOrchestrator {
 
     // =========================================================================
@@ -171,7 +171,7 @@ class NfcoreReportingOrchestrator {
 
         if (ctx) {
             def wfVersion = NfcoreVersionUtils.getWorkflowVersion(
-                null, ctx.workflowVersion
+                null, ctx.workflowVersion, ctx.workflowCommitId
             )
             report.addWorkflowVersion(ctx.workflowName, wfVersion, ctx.nextflowVersion)
         }

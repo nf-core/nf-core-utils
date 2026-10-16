@@ -36,8 +36,8 @@ Demonstrates the migration from local pipeline utility functions to plugin-based
 # Run individual test
 nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.4.0
 
-# Or use the old validation script
-./validation/validate.sh
+# Or install the plugin and run validation
+mise run validate version-topic-channels/main.nf.test
 ```
 
 ### ⚙️ config-validation/
@@ -100,21 +100,21 @@ validation/
 Run all validation tests with snapshot verification:
 
 ```bash
-# Run all validation tests
-nf-test test
+# Install the plugin and run all validation tests
+mise run validate
 
 # Run specific test with snapshots
-nf-test test validation/config-validation/main.nf.test
-nf-test test validation/version-topic-channels/main.nf.test
-nf-test test validation/notification-system/main.nf.test
-nf-test test validation/pipeline-utilities/main.nf.test
+mise run validate config-validation/main.nf.test
+mise run validate version-topic-channels/main.nf.test
+mise run validate notification-system/main.nf.test
+mise run validate pipeline-utilities/main.nf.test
 
-# Update snapshots after plugin changes
-nf-test test --update-snapshot
-
-# Clean obsolete snapshots
-nf-test test --clean-snapshot
+# Update snapshots and clean obsolete entries after intended behavior changes
+mise run update-snapshots
 ```
+
+These tasks run from `validation/`, even when invoked from the repository root
+or a subdirectory. Test paths passed to them are relative to `validation/`.
 
 ### Direct Nextflow Execution (Legacy)
 
@@ -134,25 +134,17 @@ nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.4.0 -pr
 ### Quick Validation (All Tests)
 
 ```bash
-# Legacy validation script (still available)
-./validation/validate-all.sh
+mise run validate
 ```
 
 ## Prerequisites
 
-1. **Build the plugin**: `make assemble`
-2. **Install locally**: `make install`
-3. **Nextflow**: Ensure Nextflow >=25.04.0 is installed
-4. **nf-test**: Install nf-test for automated testing:
+1. **Install the toolchain**: Follow the [development setup](../README.md#development-setup), then run `mise install --locked`.
+2. **Build the plugin**: `mise run assemble`.
+3. **Install locally**: `mise run install` (also done automatically by `mise run validate`).
 
-   ```bash
-   # Install nf-test (latest version)
-   wget -qO- https://get.nf-test.com | bash
-   sudo mv nf-test /usr/local/bin/
-
-   # Or use conda/mamba
-   conda install -c bioconda nf-test
-   ```
+Java, Nextflow, and nf-test versions are managed by mise. For direct tool commands
+below, activate mise in your shell or prefix the command with `mise exec --`.
 
 ## Migration Guidelines
 
@@ -233,12 +225,9 @@ To add a new validation test:
    # See existing .nf.test files as examples
    ```
 
-4. **Update validation runner**:
-   Add your test to `validate-all.sh`:
-
-   ```bash
-   run_validation_test "Your Test Name" "your-test-name"
-   ```
+4. **Run validation**:
+   `mise run validate your-test-name/main.nf.test`. The full `mise run validate`
+   task discovers new `.nf.test` files automatically.
 
 5. **Document the test**:
    Update this main README with test description

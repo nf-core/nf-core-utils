@@ -12,7 +12,7 @@ class NfcoreConfigValidatorTest extends Specification {
         def config = [profile: 'standard', configFiles: configFiles]
         // Capture logs
         def appender = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>()
-        def logger = LoggerFactory.getLogger(NfcoreConfigValidator)
+        def logger = LoggerFactory.getLogger("nextflow.nfcore.NfcoreConfigValidator")
         if (logger instanceof ch.qos.logback.classic.Logger) {
             logger.addAppender(appender)
             appender.start()
@@ -45,7 +45,7 @@ class NfcoreConfigValidatorTest extends Specification {
         def validator = new NfcoreConfigValidator()
         // Capture logs
         def appender = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>()
-        def logger = LoggerFactory.getLogger(NfcoreConfigValidator)
+        def logger = LoggerFactory.getLogger("nextflow.nfcore.NfcoreConfigValidator")
         if (logger instanceof ch.qos.logback.classic.Logger) {
             logger.addAppender(appender)
             appender.start()

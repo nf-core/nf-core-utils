@@ -19,13 +19,18 @@ package nfcore.plugin.nfcore
 import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.extension.FilesEx
+import nextflow.file.FileHelper
 
+import java.nio.file.FileSystems
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.util.concurrent.TimeUnit
 
 /**
  * Utility functions for nf-core pipeline notifications
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcoreNotificationUtils')
 class NfcoreNotificationUtils {
 
     // Reusable template engine instance to avoid creating multiple instances
@@ -132,7 +137,8 @@ class NfcoreNotificationUtils {
      * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §2
      */
     static Path getSingleReport(def multiqc_reports, String workflowName) {
-        def toPath = { it instanceof Path ? it : (it != null ? java.nio.file.Paths.get(it.toString()) : null) }
+        // FileHelper keeps the file system of a path given as a string (s3://, gs://, az://), unlike Paths.get()
+        def toPath = { it instanceof Path ? it : (it != null ? FileHelper.asPath(it.toString()) : null) }
 
         if (multiqc_reports instanceof Path) {
             return multiqc_reports
@@ -150,6 +156,98 @@ class NfcoreNotificationUtils {
             }
         } else {
             return null
+        }
+    }
+
+    /**
+     * The report as a local file, as the sendmail template of the pipelines reads it with `new File()`: a report on
+     * another file system, like the object storage work directory of a cloud run, is copied to a temporary file.
+     *
+     * @param report The MultiQC report
+     * @param maxSize The maximum size of the report to attach, in bytes
+     * @return The report on the local file system, null when there is none, or when it is too large to be attached
+     */
+    static Path localReport(Path report, long maxSize) {
+        if (report == null) {
+            return null
+        }
+        Path local = null
+        try {
+            if (isLocal(report)) {
+                return report
+            }
+            // not downloaded when the template would not attach it
+            if (Files.size(report) >= maxSize) {
+                return null
+            }
+            local = Files.createTempFile('multiqc_report', '.html')
+            Files.copy(report, local, StandardCopyOption.REPLACE_EXISTING)
+            return local
+        } catch (Exception e) {
+            deleteTemporaryFile(local)
+            log.warn("Could not read the MultiQC report ${report.toUri()}: ${e.message}")
+            return null
+        }
+    }
+
+    private static void deleteTemporaryFile(Path path) {
+        if (path == null) {
+            return
+        }
+        try {
+            Files.deleteIfExists(path)
+        } catch (Exception e) {
+            log.warn("Could not remove temporary file ${path}: ${e.class.simpleName}")
+        }
+    }
+
+    static boolean isLocal(Path path) {
+        return path.fileSystem == FileSystems.getDefault()
+    }
+
+    /**
+     * The commands to send the completion e-mail with, tried in order: sendmail with the HTML e-mail and the MultiQC
+     * report, then mail with the HTML e-mail, or mail with the text e-mail for a plaintext e-mail.
+     *
+     * @return The command, its input and its name for the logs, for each
+     */
+    static List<Map> emailCommands(boolean plaintextEmail, String subject, String emailAddress,
+                                   String sendmailContent, String emailHtml, String emailTxt) {
+        if (plaintextEmail) {
+            return [[command: ['mail', '-s', subject, emailAddress], input: emailTxt, name: 'mail']]
+        }
+        return [
+            [command: ['sendmail', '-t'], input: sendmailContent, name: 'sendmail'],
+            [command: ['mail', '-s', subject, '--content-type=text/html', emailAddress], input: emailHtml, name: 'mail'],
+        ]
+    }
+
+    /** Execute a mail command with a deadline, including time spent reading its input. */
+    static int runEmailCommand(List<String> command, String input, long timeoutSeconds) {
+        Path message = Files.createTempFile('nfcore-email-', '.txt')
+        Process process = null
+        try {
+            Files.writeString(message, input)
+            // A file avoids a blocking parent-side pipe write when the mail command stops reading.
+            process = new ProcessBuilder(command)
+                .redirectInput(message.toFile())
+                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start()
+            if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
+                throw new IOException("Mail command timed out after ${timeoutSeconds} seconds")
+            }
+            return process.exitValue()
+        } finally {
+            try {
+                if (process?.isAlive()) {
+                    process.descendants().withCloseable { children -> children.forEach { it.destroyForcibly() } }
+                    process.destroyForcibly()
+                    process.waitFor(5, TimeUnit.SECONDS)
+                }
+            } finally {
+                deleteTemporaryFile(message)
+            }
         }
     }
 
@@ -271,7 +369,8 @@ class NfcoreNotificationUtils {
             }
         }
 
-        def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${wf?.projectDir}", mqcFile: mqc_report, mqcMaxSize: max_multiqc_email_size]
+        def mqc_file = localReport(mqc_report, max_multiqc_email_size as long)
+        def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${wf?.projectDir}", mqcFile: mqc_file, mqcMaxSize: max_multiqc_email_size]
         def sendmail_html = email_html  // Fallback content
 
         try {
@@ -284,40 +383,25 @@ class NfcoreNotificationUtils {
             }
         } catch (Exception e) {
             log.warn("Failed to render sendmail template: ${e.message}")
-        }
-
-        // Send the HTML e-mail
-        def colors = logColours(monochrome_logs) as Map
-        if (email_address) {
-            try {
-                if (plaintext_email) {
-                    new org.codehaus.groovy.GroovyException('Send plaintext e-mail, not HTML')
-                }
-                // Try to send HTML e-mail using sendmail
-                def sendmail_tf = new File(wf?.launchDir.toString(), ".sendmail_tmp.html")
-                sendmail_tf.withWriter { w -> w << sendmail_html }
-                ['sendmail', '-t'].execute() << sendmail_html
-                log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address} (sendmail)-")
-            }
-            catch (Exception msg) {
-                log.debug(msg.toString())
-                log.debug("Trying with mail instead of sendmail")
-                // Catch failures and try with plaintext
-                def mail_cmd = ['mail', '-s', subject, '--content-type=text/html', email_address]
-                mail_cmd.execute() << email_html
-                log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address} (mail)-")
+        } finally {
+            // the copy of a remote report
+            if (mqc_file != null && mqc_file != mqc_report) {
+                deleteTemporaryFile(mqc_file)
             }
         }
 
-        // Write summary e-mail HTML to a file
+        // Persist the reports before attempting external mail delivery.
         if (outdir != null) {
             try {
                 def output_hf = new File(wf?.launchDir.toString(), ".pipeline_report.html")
                 output_hf.withWriter { w -> w << email_html }
 
-                // Ensure pipeline_info directory exists
-                def pipeline_info_dir = new File("${outdir}/pipeline_info")
-                pipeline_info_dir.mkdirs()
+                // Ensure pipeline_info directory exists, in a local outdir: copyTo creates it in a remote one, where
+                // new File() would make a local directory named after it (`s3:/bucket/results/pipeline_info`)
+                def pipeline_info_dir = FileHelper.asPath("${outdir}/pipeline_info")
+                if (isLocal(pipeline_info_dir)) {
+                    Files.createDirectories(pipeline_info_dir)
+                }
 
                 FilesEx.copyTo(output_hf.toPath(), "${outdir}/pipeline_info/pipeline_report.html")
                 output_hf.delete()
@@ -332,6 +416,28 @@ class NfcoreNotificationUtils {
             }
         } else {
             log.warn("Cannot write email reports - output directory is null")
+        }
+
+        // Send the e-mail
+        def colors = logColours(monochrome_logs) as Map
+        if (email_address) {
+            def sent = emailCommands(plaintext_email, subject, email_address, sendmail_html, email_html, email_txt).find { command ->
+                try {
+                    def exitCode = runEmailCommand(command.command as List<String>, command.input as String, 30)
+                    if (exitCode != 0) {
+                        log.debug("Could not send the summary e-mail with ${command.name}: exit status ${exitCode}")
+                        return false
+                    }
+                    log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address} (${command.name})-")
+                    return true
+                } catch (Exception e) {
+                    log.debug("Could not send the summary e-mail with ${command.name}: ${e}")
+                    return false
+                }
+            }
+            if (!sent) {
+                log.warn("[${workflowName}] Could not send the summary e-mail to ${email_address}")
+            }
         }
     }
 
@@ -445,7 +551,7 @@ class NfcoreNotificationUtils {
                 ])
             }
         } catch (Exception e) {
-            log.warn("Failed to render IM notification template: ${e.message}")
+            log.warn("Failed to render IM notification template (${e.class.simpleName})")
             return
         }
 
@@ -455,21 +561,16 @@ class NfcoreNotificationUtils {
             post.setRequestMethod("POST")
             post.setDoOutput(true)
             post.setRequestProperty("Content-Type", "application/json")
-            post.getOutputStream().write(json_message.getBytes("UTF-8"))
+            post.getOutputStream().withCloseable { it.write(json_message.getBytes("UTF-8")) }
             def postRC = post.getResponseCode()
             if (postRC < 200 || postRC >= 300) {
-                def errorText = ""
-                try {
-                    errorText = post.getErrorStream()?.getText() ?: "Unknown error"
-                } catch (Exception ignored) {
-                    errorText = "Could not read error stream"
-                }
-                log.warn("IM notification failed with response code ${postRC}: ${errorText}")
+                // Response bodies and exception messages can echo webhook credentials.
+                log.warn("IM notification failed with response code ${postRC}")
             } else {
-                log.info("IM notification sent successfully to ${hook_url}")
+                log.info("IM notification sent successfully")
             }
         } catch (Exception e) {
-            log.warn("Failed to send IM notification: ${e.message}")
+            log.warn("Failed to send IM notification (${e.class.simpleName})")
         }
     }
 }
