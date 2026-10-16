@@ -553,5 +553,6 @@ The utility transforms potential user frustration into guided learning experienc
 - Learn about **[NfCore Utilities](../NfCoreUtilities.md)** for comprehensive pipeline utilities
 - Check out **[NextflowPipelineExtension](../NextflowPipelineExtension.md)** for core pipeline functions
 
-!!! tip "Advanced Usage"
+:::tip{title="Advanced Usage"}
 For complex pipelines with multiple environments, consider implementing environment-specific validation logic using the patterns shown in section 4.2.
+:::

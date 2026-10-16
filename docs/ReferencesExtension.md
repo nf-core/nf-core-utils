@@ -572,13 +572,15 @@ process VALIDATE_REFERENCE {
 
 ### 6.1. Reference Organization
 
-> [!TIP] "Parameter Naming"
-> Use consistent parameter names across your pipeline:
->
-> - `params.fasta` for genome sequences
-> - `params.gtf` for gene annotations
-> - `params.bed12` for BED format annotations
-> - `params.{tool}_index` for tool-specific indices
+:::tip{title="Parameter Naming"}
+Use consistent parameter names across your pipeline:
+
+- `params.fasta` for genome sequences
+- `params.gtf` for gene annotations
+- `params.bed12` for BED format annotations
+- `params.{tool}_index` for tool-specific indices
+
+:::
 
 ### 6.2. Error Handling
 

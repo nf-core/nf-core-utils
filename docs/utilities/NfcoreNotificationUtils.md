@@ -19,8 +19,9 @@ The `NfcoreNotificationUtils` utility provides three core notification channels:
 
 ### 1.1. Critical Session Context Requirement
 
-!!! warning "Session Context Required"
+:::warning{title="Session Context Required"}
 **ALL notification functions require Nextflow session context and MUST be called from `workflow.onComplete` or `workflow.onError` handlers only.** They will fail with null pointer exceptions if called from the main workflow block.
+:::
 
 This requirement exists because notification functions need access to workflow metadata (success status, timing, resource usage) that is only available during completion handlers.
 

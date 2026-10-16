@@ -63,9 +63,9 @@ Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths)
 
 - `Map`: Citations keyed by tool name (`[citation: ..., bibliography: ...]`), restricted to tools that ran.
 
-!!! note "Tool-name matching"
-
-    Tool names from the `versions` topic are matched against `meta.yml` tool keys **exactly first, then case-insensitively** (so `FastQC` lines up with `fastqc`). A tool that ran but has no matching `meta.yml` citation entry is logged as a warning — add it to that module's `meta.yml` `tools:` section to silence it.
+:::note{title="Tool-name matching"}
+Tool names from the `versions` topic are matched against `meta.yml` tool keys **exactly first, then case-insensitively** (so `FastQC` lines up with `fastqc`). A tool that ran but has no matching `meta.yml` citation entry is logged as a warning — add it to that module's `meta.yml` `tools:` section to silence it.
+:::
 
 **Pipeline Integration (`utils_nfcore_<pipeline>_pipeline/main.nf`):**
 
@@ -146,9 +146,9 @@ channel.topic('versions').collect(flat: false).map { versions ->
 }
 ```
 
-!!! tip "meta.yml vs. the `citation` topic"
-
-    `citationsOnTheFly()` keeps the citation source as canonical `meta.yml` files while gating by what ran — no need to add `getCitation(...)` emissions to every module. If you have already migrated modules to emit a dedicated `citation` topic, the [`getCitation` + `autoToolCitationText`](#getcitationstring-metaymlpath) path below is equivalent and needs no `meta.yml` paths.
+:::tip{title="meta.yml vs. the citation topic"}
+`citationsOnTheFly()` keeps the citation source as canonical `meta.yml` files while gating by what ran — no need to add `getCitation(...)` emissions to every module. If you have already migrated modules to emit a dedicated `citation` topic, the [`getCitation` + `autoToolCitationText`](#getcitationstring-metaymlpath) path below is equivalent and needs no `meta.yml` paths.
+:::
 
 ---
 

@@ -30,8 +30,9 @@ Each utility class has dedicated documentation with examples and best practices:
 | 📚 **Citation Management**        | **[NfcoreCitationUtils](utilities/NfcoreCitationUtils.md)**                 | Citation extraction, processing, and topic channel integration         |
 | 🎼 **Orchestrated Reporting**     | **[NfcoreReportingOrchestrator](utilities/NfcoreReportingOrchestrator.md)** | Comprehensive reporting coordination for versions and citations        |
 
-!!! tip "Where to Start"
+:::tip{title="Where to Start"}
 New to nf-core utilities? Begin with the **Configuration & Validation** section to understand pipeline setup, then explore **Notifications & Logging** for completion handling.
+:::
 
 ## 2. Quick Start Tutorial
 
@@ -121,8 +122,9 @@ include {
 } from 'plugin/nf-core-utils'
 ```
 
-!!! note "Import Strategy"
+:::note{title="Import Strategy"}
 Start with essential utilities and add advanced features as your pipeline grows. Each function is independent and can be imported separately.
+:::
 
 ## 3. Function Categories and Usage
 
@@ -175,8 +177,9 @@ These functions help integrate with MultiQC reporting:
 
 ### 3.4. Completion Handler Functions ⚠️
 
-!!! warning "Session Context Required"
+:::warning{title="Session Context Required"}
 These functions require Nextflow session context and **MUST** be called from `workflow.onComplete` or `workflow.onError` handlers only. They will fail with null pointer exceptions if called from the main workflow block.
+:::
 
 | Function                                   | Purpose                                   | Usage Context                               |
 | ------------------------------------------ | ----------------------------------------- | ------------------------------------------- |
@@ -349,8 +352,9 @@ The plugin supports a progressive migration path from legacy approaches to moder
 | **Transition** | Mixed file and topic approaches | `processMixedCitationSources(topics, files)` |
 | **Modern**     | Pure topic channel approach     | `processCitationsFromTopic(topicCitations)`  |
 
-!!! tip "Migration Strategy"
+:::tip{title="Migration Strategy"}
 Start by converting high-priority modules to topic channels while keeping legacy modules unchanged. The mixed approach allows gradual migration without breaking existing functionality.
+:::
 
 ### 4.4. Software Versions Collection with `softwareVersionsToYAML()`
 
@@ -473,8 +477,9 @@ Key features:
 - **Tool name cleaning** (removes `tool:` prefixes)
 - **Automatic workflow metadata** inclusion
 
-!!! tip "Best Practice"
+:::tip{title="Best Practice"}
 Use `softwareVersionsToYAML()` as your primary version collection function. It handles all input types, making your pipeline future-proof and migration-friendly.
+:::
 
 ## 5. Complete Pipeline Example
 
@@ -610,8 +615,9 @@ workflow.onComplete { completionSummary(params.monochrome_logs) }
 
 ### 6.3. Error Handling
 
-!!! warning "Common Pitfall: Session Context"
+:::warning{title="Common Pitfall: Session Context"}
 The most common error is calling notification functions outside completion handlers. Always use `workflow.onComplete` or `workflow.onError` for these functions.
+:::
 
 ## 7. Troubleshooting
 

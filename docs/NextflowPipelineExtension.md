@@ -10,8 +10,9 @@ The Nextflow Pipeline Extension offers three core utilities designed to enhance 
 - **Parameter Documentation**: Export pipeline parameters for reproducibility
 - **Environment Validation**: Verify conda channel configurations
 
-!!! note "Migration from Legacy Subworkflows"
+:::note{title="Migration from Legacy Subworkflows"}
 These functions replace those previously found in the `utils_nextflow_pipeline` subworkflow. The plugin-based approach provides easier imports, better maintenance, and improved reliability.
+:::
 
 ## 2. Getting Started
 
@@ -29,8 +30,9 @@ workflow {
 }
 ```
 
-!!! tip "Function Selection"
+:::tip{title="Function Selection"}
 Import only the functions you need. Each function is independent and can be imported separately for lighter dependency management.
+:::
 
 ### 2.2. Quick Start Example
 
@@ -133,8 +135,9 @@ The function applies these formatting rules:
 2. **Git Shortening**: Uses first 7 characters of commit ID
 3. **Git Prefix**: Adds 'g' prefix to git hash (`abc1234` → `gabc1234`)
 
-!!! tip "Best Practice"
+:::tip{title="Best Practice"}
 Always use `workflow.manifest.version` and `workflow.commitId` for automatic version detection in pipelines.
+:::
 
 ---
 
@@ -218,8 +221,9 @@ The function follows nf-core conventions for file organization:
 - **Type handling**: `Path`, `Duration`, `MemoryUnit`, and `VersionNumber` parameters are converted to JSON-safe values
 - **Path handling**: files are copied with Nextflow file utilities so remote/cloud output locations behave consistently with other pipeline outputs
 
-!!! warning "Safety Check"
+:::warning{title="Safety Check"}
 The function safely handles null `outdir` values by returning immediately without error, preventing pipeline crashes.
+:::
 
 ---
 
@@ -307,8 +311,9 @@ The function performs these steps:
 3. **Validate**: Checks for conda-forge and bioconda presence and order
 4. **Report**: Provides clear feedback on issues found
 
-!!! tip "Non-Blocking Design"
+:::tip{title="Non-Blocking Design"}
 The function is designed to be non-blocking. If conda is not available or checking fails, it returns `true` to allow pipeline continuation.
+:::
 
 ---
 
@@ -441,19 +446,33 @@ workflow.onError {
 
 ### 5.1. Version Management
 
-> [!TIP] "Version String Usage"
->
-> - Include version in all log messages
-> - Add version to output filenames for traceability
-> - Use consistent version format across your organization
+:::tip{title="Version String Usage"}
+
+- Include version in all log messages
+- Add version to output filenames for traceability
+- Use consistent version format across your organization
+
+:::
 
 ### 5.2. Parameter Documentation
 
-!!! warning "Documentation Timing" - Call `dumpParametersToJSON` in `workflow.onComplete` for successful runs only - Consider saving parameters on error for debugging failed runs - Include the timestamp to distinguish between multiple runs
+:::warning{title="Documentation Timing"}
+
+- Call `dumpParametersToJSON` in `workflow.onComplete` for successful runs only
+- Consider saving parameters on error for debugging failed runs
+- Include the timestamp to distinguish between multiple runs
+
+:::
 
 ### 5.3. Environment Validation
 
-!!! note "Validation Strategy" - Check conda channels early in pipeline execution - Make validation non-fatal in development environments - Provide clear fixing instructions in error messages
+:::note{title="Validation Strategy"}
+
+- Check conda channels early in pipeline execution
+- Make validation non-fatal in development environments
+- Provide clear fixing instructions in error messages
+
+:::
 
 ## 6. Migration Guide
 
