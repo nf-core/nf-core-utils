@@ -192,16 +192,16 @@ This function validates command-line profile arguments and catches common user m
 Users frequently make syntax errors when specifying profiles:
 
 ```bash title="Common profile mistakes"
-# ❌ Trailing comma (causes parsing errors)
+# Trailing comma (causes parsing errors)
 nextflow run pipeline.nf -profile docker,
 
-# ❌ Space-separated values (only first is used)
+# Space-separated values (only first is used)
 nextflow run pipeline.nf -profile test docker
 
-# ❌ Positional arguments (silently ignored)
+# Positional arguments (silently ignored)
 nextflow run pipeline.nf samples.csv --outdir results
 
-# ✅ Correct usage
+# Correct usage
 nextflow run pipeline.nf -profile test,docker --input samples.csv --outdir results
 ```
 

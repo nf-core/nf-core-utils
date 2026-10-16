@@ -10,25 +10,25 @@ The nf-core-utils plugin transforms common pipeline tasks from complex subworkfl
 
 The plugin organizes functionality into six focused areas:
 
-- **🔧 Configuration & Validation**: Ensure proper pipeline setup and profile usage
-- **📧 Notifications & Logging**: Send completion emails, Slack/Teams messages, and terminal summaries
-- **📊 Reporting & MultiQC**: Generate pipeline reports and integrate with MultiQC
-- **🔖 Version Management**: Track software versions with topic channel support
-- **📚 Citation Management**: Extract and format tool citations automatically
-- **🎼 Orchestrated Reporting**: Coordinate comprehensive reporting workflows
+- **Configuration & Validation**: Ensure proper pipeline setup and profile usage
+- **Notifications & Logging**: Send completion emails, Slack/Teams messages, and terminal summaries
+- **Reporting & MultiQC**: Generate pipeline reports and integrate with MultiQC
+- **Version Management**: Track software versions with topic channel support
+- **Citation Management**: Extract and format tool citations automatically
+- **Orchestrated Reporting**: Coordinate comprehensive reporting workflows
 
 ### 1.2. Documentation Structure
 
 Each utility class has dedicated documentation with examples and best practices:
 
-| Category                          | Utility                                                                     | Purpose                                                                |
-| --------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| 🔧 **Configuration & Validation** | **[NfcoreConfigValidator](utilities/NfcoreConfigValidator.md)**             | Pipeline configuration validation and profile checking                 |
-| 📧 **Notifications & Logging**    | **[NfcoreNotificationUtils](utilities/NfcoreNotificationUtils.md)**         | Email notifications, Slack/Teams integration, and completion summaries |
-| 📊 **Reporting & MultiQC**        | **[NfcoreReportingUtils](utilities/NfcoreReportingUtils.md)**               | MultiQC integration and pipeline reporting utilities                   |
-| 🔖 **Version Management**         | **[NfcoreVersionUtils](utilities/NfcoreVersionUtils.md)**                   | Version tracking with topic channel support and migration utilities    |
-| 📚 **Citation Management**        | **[NfcoreCitationUtils](utilities/NfcoreCitationUtils.md)**                 | Citation extraction, processing, and topic channel integration         |
-| 🎼 **Orchestrated Reporting**     | **[NfcoreReportingOrchestrator](utilities/NfcoreReportingOrchestrator.md)** | Comprehensive reporting coordination for versions and citations        |
+| Category                       | Utility                                                                     | Purpose                                                                |
+| ------------------------------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Configuration & Validation** | **[NfcoreConfigValidator](utilities/NfcoreConfigValidator.md)**             | Pipeline configuration validation and profile checking                 |
+| **Notifications & Logging**    | **[NfcoreNotificationUtils](utilities/NfcoreNotificationUtils.md)**         | Email notifications, Slack/Teams integration, and completion summaries |
+| **Reporting & MultiQC**        | **[NfcoreReportingUtils](utilities/NfcoreReportingUtils.md)**               | MultiQC integration and pipeline reporting utilities                   |
+| **Version Management**         | **[NfcoreVersionUtils](utilities/NfcoreVersionUtils.md)**                   | Version tracking with topic channel support and migration utilities    |
+| **Citation Management**        | **[NfcoreCitationUtils](utilities/NfcoreCitationUtils.md)**                 | Citation extraction, processing, and topic channel integration         |
+| **Orchestrated Reporting**     | **[NfcoreReportingOrchestrator](utilities/NfcoreReportingOrchestrator.md)** | Comprehensive reporting coordination for versions and citations        |
 
 :::tip{title="Where to Start"}
 New to nf-core utilities? Begin with the **Configuration & Validation** section to understand pipeline setup, then explore **Notifications & Logging** for completion handling.
@@ -175,7 +175,7 @@ These functions help integrate with MultiQC reporting:
 | `workflowSummaryMQC(summary, metadata, results)` | Create comprehensive MultiQC template | Process                  |
 | `getSingleReport(multiqc_reports)`               | Extract single report from Path/List  | Anywhere                 |
 
-### 3.4. Completion Handler Functions ⚠️
+### 3.4. Completion Handler Functions
 
 :::warning{title="Session Context Required"}
 These functions require Nextflow session context and **MUST** be called from `workflow.onComplete` or `workflow.onError` handlers only. They will fail with null pointer exceptions if called from the main workflow block.
@@ -189,7 +189,7 @@ These functions require Nextflow session context and **MUST** be called from `wo
 
 ```nextflow title="Completion handler pattern"
 workflow.onComplete {
-    // ✅ CORRECT - These functions work here
+    // CORRECT - These functions work here
     completionSummary(params.monochrome_logs)
 
     if (params.email) {
@@ -202,7 +202,7 @@ workflow.onComplete {
 }
 
 workflow {
-    // ❌ WRONG - These functions will fail here
+    // WRONG - These functions will fail here
     // completionSummary(params.monochrome_logs)  // Error: session is null
 }
 ```

@@ -51,7 +51,7 @@ workflow {
     log.info "Analysis complete"
 }
 
-// ✅ CORRECT - Notification in completion handler
+// CORRECT - Notification in completion handler
 workflow.onComplete {
     completionSummary(params.monochrome_logs)
 }
@@ -83,14 +83,14 @@ include { completionSummary } from 'plugin/nf-core-utils'
 workflow {
     log.info "Pipeline starting..."
 
-    // ❌ WRONG - This will cause a NullPointerException
+    // WRONG - This will cause a NullPointerException
     // completionSummary(params.monochrome_logs)  // Session is null here!
 
     log.info "Pipeline logic completed"
 }
 
 workflow.onComplete {
-    // ✅ CORRECT - Session context is available here
+    // CORRECT - Session context is available here
     log.info "Session available: ${session != null}"
     log.info "Workflow success: ${workflow.success}"
     log.info "Workflow duration: ${workflow.duration}"
@@ -462,7 +462,7 @@ void imNotification(Map summaryParams, String hookUrl)
 - `summaryParams` (Map): Nested map of grouped summary parameters (same structure as `completionEmail`)
 - `hookUrl` (String): Webhook URL for Slack, Teams, or other compatible service
 
-**⚠️ Usage Requirements:**
+**Usage Requirements:**
 
 - Must be called from `workflow.onComplete` or `workflow.onError` handlers only
 - Requires Nextflow session context (workflow metadata, timing, success status)
@@ -641,7 +641,7 @@ workflow.onError {
 Group parameters logically for better email/notification formatting:
 
 ```nextflow
-// ✅ GOOD - Grouped structure
+// GOOD - Grouped structure
 def summary_params = [
     'Core Nextflow options': [
         'runName': workflow.runName,
@@ -653,7 +653,7 @@ def summary_params = [
     ]
 ]
 
-// ❌ AVOID - Flat structure
+// AVOID - Flat structure
 def summary_params = [
     runName: workflow.runName,
     profile: workflow.profile,
@@ -712,7 +712,7 @@ def filtered_params = params.findAll { k, v ->
 **Problem:**
 
 ```nextflow
-// ❌ WRONG - This will cause null pointer exceptions
+// WRONG - This will cause null pointer exceptions
 workflow {
     completionSummary(params.monochrome_logs)  // ERROR: session is null
 }
@@ -721,9 +721,9 @@ workflow {
 **Solution:**
 
 ```nextflow
-// ✅ CORRECT - Call from completion handlers
+// CORRECT - Call from completion handlers
 workflow.onComplete {
-    completionSummary(params.monochrome_logs)  // ✅ Works correctly
+    completionSummary(params.monochrome_logs)  // Works correctly
 }
 ```
 

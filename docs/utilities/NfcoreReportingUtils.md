@@ -351,7 +351,7 @@ workflow COLOR_AWARE_LOGGING {
 Structure parameters logically for better MultiQC display:
 
 ```nextflow
-// ✅ GOOD - Grouped structure
+// GOOD - Grouped structure
 def summary_params = [
     'Core Nextflow options': [
         'runName': workflow.runName,
@@ -368,7 +368,7 @@ def summary_params = [
     ]
 ]
 
-// ❌ AVOID - Flat structure
+// AVOID - Flat structure
 def summary_params = [
     runName: workflow.runName,
     input: params.input,
