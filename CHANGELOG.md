@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated reporting orchestration to use explicit execution context data, including workflow metadata for methods-description templates.
 - Migrated pre-commit configuration to `prek.toml` and added validation snapshot checks.
+- The docs are published on nf-co.re on each release, with admonitions written in the nf-core website syntax and without emojis.
 
 ### Fixed
 
