@@ -16,6 +16,21 @@ To build the plugin:
 make assemble
 ```
 
+### Build caching
+
+Gradle's local build cache is enabled by default for builds and unit tests. Unchanged,
+cacheable tasks can restore their outputs even after `./gradlew clean`; Gradle
+invalidates entries when their declared inputs change. Use `--no-build-cache` to
+disable reuse for a run, or `--rerun-tasks` to force task execution.
+
+The build and validation workflows use `gradle/actions/setup-gradle` to cache
+Gradle distributions, dependencies, and build outputs between GitHub Actions runs.
+Only runs on the default branch write caches; pull requests restore them read-only.
+The action's job summary reports cache usage. Configuration caching is not enabled.
+
+For Amp orbs, `.agents/setup` installs JDK 21 and warms the Gradle cache by building
+and testing the plugin, so future orb snapshots can reuse those dependencies and outputs.
+
 ## Testing with Nextflow
 
 The plugin can be tested without a local Nextflow installation:
