@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed malformed HTML tag (`</a>` → `</span>`) in `paramsSummaryMultiqc()`.
 - Fixed `completionEmail()` never attaching the MultiQC report with an object storage work directory (`s3://`, `gs://`, `az://`): the report is copied locally for the sendmail template, which reads it with `new File()`, and `getSingleReport()` keeps the file system of a report given as a string. A remote `outdir` no longer creates a local `s3:` directory ([#65](https://github.com/nf-core/nf-core-utils/issues/65)).
 - Fixed `Nextflow: unknown` in the version reports without a Nextflow version given or `NXF_VER` set: they fall back to the version of the running Nextflow.
+- Fixed `completionEmail()` ignoring `plaintext_email`: a plaintext e-mail is sent as text with `mail`, and a failure to send the e-mail is a warning instead of an error in `onComplete`.
 
 ## [0.4.0] - 2025-10-31
 

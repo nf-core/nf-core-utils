@@ -155,6 +155,22 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         NfcoreNotificationUtils.getSingleReport(null, 'pipe') == null
     }
 
+    // --- sending the completion e-mail ---
+
+    def 'emailCommands sends the text e-mail with mail for a plaintext e-mail'() {
+        expect:
+        NfcoreNotificationUtils.emailCommands(true, 'subject', 'a@b.c', 'sendmail', '<p>html</p>', 'text') ==
+            [[command: ['mail', '-s', 'subject', 'a@b.c'], input: 'text', name: 'mail']]
+    }
+
+    def 'emailCommands tries sendmail with the full e-mail, then mail with the HTML e-mail'() {
+        expect:
+        NfcoreNotificationUtils.emailCommands(false, 'subject', 'a@b.c', 'sendmail', '<p>html</p>', 'text') == [
+            [command: ['sendmail', '-t'], input: 'sendmail', name: 'sendmail'],
+            [command: ['mail', '-s', 'subject', '--content-type=text/html', 'a@b.c'], input: '<p>html</p>', name: 'mail'],
+        ]
+    }
+
     // --- reports on a remote file system (#65): a zip file system stands for object storage ---
 
     @Issue("https://github.com/nf-core/nf-core-utils/issues/65")

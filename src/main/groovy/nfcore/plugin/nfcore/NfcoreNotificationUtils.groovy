@@ -192,6 +192,23 @@ class NfcoreNotificationUtils {
     }
 
     /**
+     * The commands to send the completion e-mail with, tried in order: sendmail with the HTML e-mail and the MultiQC
+     * report, then mail with the HTML e-mail, or mail with the text e-mail for a plaintext e-mail.
+     *
+     * @return The command, its input and its name for the logs, for each
+     */
+    static List<Map> emailCommands(boolean plaintextEmail, String subject, String emailAddress,
+                                   String sendmailContent, String emailHtml, String emailTxt) {
+        if (plaintextEmail) {
+            return [[command: ['mail', '-s', subject, emailAddress], input: emailTxt, name: 'mail']]
+        }
+        return [
+            [command: ['sendmail', '-t'], input: sendmailContent, name: 'sendmail'],
+            [command: ['mail', '-s', subject, '--content-type=text/html', emailAddress], input: emailHtml, name: 'mail'],
+        ]
+    }
+
+    /**
      * @deprecated Use {@link #getSingleReport(Object, String)} with explicit workflowName
      */
     @Deprecated
@@ -330,26 +347,25 @@ class NfcoreNotificationUtils {
             }
         }
 
-        // Send the HTML e-mail
+        // Send the e-mail
         def colors = logColours(monochrome_logs) as Map
         if (email_address) {
-            try {
-                if (plaintext_email) {
-                    new org.codehaus.groovy.GroovyException('Send plaintext e-mail, not HTML')
-                }
-                // Try to send HTML e-mail using sendmail
+            if (!plaintext_email) {
                 def sendmail_tf = new File(wf?.launchDir.toString(), ".sendmail_tmp.html")
                 sendmail_tf.withWriter { w -> w << sendmail_html }
-                ['sendmail', '-t'].execute() << sendmail_html
-                log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address} (sendmail)-")
             }
-            catch (Exception msg) {
-                log.debug(msg.toString())
-                log.debug("Trying with mail instead of sendmail")
-                // Catch failures and try with plaintext
-                def mail_cmd = ['mail', '-s', subject, '--content-type=text/html', email_address]
-                mail_cmd.execute() << email_html
-                log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address} (mail)-")
+            def sent = emailCommands(plaintext_email, subject, email_address, sendmail_html, email_html, email_txt).find { command ->
+                try {
+                    (command.command as List).execute() << command.input
+                    log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address} (${command.name})-")
+                    return true
+                } catch (Exception e) {
+                    log.debug("Could not send the summary e-mail with ${command.name}: ${e}")
+                    return false
+                }
+            }
+            if (!sent) {
+                log.warn("[${workflowName}] Could not send the summary e-mail to ${email_address}")
             }
         }
 
