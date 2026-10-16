@@ -19,8 +19,12 @@ package nfcore.plugin.nfcore
 import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.extension.FilesEx
+import nextflow.file.FileHelper
 
+import java.nio.file.FileSystems
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 
 /**
  * Utility functions for nf-core pipeline notifications
@@ -132,7 +136,8 @@ class NfcoreNotificationUtils {
      * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §2
      */
     static Path getSingleReport(def multiqc_reports, String workflowName) {
-        def toPath = { it instanceof Path ? it : (it != null ? java.nio.file.Paths.get(it.toString()) : null) }
+        // FileHelper keeps the file system of a path given as a string (s3://, gs://, az://), unlike Paths.get()
+        def toPath = { it instanceof Path ? it : (it != null ? FileHelper.asPath(it.toString()) : null) }
 
         if (multiqc_reports instanceof Path) {
             return multiqc_reports
@@ -151,6 +156,39 @@ class NfcoreNotificationUtils {
         } else {
             return null
         }
+    }
+
+    /**
+     * The report as a local file, as the sendmail template of the pipelines reads it with `new File()`: a report on
+     * another file system, like the object storage work directory of a cloud run, is copied to a temporary file.
+     *
+     * @param report The MultiQC report
+     * @param maxSize The maximum size of the report to attach, in bytes
+     * @return The report on the local file system, null when there is none, or when it is too large to be attached
+     */
+    static Path localReport(Path report, long maxSize) {
+        if (report == null) {
+            return null
+        }
+        try {
+            if (isLocal(report)) {
+                return report
+            }
+            // not downloaded when the template would not attach it
+            if (Files.size(report) >= maxSize) {
+                return null
+            }
+            def local = Files.createTempFile('multiqc_report', '.html')
+            Files.copy(report, local, StandardCopyOption.REPLACE_EXISTING)
+            return local
+        } catch (Exception e) {
+            log.warn("Could not read the MultiQC report ${report.toUri()}: ${e.message}")
+            return null
+        }
+    }
+
+    static boolean isLocal(Path path) {
+        return path.fileSystem == FileSystems.getDefault()
     }
 
     /**
@@ -271,7 +309,8 @@ class NfcoreNotificationUtils {
             }
         }
 
-        def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${wf?.projectDir}", mqcFile: mqc_report, mqcMaxSize: max_multiqc_email_size]
+        def mqc_file = localReport(mqc_report, max_multiqc_email_size as long)
+        def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${wf?.projectDir}", mqcFile: mqc_file, mqcMaxSize: max_multiqc_email_size]
         def sendmail_html = email_html  // Fallback content
 
         try {
@@ -284,6 +323,11 @@ class NfcoreNotificationUtils {
             }
         } catch (Exception e) {
             log.warn("Failed to render sendmail template: ${e.message}")
+        } finally {
+            // the copy of a remote report
+            if (mqc_file != null && mqc_file != mqc_report) {
+                Files.deleteIfExists(mqc_file)
+            }
         }
 
         // Send the HTML e-mail
@@ -315,9 +359,12 @@ class NfcoreNotificationUtils {
                 def output_hf = new File(wf?.launchDir.toString(), ".pipeline_report.html")
                 output_hf.withWriter { w -> w << email_html }
 
-                // Ensure pipeline_info directory exists
-                def pipeline_info_dir = new File("${outdir}/pipeline_info")
-                pipeline_info_dir.mkdirs()
+                // Ensure pipeline_info directory exists, in a local outdir: copyTo creates it in a remote one, where
+                // new File() would make a local directory named after it (`s3:/bucket/results/pipeline_info`)
+                def pipeline_info_dir = FileHelper.asPath("${outdir}/pipeline_info")
+                if (isLocal(pipeline_info_dir)) {
+                    Files.createDirectories(pipeline_info_dir)
+                }
 
                 FilesEx.copyTo(output_hf.toPath(), "${outdir}/pipeline_info/pipeline_report.html")
                 output_hf.delete()
