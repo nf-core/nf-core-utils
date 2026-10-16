@@ -736,4 +736,4 @@ workflow MEMORY_EFFICIENT_REPORTING {
 }
 ```
 
-For more information on MultiQC integration and pipeline reporting, see the [MultiQC documentation](https://multiqc.info/) and [nf-core reporting guidelines](https://nf-co.re/docs/contributing/pipelines/reporting).
+For more information on MultiQC integration and pipeline reporting, see the [MultiQC documentation](https://multiqc.info/) and [nf-core reporting guidelines](https://nf-co.re/docs/developing/components/automated-methods-text).
