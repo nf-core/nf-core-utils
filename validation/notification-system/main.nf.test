@@ -30,6 +30,8 @@ nextflow_pipeline {
                 !line.startsWith('✅ Conda channels are configured correctly') &&
                 !line.startsWith('⚠️ Conda channels may need configuration adjustment')
             }
+            assert normalizedOutput.contains('✅ completionEmail exercised')
+            assert normalizedOutput.contains('✅ imNotification exercised')
             assert snapshot(normalizedOutput).match()
         }
     }

@@ -20,24 +20,22 @@
                 "=== Testing completionEmail() function ===",
                 "\u2705 completionEmail exercised",
                 "=== Testing imNotification() function ===",
-                "IM notification sent successfully to https://hooks.slack.com/services/test/webhook",
                 "\u2705 imNotification exercised",
                 "Notification System Validation Results",
                 "\u2705 completionSummary() - Pipeline completion logging tested",
                 "\u2705 completionEmail() - Email notification functionality tested",
                 "\u2705 imNotification() - Instant messenger integration tested",
                 "Notification system functions tested successfully! \ud83d\ude80",
+                "WARN: Cannot send IM notification - hook URL is null or empty",
                 "WARN: Email template not found: [PATH]/notification-system/assets/email_template.txt",
                 "WARN: HTML email template not found: [PATH]/notification-system/assets/email_template.html",
-                "WARN: IM notification template not found: [PATH]/notification-system/assets/slackreport.json",
-                "WARN: Sendmail template not found: [PATH]/notification-system/assets/sendmail_template.txt",
-                "WARN: [unknown] Could not send the summary e-mail to test@example.com"
+                "WARN: Sendmail template not found: [PATH]/notification-system/assets/sendmail_template.txt"
             ]
         ],
-        "timestamp": "2026-10-16T15:52:49.711165",
+        "timestamp": "2026-10-16T15:11:33.095045156",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "26.10.0"
+            "nextflow": "25.10.0"
         }
     }
 }
