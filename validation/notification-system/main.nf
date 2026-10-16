@@ -67,9 +67,7 @@ workflow {
             ],
         ]
 
-        def mock_multiqc_reports = [
-            './results/multiqc/multiqc_report.html'
-        ]
+        def mock_multiqc_reports = ['./results/multiqc/multiqc_report.html']
 
         // Test 1: completionSummary() function
         log.info("=== Testing completionSummary() function ===")
