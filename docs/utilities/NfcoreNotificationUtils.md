@@ -19,8 +19,9 @@ The `NfcoreNotificationUtils` utility provides three core notification channels:
 
 ### 1.1. Critical Session Context Requirement
 
-!!! warning "Session Context Required"
+:::warning{title="Session Context Required"}
 **ALL notification functions require Nextflow session context and MUST be called from `workflow.onComplete` or `workflow.onError` handlers only.** They will fail with null pointer exceptions if called from the main workflow block.
+:::
 
 This requirement exists because notification functions need access to workflow metadata (success status, timing, resource usage) that is only available during completion handlers.
 
@@ -50,7 +51,7 @@ workflow {
     log.info "Analysis complete"
 }
 
-// ✅ CORRECT - Notification in completion handler
+// CORRECT - Notification in completion handler
 workflow.onComplete {
     completionSummary(params.monochrome_logs)
 }
@@ -82,14 +83,14 @@ include { completionSummary } from 'plugin/nf-core-utils'
 workflow {
     log.info "Pipeline starting..."
 
-    // ❌ WRONG - This will cause a NullPointerException
+    // WRONG - This will cause a NullPointerException
     // completionSummary(params.monochrome_logs)  // Session is null here!
 
     log.info "Pipeline logic completed"
 }
 
 workflow.onComplete {
-    // ✅ CORRECT - Session context is available here
+    // CORRECT - Session context is available here
     log.info "Session available: ${session != null}"
     log.info "Workflow success: ${workflow.success}"
     log.info "Workflow duration: ${workflow.duration}"
@@ -145,7 +146,7 @@ Now let's explore each notification function in detail, building from simple to 
 
 This function provides immediate visual feedback about pipeline completion status.
 
-#### Basic Terminal Summary
+**Basic Terminal Summary**
 
 The simplest notification shows essential completion information:
 
@@ -164,7 +165,7 @@ workflow.onComplete {
 }
 ```
 
-#### Function Parameters
+**Function Parameters**
 
 ```groovy title="Function signature"
 void completionSummary(boolean monochromeLogs = true)
@@ -174,7 +175,7 @@ void completionSummary(boolean monochromeLogs = true)
 | ---------------- | ------- | ------- | ----------------------------------------------------- |
 | `monochromeLogs` | Boolean | `true`  | If `true`, disables color codes for plain text output |
 
-#### Color-Coded Output Examples
+**Color-Coded Output Examples**
 
 **Success with colors enabled:**
 
@@ -203,7 +204,7 @@ Exit status : 1
 Error       : Process FASTQC (1) failed
 ```
 
-#### Advanced Terminal Summary Usage
+**Advanced Terminal Summary Usage**
 
 For pipelines that need custom completion reporting:
 
@@ -247,7 +248,7 @@ HTML emails try `sendmail` first, then `mail` if the command cannot run, exits w
 
 Success means the local mail command exited successfully, not that the recipient received the email. HTML and text reports are saved under `outdir/pipeline_info` before delivery is attempted. If all attempts fail, the function logs a warning. Temporary attachment copies are removed after rendering; cleanup failures are warnings and do not prevent saving reports or attempting delivery.
 
-#### Understanding Email Structure
+**Understanding Email Structure**
 
 Before implementing email notifications, let's understand what information needs to be organized:
 
@@ -271,7 +272,7 @@ def summary_params = [
 ]
 ```
 
-#### Basic Email Implementation
+**Basic Email Implementation**
 
 Let's implement a simple email notification:
 
@@ -323,7 +324,7 @@ workflow.onComplete {
 }
 ```
 
-#### Function Parameters Reference
+**Function Parameters Reference**
 
 ```groovy title="completionEmail signature"
 void completionEmail(
@@ -337,7 +338,7 @@ void completionEmail(
 )
 ```
 
-#### Advanced Email with MultiQC Reports
+**Advanced Email with MultiQC Reports**
 
 For production pipelines, include MultiQC reports as attachments:
 
@@ -395,7 +396,7 @@ workflow.onComplete {
 
 Team collaboration is enhanced with Slack and Microsoft Teams notifications that keep everyone informed about pipeline status.
 
-#### Understanding Webhook Integration
+**Understanding Webhook Integration**
 
 Instant messaging notifications use webhooks to send JSON payloads to chat services:
 
@@ -407,7 +408,7 @@ params.hook_url = "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
 // params.hook_url = "https://outlook.office.com/webhook/YOUR/TEAMS/WEBHOOK"
 ```
 
-#### Basic Slack/Teams Notification
+**Basic Slack/Teams Notification**
 
 Let's implement basic instant messaging notifications:
 
@@ -449,7 +450,7 @@ Ignored     : 0
 
 ---
 
-### `imNotification(Map summaryParams, String hookUrl)`
+### `imNotification()`
 
 **Description:**  
 Sends JSON notifications to instant messaging webhooks (Slack, Microsoft Teams) with pipeline summary and workflow metadata. Supports rich formatting for better readability.
@@ -467,7 +468,7 @@ void imNotification(Map summaryParams, String hookUrl)
 - `summaryParams` (Map): Nested map of grouped summary parameters (same structure as `completionEmail`)
 - `hookUrl` (String): Webhook URL for Slack, Teams, or other compatible service
 
-**⚠️ Usage Requirements:**
+**Usage Requirements:**
 
 - Must be called from `workflow.onComplete` or `workflow.onError` handlers only
 - Requires Nextflow session context (workflow metadata, timing, success status)
@@ -646,7 +647,7 @@ workflow.onError {
 Group parameters logically for better email/notification formatting:
 
 ```nextflow
-// ✅ GOOD - Grouped structure
+// GOOD - Grouped structure
 def summary_params = [
     'Core Nextflow options': [
         'runName': workflow.runName,
@@ -658,7 +659,7 @@ def summary_params = [
     ]
 ]
 
-// ❌ AVOID - Flat structure
+// AVOID - Flat structure
 def summary_params = [
     runName: workflow.runName,
     profile: workflow.profile,
@@ -717,7 +718,7 @@ def filtered_params = params.findAll { k, v ->
 **Problem:**
 
 ```nextflow
-// ❌ WRONG - This will cause null pointer exceptions
+// WRONG - This will cause null pointer exceptions
 workflow {
     completionSummary(params.monochrome_logs)  // ERROR: session is null
 }
@@ -726,9 +727,9 @@ workflow {
 **Solution:**
 
 ```nextflow
-// ✅ CORRECT - Call from completion handlers
+// CORRECT - Call from completion handlers
 workflow.onComplete {
-    completionSummary(params.monochrome_logs)  // ✅ Works correctly
+    completionSummary(params.monochrome_logs)  // Works correctly
 }
 ```
 

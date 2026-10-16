@@ -97,7 +97,7 @@ INFO [main] - Configuration validation passed - proceeding with analysis
 
 This function encourages users to provide custom configurations for optimal performance.
 
-#### Understanding Configuration Types
+**Understanding Configuration Types**
 
 Nextflow can be configured in several ways, listed in order of preference:
 
@@ -106,7 +106,7 @@ Nextflow can be configured in several ways, listed in order of preference:
 3. **Custom config files**: Project-specific configuration files
 4. **Default settings** (suboptimal): Basic Nextflow defaults
 
-#### Basic Implementation
+**Basic Implementation**
 
 ```nextflow title="config_detection_example.nf"
 #!/usr/bin/env nextflow
@@ -127,7 +127,7 @@ workflow {
 }
 ```
 
-#### Function Reference
+**Function Reference**
 
 ```groovy title="Function signature"
 boolean checkConfigProvided()
@@ -140,7 +140,7 @@ boolean checkConfigProvided()
 | **Session Dependencies** | Requires Nextflow session context                   |
 | **Side Effects**         | Logs warning messages if no custom config found     |
 
-#### Advanced Configuration Guidance
+**Advanced Configuration Guidance**
 
 For production pipelines, provide more detailed guidance:
 
@@ -187,25 +187,25 @@ workflow {
 
 This function validates command-line profile arguments and catches common user mistakes before they cause issues.
 
-#### Understanding Common Profile Mistakes
+**Understanding Common Profile Mistakes**
 
 Users frequently make syntax errors when specifying profiles:
 
 ```bash title="Common profile mistakes"
-# ❌ Trailing comma (causes parsing errors)
+# Trailing comma (causes parsing errors)
 nextflow run pipeline.nf -profile docker,
 
-# ❌ Space-separated values (only first is used)
+# Space-separated values (only first is used)
 nextflow run pipeline.nf -profile test docker
 
-# ❌ Positional arguments (silently ignored)
+# Positional arguments (silently ignored)
 nextflow run pipeline.nf samples.csv --outdir results
 
-# ✅ Correct usage
+# Correct usage
 nextflow run pipeline.nf -profile test,docker --input samples.csv --outdir results
 ```
 
-#### Basic Profile Validation
+**Basic Profile Validation**
 
 Let's implement profile validation with helpful error messages:
 
@@ -223,7 +223,7 @@ workflow {
 }
 ```
 
-#### Color-Coded Error Messages
+**Color-Coded Error Messages**
 
 The function supports color formatting for better user experience:
 
@@ -254,7 +254,7 @@ HINT: A common mistake is to provide multiple values separated by spaces e.g. `-
 [33mHINT[0m: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.
 ```
 
-#### Function Reference
+**Function Reference**
 
 ```groovy title="Function signature"
 void checkProfileProvided(List args, boolean monochromeLogs = true)
@@ -265,7 +265,7 @@ void checkProfileProvided(List args, boolean monochromeLogs = true)
 | `args`           | List    | Required | Command-line arguments (use built-in `args` variable) |
 | `monochromeLogs` | Boolean | `true`   | If `true`, disables color codes in error messages     |
 
-#### Comprehensive Profile Validation
+**Comprehensive Profile Validation**
 
 For production pipelines, implement comprehensive validation:
 
@@ -553,5 +553,6 @@ The utility transforms potential user frustration into guided learning experienc
 - Learn about **[NfCore Utilities](../NfCoreUtilities.md)** for comprehensive pipeline utilities
 - Check out **[NextflowPipelineExtension](../NextflowPipelineExtension.md)** for core pipeline functions
 
-!!! tip "Advanced Usage"
+:::tip{title="Advanced Usage"}
 For complex pipelines with multiple environments, consider implementing environment-specific validation logic using the patterns shown in section 4.2.
+:::
