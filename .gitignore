@@ -13,3 +13,6 @@ bin/
 .nf-test/
 .nf-test.log
 validation_results/
+
+# Orb portal metadata
+.amp/portals/

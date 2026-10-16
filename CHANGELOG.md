@@ -19,11 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated reporting orchestration to use explicit execution context data, including workflow metadata for methods-description templates.
 - Migrated pre-commit configuration to `prek.toml` and added validation snapshot checks.
 - The docs are published on nf-co.re on each release, with admonitions written in the nf-core website syntax, without emojis, and with shorter headings for the table of contents.
+- Enabled Gradle build caching, managed CI caches with `setup-gradle`, and added cache warming for Amp orbs.
 
 ### Fixed
 
 - Fixed `dumpParametersToJSON()` to serialize Nextflow parameter types and copy parameter reports through Nextflow file handling for cloud/remote paths.
 - Fixed malformed HTML tag (`</a>` → `</span>`) in `paramsSummaryMultiqc()`.
+- Fixed broken links: the README link to the `NfCorePipelineExtension` docs, deleted with `NfcorePipelineUtils`, and the links to moved pages of the nf-core website in the utility docs.
 
 ## [0.4.0] - 2025-10-31
 

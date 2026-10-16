@@ -647,4 +647,4 @@ workflow BENCHMARK_REPORTING {
 }
 ```
 
-For more information on orchestrated reporting and utility coordination, see the individual utility documentation and [nf-core reporting best practices](https://nf-co.re/docs/contributing/pipelines/reporting).
+For more information on orchestrated reporting and utility coordination, see the individual utility documentation and [nf-core reporting best practices](https://nf-co.re/docs/developing/components/automated-methods-text).
