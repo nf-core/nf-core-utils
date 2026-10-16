@@ -163,7 +163,8 @@ class PipelineExecutionContextTest extends Specification {
         ctx.profile == null
         ctx.configFiles == []
         ctx.config == [:]
-        ctx.nextflowVersion == null
+        // without config nor NXF_VER, the version of the running Nextflow
+        ctx.nextflowVersion == (System.getenv('NXF_VER') ?: NfcoreVersionUtils.runningNextflowVersion())
     }
 
     def 'fromSession handles null session'() {

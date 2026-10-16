@@ -101,11 +101,7 @@ class NfcoreVersionUtils {
             def manifest = session.getManifest()
             def wfName = manifest?.getName() ?: 'unknown'
             def wfVersion = getWorkflowVersion(session)
-            def nfVer = nextflowVersion?.toString() ?:
-                        session?.getConfig()?.get('nextflow')?.get('version') ?:
-                        System.getenv('NXF_VER') ?:
-                        'unknown'
-            report.addWorkflowVersion(wfName, wfVersion, nfVer)
+            report.addWorkflowVersion(wfName, wfVersion, resolveNextflowVersion(session, nextflowVersion))
         }
 
         return report.renderYaml()
@@ -114,6 +110,29 @@ class NfcoreVersionUtils {
     // =========================================================================
     // WORKFLOW INFO METHODS (not deprecated - different concern)
     // =========================================================================
+
+    /**
+     * The Nextflow version for the version reports: the one given, else the one of the config or NXF_VER, else the
+     * version of the running Nextflow
+     */
+    static String resolveNextflowVersion(Session session, Object nextflowVersion = null) {
+        return nextflowVersion?.toString() ?:
+            session?.getConfig()?.get('nextflow')?.get('version')?.toString() ?:
+            System.getenv('NXF_VER') ?:
+            runningNextflowVersion() ?:
+            'unknown'
+    }
+
+    /**
+     * The version of the running Nextflow, null when it can't be read
+     */
+    static String runningNextflowVersion() {
+        try {
+            return nextflow.BuildInfo.version
+        } catch (Throwable ignored) {
+            return null
+        }
+    }
 
     /**
      * Generate workflow version string
@@ -246,11 +265,9 @@ class NfcoreVersionUtils {
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'Workflow'
         def workflowVersion = getWorkflowVersion(session)
-        // Get Nextflow version from session config, fall back to environment variable
-        def nextflowVersion = session?.getConfig()?.get('nextflow')?.get('version') ?: System.getenv('NXF_VER') ?: 'unknown'
         return [
             ['Workflow', workflowName, workflowVersion],
-            ['Workflow', 'Nextflow', nextflowVersion]
+            ['Workflow', 'Nextflow', resolveNextflowVersion(session)]
         ]
     }
 
@@ -261,11 +278,7 @@ class NfcoreVersionUtils {
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def workflowVersion = getWorkflowVersion(session)
-        // Use provided version, or try session config, or fall back to environment variable
-        def nfVer = nextflowVersion?.toString() ?:
-                    session?.getConfig()?.get('nextflow')?.get('version') ?:
-                    System.getenv('NXF_VER') ?:
-                    'unknown'
+        def nfVer = resolveNextflowVersion(session, nextflowVersion)
         return """
         Workflow:
             ${workflowName}: ${workflowVersion}
