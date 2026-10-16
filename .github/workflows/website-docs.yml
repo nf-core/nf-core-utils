@@ -1,6 +1,6 @@
 name: Publish the docs on nf-co.re
 # On each release, ask the nf-core website to copy the docs of this release, as nf-core/tools does for its API docs:
-# the website opens a pull request with the docs in sites/docs/src/content/docs/developing/nf-core-utils/.
+# the website opens a pull request with the docs in sites/docs/src/content/docs/nf-core-tools/nf-core-utils/.
 on:
   release:
     types: [published]
@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Trigger the docs update
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        env:
+          REF_NAME: ${{ inputs.ref_name || github.ref_name }}
         with:
           github-token: ${{ secrets.nf_core_bot_auth_token }}
           script: |
@@ -26,6 +28,6 @@ jobs:
               workflow_id: "add-nf-core-utils-docs.yml",
               ref: "main",
               inputs: {
-                ref_name: "${{ inputs.ref_name || github.ref_name }}",
+                ref_name: process.env.REF_NAME,
               },
             });
