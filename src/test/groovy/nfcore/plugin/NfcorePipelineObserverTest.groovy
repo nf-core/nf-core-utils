@@ -27,7 +27,7 @@ class NfcorePipelineObserverTest extends Specification {
         session.binding = new ScriptBinding().setArgs(args)
         def appender = new ListAppender<ILoggingEvent>()
         appender.start()
-        ((Logger) LoggerFactory.getLogger(NfcoreConfigValidator)).addAppender(appender)
+        ((Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcoreConfigValidator")).addAppender(appender)
 
         when:
         new NfcorePipelineObserver().onFlowCreate(session)
@@ -39,7 +39,7 @@ class NfcorePipelineObserverTest extends Specification {
         !warnings.any { it.contains('`nextflow`') }
 
         cleanup:
-        ((Logger) LoggerFactory.getLogger(NfcoreConfigValidator)).detachAppender(appender)
+        ((Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcoreConfigValidator")).detachAppender(appender)
 
         where:
         profile    | configFiles                            | args       || configWarning | positionalWarning
@@ -75,7 +75,7 @@ class NfcorePipelineObserverTest extends Specification {
         }
 
         // Set up logging capture
-        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        Logger logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcorePipelineObserver")
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
         listAppender.start()
         logger.addAppender(listAppender)
@@ -99,7 +99,7 @@ class NfcorePipelineObserverTest extends Specification {
         def observer = new NfcorePipelineObserver()
 
         // Set up logging capture
-        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        Logger logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcorePipelineObserver")
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
         listAppender.start()
         logger.addAppender(listAppender)
@@ -129,7 +129,7 @@ class NfcorePipelineObserverTest extends Specification {
         }
 
         // Set up logging capture with DEBUG level
-        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        Logger logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcorePipelineObserver")
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
         listAppender.start()
         logger.addAppender(listAppender)
@@ -153,7 +153,7 @@ class NfcorePipelineObserverTest extends Specification {
         def observer = new NfcorePipelineObserver()
 
         // Set up logging capture with DEBUG level
-        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        Logger logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcorePipelineObserver")
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
         listAppender.start()
         logger.addAppender(listAppender)

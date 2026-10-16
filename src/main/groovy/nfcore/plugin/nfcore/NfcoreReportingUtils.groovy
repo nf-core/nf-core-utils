@@ -22,7 +22,7 @@ import nextflow.Session
 /**
  * Utility functions for nf-core pipeline reporting
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcoreReportingUtils')
 class NfcoreReportingUtils {
 
     /**

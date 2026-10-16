@@ -25,7 +25,7 @@ import nfcore.plugin.nfcore.NfcoreConfigValidator
  * Implements an observer that allows implementing custom
  * logic on nextflow execution events.
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcorePipelineObserver')
 class NfcorePipelineObserver implements TraceObserver {
 
     private final NfcoreConfigValidator configValidator

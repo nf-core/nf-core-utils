@@ -188,13 +188,13 @@ class ExtensionAdaptersTest extends Specification {
 
     private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {
         def appender = new ListAppender<ILoggingEvent>()
-        def logger = (Logger) LoggerFactory.getLogger(clazz)
+        def logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.${clazz.simpleName}")
         appender.start()
         logger.addAppender(appender)
         return appender
     }
 
     private void detachAppender(ListAppender appender, Class clazz) {
-        ((Logger) LoggerFactory.getLogger(clazz)).detachAppender(appender)
+        ((Logger) LoggerFactory.getLogger("nextflow.nfcore.${clazz.simpleName}")).detachAppender(appender)
     }
 }

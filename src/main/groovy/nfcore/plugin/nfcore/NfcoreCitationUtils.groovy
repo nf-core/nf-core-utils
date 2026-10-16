@@ -24,7 +24,7 @@ import org.yaml.snakeyaml.Yaml
  * Utility functions for nf-core citations
  * Supports both legacy meta.yml files and new topic channel approach
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcoreCitationUtils')
 class NfcoreCitationUtils {
 
     /**

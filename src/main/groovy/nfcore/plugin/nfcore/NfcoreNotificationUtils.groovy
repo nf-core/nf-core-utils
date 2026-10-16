@@ -25,7 +25,7 @@ import java.nio.file.Path
 /**
  * Utility functions for nf-core pipeline notifications
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcoreNotificationUtils')
 class NfcoreNotificationUtils {
 
     // Reusable template engine instance to avoid creating multiple instances

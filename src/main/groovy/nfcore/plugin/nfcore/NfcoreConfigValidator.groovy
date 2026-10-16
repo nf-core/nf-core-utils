@@ -22,7 +22,7 @@ import nextflow.Session
 /**
  * Validates pipeline configurations and provides feedback
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcoreConfigValidator')
 class NfcoreConfigValidator {
 
     /**
