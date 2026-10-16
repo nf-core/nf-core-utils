@@ -4,53 +4,64 @@ import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
+import java.nio.file.Paths
+import nextflow.Session
+import nextflow.script.ScriptBinding
 import nfcore.plugin.nfcore.NfcoreConfigValidator
 import org.slf4j.LoggerFactory
-import spock.lang.PendingFeature
+import spock.lang.Issue
 import spock.lang.Specification
 
 class NfcorePipelineObserverTest extends Specification {
     // This file is now reserved for observer-specific logic tests.
     // All config, version, and factory tests have been moved to dedicated files.
 
-    @PendingFeature()
-    def 'onFlowCreate should call configValidator methods with correct arguments'() {
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/66")
+    def 'onFlowCreate warns about the configuration and positional arguments of the run'() {
         given:
-        def validator = Spy(NfcoreConfigValidator)
-        def observer = new NfcorePipelineObserver(validator)
-        def session = Mock(nextflow.Session) {
-            workflowMetadata >> [projectName: 'test-pipeline']
-            config >> [profile: 'standard', configFiles: ['main.config']]
-            profile >> 'standard'
-            commandLine >> '--foo bar'
-        }
+        // a real Session: Nextflow keeps the profile and config files there, not in the config map
+        def session = new Session()
+        session.profile = profile
+        session.configFiles = configFiles.collect { Paths.get(it) }
+        session.commandLine = "nextflow run main.nf -profile ${profile} ${args.join(' ')}"
+        session.binding = new ScriptBinding().setArgs(args)
+        def appender = new ListAppender<ILoggingEvent>()
+        appender.start()
+        ((Logger) LoggerFactory.getLogger(NfcoreConfigValidator)).addAppender(appender)
 
         when:
-        observer.onFlowCreate(session)
+        new NfcorePipelineObserver().onFlowCreate(session)
+        def warnings = appender.list.findAll { it.level == Level.WARN }*.formattedMessage
 
         then:
-        1 * validator.checkConfigProvided('test-pipeline', { it.profile == 'standard' && it.configFiles == ['main.config'] })
-        1 * validator.checkProfileProvided('standard', '--foo bar', true)
+        warnings.any { it.contains('without any custom configuration') } == configWarning
+        warnings.any { it.contains('positional argument') } == positionalWarning
+        !warnings.any { it.contains('`nextflow`') }
+
+        cleanup:
+        ((Logger) LoggerFactory.getLogger(NfcoreConfigValidator)).detachAppender(appender)
+
+        where:
+        profile    | configFiles                            | args       || configWarning | positionalWarning
+        'standard' | ['nextflow.config']                    | []         || true          | false
+        'docker'   | ['nextflow.config']                    | []         || false         | false
+        'standard' | ['nextflow.config', 'custom.config']   | []         || false         | false
+        'test'     | ['nextflow.config']                    | ['docker'] || false         | true
     }
 
-    @PendingFeature()
-    def 'onFlowCreate handles missing metadata gracefully'() {
+    def 'onFlowCreate stops a run whose profile ends with a comma'() {
         given:
-        def validator = Spy(NfcoreConfigValidator)
-        def observer = new NfcorePipelineObserver(validator)
-        def session = Mock(nextflow.Session) {
-            workflowMetadata >> null
-            config >> [profile: 'standard', configFiles: []]
-            profile >> 'standard'
-            commandLine >> ''
-        }
+        def session = new Session()
+        session.profile = 'test,'
+        session.configFiles = [Paths.get('nextflow.config')]
+        session.binding = new ScriptBinding().setArgs(['docker'])
 
         when:
-        observer.onFlowCreate(session)
+        new NfcorePipelineObserver().onFlowCreate(session)
 
         then:
-        1 * validator.checkConfigProvided(null, { it.profile == 'standard' && it.configFiles == [] })
-        1 * validator.checkProfileProvided('standard', '', true)
+        def error = thrown(IllegalArgumentException)
+        error.message.contains('cannot end with a trailing comma')
     }
 
     def 'onFlowCreate should log start message at TRACE level'() {

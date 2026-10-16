@@ -112,7 +112,7 @@ class PipelineExecutionContext {
             workflowCommitId: metadataProperty(workflowMetadata, 'commitId'),
             projectName: projectName,
             profile: session.getProfile(),
-            configFiles: (cfg.get('configFiles') instanceof List) ? (List<String>) cfg.get('configFiles') : [],
+            configFiles: sessionConfigFiles(session, cfg),
             config: cfg,
             nextflowVersion: nfVer,
             manifestMap: safeManifestMap(manifest),
@@ -150,5 +150,17 @@ class PipelineExecutionContext {
         } catch (Exception ignored) {
             return [:]
         }
+    }
+
+    // Nextflow keeps the config files of the run in the Session, not in the config map
+    private static List<String> sessionConfigFiles(Session session, Map cfg) {
+        def files = null
+        try {
+            files = session.getConfigFiles()
+        } catch (Exception ignored) {}
+        if (!files && cfg.get('configFiles') instanceof List) {
+            files = cfg.get('configFiles')
+        }
+        return (files ?: []).collect { it.toString() }
     }
 }

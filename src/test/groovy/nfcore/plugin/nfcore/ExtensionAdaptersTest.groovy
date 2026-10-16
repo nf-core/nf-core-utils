@@ -1,5 +1,6 @@
 package nfcore.plugin.nfcore
 
+import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
@@ -26,7 +27,8 @@ class ExtensionAdaptersTest extends Specification {
         given:
         def ctx = new PipelineExecutionContext(
             projectName: 'nf-core/rnaseq',
-            config: [profile: 'standard', configFiles: ['a.config', 'b.config']]
+            profile: 'standard',
+            configFiles: ['a.config', 'b.config']
         )
         def adapter = new ValidationAdapter(ctx)
 
@@ -42,7 +44,8 @@ class ExtensionAdaptersTest extends Specification {
         def appender = captureLogsFor(NfcoreConfigValidator)
         def ctx = new PipelineExecutionContext(
             projectName: 'pipe',
-            config: [profile: 'standard', configFiles: ['main.config']]
+            profile: 'standard',
+            configFiles: ['main.config']
         )
         def adapter = new ValidationAdapter(ctx)
 
@@ -54,6 +57,43 @@ class ExtensionAdaptersTest extends Specification {
 
         cleanup:
         detachAppender(appender, NfcoreConfigValidator)
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/66")
+    def 'ValidationAdapter.checkProfileProvided checks the profile of the run'() {
+        given:
+        def adapter = new ValidationAdapter(new PipelineExecutionContext(profile: 'test,'))
+
+        when:
+        adapter.checkProfileProvided([], true)
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/66")
+    def 'ValidationAdapter.checkProfileProvided warns about positional arguments only'() {
+        given:
+        def appender = captureLogsFor(NfcoreConfigValidator)
+        def adapter = new ValidationAdapter(new PipelineExecutionContext(profile: 'test'))
+
+        when:
+        adapter.checkProfileProvided(args, true)
+        def warnings = appender.list.findAll { it.level == Level.WARN }*.formattedMessage
+
+        then:
+        warnings.size() == (positional ? 1 : 0)
+        !positional || warnings[0].contains("`${positional}`")
+
+        cleanup:
+        detachAppender(appender, NfcoreConfigValidator)
+
+        where:
+        args                        || positional
+        []                          || null
+        ['docker']                  || 'docker'
+        ['-profile', 'test,docker'] || null
+        ['-profile', 'test', 'foo'] || 'foo'
     }
 
     def 'ValidationAdapter.checkProfileProvided detects trailing comma'() {
