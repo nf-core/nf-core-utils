@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Renamed the prek configuration and its CI workflow back to the standard nf-core `.pre-commit-config.yaml` and `pre-commit.yml`, with the same hooks ([#38](https://github.com/nf-core/nf-core-utils/issues/38)).
 - Updated reporting orchestration to use explicit execution context data, including workflow metadata for methods-description templates.
 - Migrated pre-commit configuration to `prek.toml` and added validation snapshot checks.
 - Enabled Gradle build caching, managed CI caches with `setup-gradle`, and added cache warming for Amp orbs.
