@@ -37,7 +37,7 @@ import org.yaml.snakeyaml.Yaml
  *
  * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §3
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.SoftwareVersionReport')
 class SoftwareVersionReport {
 
     private final Map<String, Map<String, Object>> merged = [:].withDefault { [:] as Map<String, Object> }

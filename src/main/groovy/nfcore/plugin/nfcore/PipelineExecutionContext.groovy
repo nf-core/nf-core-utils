@@ -39,6 +39,9 @@ class PipelineExecutionContext {
     /** Pipeline version from manifest (e.g. "3.14.0"). */
     final String workflowVersion
 
+    /** Git commit of the run from WorkflowMetadata, when run from a repository. */
+    final String workflowCommitId
+
     /** Project name from WorkflowMetadata, when available. */
     final String projectName
 
@@ -51,7 +54,7 @@ class PipelineExecutionContext {
     /** Full Nextflow config map. */
     final Map config
 
-    /** Nextflow engine version (from config or NXF_VER). */
+    /** Nextflow engine version (from config or NXF_VER, else of the running Nextflow). */
     final String nextflowVersion
 
     /** Manifest key-value pairs as a plain map. */
@@ -67,6 +70,7 @@ class PipelineExecutionContext {
     PipelineExecutionContext(Map props = [:]) {
         this.workflowName = (props.workflowName as String) ?: 'unknown'
         this.workflowVersion = props.workflowVersion as String
+        this.workflowCommitId = props.workflowCommitId as String
         this.projectName = props.projectName as String
         this.profile = props.profile as String
         this.configFiles = (props.configFiles as List<String>) ?: []
@@ -96,28 +100,35 @@ class PipelineExecutionContext {
         } catch (Exception ignored) {}
 
         // Extract projectName safely — property may not exist on all metadata versions
-        String projectName = null
-        if (workflowMetadata instanceof Map) {
-            projectName = workflowMetadata.get('projectName')?.toString()
-        } else if (workflowMetadata != null && workflowMetadata.metaClass?.hasProperty(workflowMetadata, 'projectName')) {
-            projectName = workflowMetadata.projectName?.toString()
-        }
+        String projectName = metadataProperty(workflowMetadata, 'projectName')
 
-        // Nextflow version: config > NXF_VER env var
+        // Nextflow version: config > NXF_VER env var > running Nextflow
         def nfVer = (cfg.get('nextflow') as Map)?.get('version')?.toString()
             ?: System.getenv('NXF_VER')
+            ?: NfcoreVersionUtils.runningNextflowVersion()
 
         return new PipelineExecutionContext(
             workflowName: manifest?.getName() ?: 'unknown',
             workflowVersion: manifest?.getVersion()?.toString(),
+            workflowCommitId: metadataProperty(workflowMetadata, 'commitId'),
             projectName: projectName,
             profile: session.getProfile(),
-            configFiles: (cfg.get('configFiles') instanceof List) ? (List<String>) cfg.get('configFiles') : [],
+            configFiles: sessionConfigFiles(session, cfg),
             config: cfg,
             nextflowVersion: nfVer,
             manifestMap: safeManifestMap(manifest),
             workflowMap: safeWorkflowMap(workflowMetadata)
         )
+    }
+
+    private static String metadataProperty(def meta, String name) {
+        if (meta instanceof Map) {
+            return meta.get(name)?.toString()
+        }
+        if (meta != null && meta.metaClass?.hasProperty(meta, name)) {
+            return meta."${name}"?.toString()
+        }
+        return null
     }
 
     private static Map safeManifestMap(def manifest) {
@@ -140,5 +151,17 @@ class PipelineExecutionContext {
         } catch (Exception ignored) {
             return [:]
         }
+    }
+
+    // Nextflow keeps the config files of the run in the Session, not in the config map
+    private static List<String> sessionConfigFiles(Session session, Map cfg) {
+        def files = null
+        try {
+            files = session.getConfigFiles()
+        } catch (Exception ignored) {}
+        if (!files && cfg.get('configFiles') instanceof List) {
+            files = cfg.get('configFiles')
+        }
+        return (files ?: []).collect { it.toString() }
     }
 }

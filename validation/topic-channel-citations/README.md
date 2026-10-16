@@ -100,7 +100,7 @@ workflow {
 
 ```bash
 # Build and install plugin
-make install
+mise run install
 
 # Run validation test
 cd validation/topic-channel-citations

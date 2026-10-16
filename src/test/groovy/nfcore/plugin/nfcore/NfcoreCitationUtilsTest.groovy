@@ -1027,7 +1027,7 @@ ${tool_bibliography}
 
     private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {
         def appender = new ListAppender<ILoggingEvent>()
-        def logger = (Logger) LoggerFactory.getLogger(clazz)
+        def logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.${clazz.simpleName}")
         appender.start()
         logger.addAppender(appender)
         return appender
@@ -1038,7 +1038,7 @@ ${tool_bibliography}
     }
 
     private void detachAppender(ListAppender<ILoggingEvent> appender) {
-        ((Logger) LoggerFactory.getLogger(NfcoreCitationUtils)).detachAppender(appender)
+        ((Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcoreCitationUtils")).detachAppender(appender)
     }
 
     // Helper method to create mock meta.yml files for testing

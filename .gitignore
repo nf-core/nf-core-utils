@@ -16,3 +16,7 @@ validation_results/
 
 # Orb portal metadata
 .amp/portals/
+
+# Personal mise overrides
+mise.local.toml
+mise.local.lock

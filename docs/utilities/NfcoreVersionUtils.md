@@ -32,7 +32,7 @@ String getWorkflowVersion(String version = null, String commitId = null)
 **Parameters:**
 
 - `version` (String, optional): Explicit version string to use (defaults to workflow.manifest.version)
-- `commitId` (String, optional): Explicit commit ID to use (defaults to workflow.commitId)
+- `commitId` (String, optional): Explicit commit ID to use (defaults to workflow.commitId when no `version` is given, so runs from a repository get the `-g<sha>` suffix)
 
 **Returns:**
 

@@ -31,18 +31,23 @@ class ValidationAdapter {
     }
 
     boolean checkConfigProvided() {
-        return NfcoreConfigValidator.checkConfigProvided(ctx.projectName, ctx.config)
+        return NfcoreConfigValidator.checkConfigProvided(ctx.projectName, ctx.profile, ctx.configFiles)
     }
 
+    /**
+     * @param args The positional arguments of the script (`args` in the pipeline), or a command line split in words
+     */
     void checkProfileProvided(List args, boolean monochromeLogs = true) {
-        String profile = null
+        // the profile of the run, unless the arguments give one
+        String profile = ctx.profile
         for (int i = 0; i < args.size(); i++) {
             if (args[i] == '-profile' && i + 1 < args.size()) {
                 profile = args[i + 1]
                 break
             }
         }
-        String commandLine = args.join(' ')
-        NfcoreConfigValidator.checkProfileProvided(profile, commandLine, monochromeLogs)
+        // the value of -profile is not a positional argument
+        def positional = args.withIndex().findAll { arg, i -> !(i > 0 && args[i - 1] == '-profile') }*.get(0)
+        NfcoreConfigValidator.checkProfileAndArgs(profile, positional, monochromeLogs)
     }
 }

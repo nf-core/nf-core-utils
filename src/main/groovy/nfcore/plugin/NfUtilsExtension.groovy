@@ -39,7 +39,7 @@ import nfcore.plugin.ReferencesUtils
  *
  * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §5
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfUtilsExtension')
 class NfUtilsExtension extends PluginExtensionPoint {
 
     private Session session
