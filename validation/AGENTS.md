@@ -36,5 +36,5 @@ Normalize nondeterministic values in `.nf.test` files, not `.snap` files:
 mise run validate
 mise run update-snapshots   # only after expected behavior changes
 mise run validate           # confirm regenerated snapshots are stable
-prek -c prek.toml run validation-nf-test-snapshot-guard
+prek run validation-nf-test-snapshot-guard
 ```
