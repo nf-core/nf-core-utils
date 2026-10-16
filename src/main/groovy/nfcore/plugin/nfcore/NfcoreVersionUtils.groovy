@@ -50,7 +50,7 @@ import org.yaml.snakeyaml.Yaml
  *   <li>{@link #processMixedVersionSources} - use collectVersions() instead</li>
  * </ul>
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcoreVersionUtils')
 class NfcoreVersionUtils {
 
     // =========================================================================

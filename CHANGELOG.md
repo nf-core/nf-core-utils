@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed the workflow version of `collectVersions()`, `completionEmail()` and the other version reports missing the `-g<sha>` commit suffix of runs from a repository: `getWorkflowVersion()` without arguments now adds the commit of the run, as the template helpers did ([#68](https://github.com/nf-core/nf-core-utils/issues/68)).
 - Fixed `dumpParametersToJSON()` to serialize Nextflow parameter types and copy parameter reports through Nextflow file handling for cloud/remote paths.
 - Fixed the startup config checks warning on every run: the profile and config files are read from the session, where Nextflow keeps them, and the positional argument check looks at the arguments of the script instead of the command line, which starts with `nextflow` ([#66](https://github.com/nf-core/nf-core-utils/issues/66)).
+- Fixed the warnings, errors and completion summary of the plugin never reaching the console: the plugin logs under `nextflow.nfcore`, as the console only shows the loggers under `nextflow` ([#67](https://github.com/nf-core/nf-core-utils/issues/67)).
 - Fixed malformed HTML tag (`</a>` → `</span>`) in `paramsSummaryMultiqc()`.
 - Fixed broken links: the README link to the `NfCorePipelineExtension` docs, deleted with `NfcorePipelineUtils`, and the links to moved pages of the nf-core website in the utility docs.
 

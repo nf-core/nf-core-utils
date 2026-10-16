@@ -159,7 +159,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
 
     private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {
         def appender = new ListAppender<ILoggingEvent>()
-        def logger = (Logger) LoggerFactory.getLogger(clazz)
+        def logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.${clazz.simpleName}")
         appender.start()
         logger.addAppender(appender)
         return appender
@@ -170,7 +170,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
     }
 
     private void detachAppender(ListAppender<ILoggingEvent> appender) {
-        def logger = (Logger) LoggerFactory.getLogger(NfcoreNotificationUtils)
+        def logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcoreNotificationUtils")
         logger.detachAppender(appender)
     }
 }
