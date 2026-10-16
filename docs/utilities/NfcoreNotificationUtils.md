@@ -846,4 +846,4 @@ def teams_summary = [
 ]
 ```
 
-For more information on setting up external service integrations, see the [nf-core documentation](https://nf-co.re/docs/usage/configuration#notifications).
+For more information on setting up external service integrations, see the [nf-core documentation](https://nf-co.re/docs/running/run-pipelines#notifications).

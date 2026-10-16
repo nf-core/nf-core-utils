@@ -960,4 +960,4 @@ workflow {
 }
 ```
 
-For more information on version management and topic channels, see the [Nextflow documentation](https://www.nextflow.io/docs/latest/channel.html#topic) and [nf-core best practices](https://nf-co.re/docs/contributing/modules#software-versions).
+For more information on version management and topic channels, see the [Nextflow documentation](https://www.nextflow.io/docs/latest/channel.html#topic) and [nf-core best practices](https://nf-co.re/docs/specifications/components/modules/general#emission-of-versions).
