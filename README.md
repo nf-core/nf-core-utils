@@ -5,7 +5,6 @@ The nf-core-utils plugin provides utility functions used by nf-core pipelines.
 ## Features
 
 - [NextflowPipelineExtension](docs/NextflowPipelineExtension.md)
-- [NfCorePipelineExtension](docs/NfCorePipelineExtension.md)
 - [ReferencesExtension](docs/ReferencesExtension.md)
 - [NfCore Utilities](docs/NfCoreUtilities.md)
 
