@@ -1,5 +1,6 @@
 package nfcore.plugin.nfcore
 
+import java.nio.file.Paths
 import nextflow.Session
 import nextflow.config.Manifest
 import nextflow.script.WorkflowMetadata
@@ -94,6 +95,22 @@ class PipelineExecutionContextTest extends Specification {
 
         then:
         ctx.profile == 'docker,test'
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/66")
+    def 'fromSession extracts configFiles from the session'() {
+        given:
+        def session = Mock(Session) {
+            getManifest() >> Mock(Manifest)
+            getConfig() >> [:]
+            getConfigFiles() >> [Paths.get('/pipeline/nextflow.config'), Paths.get('/home/custom.config')]
+        }
+
+        when:
+        def ctx = PipelineExecutionContext.fromSession(session)
+
+        then:
+        ctx.configFiles == ['/pipeline/nextflow.config', '/home/custom.config']
     }
 
     def 'fromSession extracts configFiles from config map'() {
