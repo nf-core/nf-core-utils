@@ -8,14 +8,14 @@
                 "Testing profile with trailing comma (expected to fail)",
                 "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, [CONTAINER]`.",
                 " -- Check script '[PATH]/config-validation/error-test.nf' at line: 24 or see '[PATH]/tests/[NFT_HASH]/meta/nextflow.log' file for more details",
-                "ERROR ~ ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!"
+                "ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!"
             ]
         ],
-        "timestamp": "2026-05-22T12:17:38.142295",
         "meta": {
-            "nf-test": "0.9.5",
-            "nextflow": "25.10.3"
-        }
+            "nf-test": "0.9.3",
+            "nextflow": "26.10.2"
+        },
+        "timestamp": "2026-10-17T07:29:59.348914294"
     },
     "Error output - Color": {
         "content": [
@@ -24,15 +24,15 @@
                 "Launching `[PATH]/config-validation/./error-test.nf` [RUN_NAME] - revision: [REVISION]",
                 "Color Formatting Error Test",
                 "Testing profile with trailing comma (expected to fail)",
-                "HINT: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, [CONTAINER]`.",
-                " -- Check script '[PATH]/config-validation/error-test.nf' at line: 24 or see '[PATH]/tests/[NFT_HASH]/meta/nextflow.log' file for more details",
-                "ERROR ~ ERROR ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!"
+                "\u001b[0;31mERROR\u001b[0m ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!",
+                "\u001b[0;33mHINT\u001b[0m: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, [CONTAINER]`.",
+                " -- Check script '[PATH]/config-validation/error-test.nf' at line: 24 or see '[PATH]/tests/[NFT_HASH]/meta/nextflow.log' file for more details"
             ]
         ],
-        "timestamp": "2026-05-22T12:17:43.919038",
         "meta": {
-            "nf-test": "0.9.5",
-            "nextflow": "25.10.3"
-        }
+            "nf-test": "0.9.3",
+            "nextflow": "26.10.2"
+        },
+        "timestamp": "2026-10-17T07:30:04.258024535"
     }
 }

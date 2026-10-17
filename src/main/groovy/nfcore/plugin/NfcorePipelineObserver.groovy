@@ -19,7 +19,6 @@ package nfcore.plugin
 import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.trace.TraceObserver
-import nfcore.plugin.nfcore.NfcoreConfigValidator
 
 /**
  * Implements an observer that allows implementing custom
@@ -28,29 +27,11 @@ import nfcore.plugin.nfcore.NfcoreConfigValidator
 @Slf4j(category = 'nextflow.nfcore.NfcorePipelineObserver')
 class NfcorePipelineObserver implements TraceObserver {
 
-    private final NfcoreConfigValidator configValidator
-
-    NfcorePipelineObserver(NfcoreConfigValidator configValidator = new NfcoreConfigValidator()) {
-        this.configValidator = configValidator
-    }
-
     @Override
     void onFlowCreate(Session session) {
-        def meta = session.getWorkflowMetadata()
-        String projectName = null
-        if (meta != null && meta.metaClass?.hasProperty(meta, 'projectName')) {
-            projectName = meta.projectName
-        }
-        // Nextflow keeps the profile and config files in the Session, not in the config, and the command line
-        // starts with `nextflow`: check the positional arguments of the script, as the pipeline gets them
-        configValidator.checkConfigProvided(projectName, session.profile, session.configFiles)
-        configValidator.checkProfileAndArgs(session.profile, scriptArgs(session), true)
+        // Pipelines own startup validation, using exported functions or template-local checks.
+        // Observer checks duplicate their warnings, and Nextflow swallows callback exceptions.
         log.trace "Pipeline is starting! 🚀"
-    }
-
-    private static List scriptArgs(Session session) {
-        def binding = session.binding
-        return binding?.hasVariable('args') ? (binding.getVariable('args') as List ?: []) : []
     }
 
     @Override

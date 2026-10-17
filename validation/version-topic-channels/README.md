@@ -75,9 +75,16 @@ The test will:
 
 ### Output Files
 
-- `validation_results/pipeline_info/nf_core_utils_software_mqc_versions.yml` - Final versions file
+- `validation_results/topic_versions.yml` - Versions collected from topic tuples
+- `validation_results/file_versions.yml` - Versions collected from YAML file paths
+- `validation_results/mixed_versions.yml` - Versions collected from mixed input types
 - `validation_results/execution_*.html` - Nextflow execution reports
 - `validation_results/pipeline_dag.svg` - Workflow diagram
+
+The nf-test snapshots compare each complete YAML report independently, normalizing
+only the running Nextflow version. Channel completion order is not guaranteed, so
+console arrival order is not part of the test contract. Missing reports, incorrect
+versions, and changes to YAML structure or ordering still fail the snapshots.
 
 ## Migration Pattern Demonstrated
 

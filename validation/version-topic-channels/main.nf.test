@@ -6,36 +6,23 @@ nextflow_pipeline {
 
     test("Version utilities") {
 
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+        }
 
         then {
             assert workflow.success
-            def normalizedOutput = filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true).flatten().findAll { it instanceof String }.collect { line ->
-                line
-                    .replaceAll(/https:\/\/cloud\.seqera\.io\/user\/[^\/\s]+\/watch\/[A-Za-z0-9]+/, 'https://cloud.seqera.io/user/[USER]/watch/[TRACE_ID]')
-                    .replaceAll(/https:\/\/api\.cloud\.seqera\.io\/trace\/[A-Za-z0-9]+\/complete/, 'https://api.cloud.seqera.io/trace/[TRACE_ID]/complete')
-                    .replaceAll(/ DSL2 - revision:/, ' - revision:')
-                    .replaceAll(/\[PATH\]\/\.nf-test\/tests/, '[PATH]/tests')
-                    // the version reports give the running Nextflow version, which changes with the installed one
-                    .replaceAll(/^(\s*Nextflow: )\S+$/, '$1[VERSION]')
-            }.findAll { line ->
-                line != '==========================================' &&
-                line != '===========================================' &&
-                !line.startsWith('Monitor the execution with Seqera Platform') &&
-                !line.startsWith('WARN: Graphviz is required') &&
-                !line.startsWith("WARN: Unrecognized config option") &&
-                !line.startsWith('WARN: Task runtime metrics are not reported') &&
-                !line.startsWith('WARN: Unexpected HTTP response') &&
-                !line.startsWith('Failed to send message to https://api.cloud.seqera.io') &&
-                !line.startsWith('- status code :') &&
-                !line.startsWith('- response msg:') &&
-                !line.startsWith('- error cause :') &&
-                !line.startsWith('Conda channels check result:') &&
-                !line.startsWith('Conda channels status:') &&
-                !line.startsWith('✅ Conda channels are configured correctly') &&
-                !line.startsWith('⚠️ Conda channels may need configuration adjustment')
+
+            // Channels finish independently; compare each complete report, not console arrival order.
+            def reports = ['topic', 'file', 'mixed'].collectEntries { kind ->
+                def lines = path("${params.outdir}/${kind}_versions.yml").text.readLines().collect { line ->
+                    line.replaceAll(/^(\s*Nextflow: )\S+$/, '$1[VERSION]')
+                }
+                [kind, lines]
             }
-            def stableOutput = normalizedOutput.findAll { !it.startsWith('Processing ') }
-            assert snapshot(stableOutput).match()
+            assert snapshot(reports).match()
         }
     }
 }

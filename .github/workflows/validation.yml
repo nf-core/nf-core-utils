@@ -11,11 +11,20 @@ env:
   NFT_DIFF: pdiff
   NFT_DIFF_ARGS: "--line-numbers --expand-tabs=2"
   NXF_ANSI_LOG: false
+  NXF_AGENT_MODE: false
   NXF_SINGULARITY_CACHEDIR: ${{ github.workspace }}/.singularity
   NXF_SINGULARITY_LIBRARYDIR: ${{ github.workspace }}/.singularity
 jobs:
   validation:
+    name: Nextflow ${{ matrix.nextflow }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Latest patch of every supported stable line (>=25.10), plus the #73 regression version.
+        nextflow: ["25.10.4", "25.10.8", "26.04.7", "26.10.2"]
+    env:
+      NXF_VER: ${{ matrix.nextflow }}
 
     steps:
       - name: Checkout code
@@ -45,13 +54,15 @@ jobs:
         run: echo "NFT_WORKDIR=$HOME" >> $GITHUB_ENV
 
       - name: Build and validate plugin
-        run: mise run validate
+        run: |
+          mise exec -- nextflow -version
+          mise run validate
 
       - name: Upload validation artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: validation-results
+          name: validation-results-${{ matrix.nextflow }}
           path: |
             validation/*/work/pipeline_info/
             validation/*/work/*.log
@@ -64,7 +75,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: validation-logs
+          name: validation-logs-${{ matrix.nextflow }}
           path: |
             validation/*/.nextflow.log
             validation/*/work/**/*.log
