@@ -169,9 +169,9 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
 
     // --- sending the completion e-mail ---
 
-    @Issue("https://github.com/nf-core/nf-core-utils/pull/71")
+    @Issue(["https://github.com/nf-core/nf-core-utils/pull/71", "https://github.com/nf-core/nf-core-utils/issues/74"])
     @ConfineMetaClassChanges(Nextflow)
-    def 'completionEmail attaches cloud reports and preserves output when plaintext=#plaintext, sendmail=#sendmailExit, mail=#mailExit, cleanupFails=#cleanupFails'() {
+    def 'completionEmail preserves attachments and output when plaintext=#plaintext, sendmail=#sendmailExit, mail=#mailExit, cleanupFails=#cleanupFails, renderFails=#renderFails'() {
         given:
         def assets = tempDir.resolve('assets').toFile()
         assets.mkdirs()
@@ -179,9 +179,13 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         new File(assets, 'email_template.html').text = '<p>HTML summary</p>'
         new File(assets, 'sendmail_template.txt').text = '''<%
 def report = new File("$mqcFile")
+out << 'Content-Disposition: attachment; filename="' << report.name << '"' << System.lineSeparator()
 out << report.bytes.encodeBase64().toString()
 new File("$projectDir/attachment-path").text = report.path
 %>'''
+        if (renderFails) {
+            new File(assets, 'sendmail_template.txt') << '<% throw new IllegalStateException("broken template") %>'
+        }
         if (cleanupFails) {
             new File(assets, 'sendmail_template.txt') << '''<%
 report.delete()
@@ -229,30 +233,92 @@ exit ${status}
         noExceptionThrown()
         tempDir.resolve('sendmail.finished').toFile().exists() == !plaintext
         tempDir.resolve('mail.finished').toFile().exists() == (plaintext || sendmailExit != 0)
-        plaintext || tempDir.resolve('sendmail.body').toFile().text == 'PGh0bWw+cmVwb3J0PC9odG1sPg=='
+        plaintext || tempDir.resolve('sendmail.body').toFile().text == (renderFails ? '<p>HTML summary</p>' : 'Content-Disposition: attachment; filename="multiqc_report.html"\nPGh0bWw+cmVwb3J0PC9odG1sPg==')
         !(plaintext || sendmailExit != 0) || tempDir.resolve('mail.body').toFile().text == (plaintext ? 'Plain summary' : '<p>HTML summary</p>')
         logMessages(appender).count { it.contains('Sent summary e-mail') } == (deliveredBy ? 1 : 0)
         !deliveredBy || logMessages(appender).any { it.contains("(${deliveredBy})-") }
         logMessages(appender).any { it.contains('[review] Could not send the summary e-mail') } == !deliveredBy
         Files.readString(outdir.resolve('pipeline_info/pipeline_report.html')) == '<p>HTML summary</p>'
         Files.readString(outdir.resolve('pipeline_info/pipeline_report.txt')) == 'Plain summary'
-        new File(tempDir.resolve('attachment-path').toFile().text).exists() == cleanupFails
+        Files.readString(fs.getPath('/multiqc_report.html')) == '<html>report</html>'
+        tempDir.resolve('attachment-path').toFile().exists() == !plaintext
+        if (!plaintext) {
+            def attachment = new File(tempDir.resolve('attachment-path').toFile().text)
+            assert attachment.exists() == cleanupFails
+            assert attachment.parentFile.exists() == cleanupFails
+        }
         logMessages(appender).any { it.contains('Could not remove temporary file') } == cleanupFails
+        logMessages(appender).any { it.contains('Failed to render sendmail template') } == renderFails
 
         cleanup:
         detachAppender(appender)
         fs?.close()
         if (tempDir.resolve('attachment-path').toFile().exists()) {
-            new File(tempDir.resolve('attachment-path').toFile().text).deleteDir()
+            def attachment = new File(tempDir.resolve('attachment-path').toFile().text)
+            attachment.deleteDir()
+            // Do not remove the system temp directory when running against the old implementation.
+            if (attachment.parentFile.name.startsWith('multiqc_report')) attachment.parentFile.deleteDir()
         }
 
         where:
-        plaintext | sendmailExit | mailExit | cleanupFails || deliveredBy
-        false     | 0            | 0        | false        || 'sendmail'
-        false     | 75           | 0        | false        || 'mail'
-        false     | 75           | 1        | false        || null
-        true      | 0            | 0        | false        || 'mail'
-        false     | 0            | 0        | true         || 'sendmail'
+        plaintext | sendmailExit | mailExit | cleanupFails | renderFails || deliveredBy
+        false     | 0            | 0        | false        | false       || 'sendmail'
+        false     | 75           | 0        | false        | false       || 'mail'
+        false     | 75           | 1        | false        | false       || null
+        true      | 0            | 0        | false        | false       || 'mail'
+        false     | 0            | 0        | true         | false       || 'sendmail'
+        false     | 0            | 0        | false        | true        || 'sendmail'
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/74")
+    @ConfineMetaClassChanges(Nextflow)
+    def 'completionEmail skips attachment access and sendmail rendering for #scenario'() {
+        given:
+        def assets = Files.createDirectories(tempDir.resolve('assets'))
+        assets.resolve('email_template.txt').text = 'Plain summary'
+        assets.resolve('email_template.html').text = '<p>HTML summary</p>'
+        assets.resolve('sendmail_template.txt').text = '<% throw new IllegalStateException("sendmail must not render") %>'
+        def fs = FileSystems.newFileSystem(zipWithReport('<html>report</html>'))
+        def report = fs.getPath('/multiqc_report.html')
+        fs.close() // Any size check or download now fails visibly, as in the issue reproducer.
+        def metadata = Mock(WorkflowMetadata) {
+            getLaunchDir() >> tempDir
+            getProjectDir() >> tempDir
+            getSuccess() >> success
+        }
+        def session = Stub(Session) {
+            getManifest() >> Stub(Manifest) { getName() >> 'review'; getVersion() >> '1.0' }
+            getConfig() >> [params: [max_multiqc_email_size: '1 MB']]
+            getWorkflowMetadata() >> metadata
+        }
+        Nextflow.metaClass.static.getSession = { -> session }
+        def script = tempDir.resolve('mail.sh')
+        script.text = 'cat > "$0.body"'
+        GroovySpy(NfcoreNotificationUtils, global: true)
+        NfcoreNotificationUtils.emailCommands(_, _, _, _, _, _) >> {
+            callRealMethod().collect { entry -> entry + [command: ['sh', script.toString()]] }
+        }
+        def appender = captureLogsFor(NfcoreNotificationUtils)
+
+        when:
+        NfcoreNotificationUtils.completionEmail([:], email, emailOnFail, plaintext, tempDir.resolve('results').toString(), true, [report])
+
+        then:
+        !appender.list.any { it.level == Level.WARN || it.level == Level.ERROR }
+        tempDir.resolve('mail.sh.body').toFile().exists() == plaintext
+        !plaintext || tempDir.resolve('mail.sh.body').text == 'Plain summary'
+        tempDir.resolve('results/pipeline_info/pipeline_report.html').text == '<p>HTML summary</p>'
+        tempDir.resolve('results/pipeline_info/pipeline_report.txt').text == 'Plain summary'
+
+        cleanup:
+        detachAppender(appender)
+
+        where:
+        scenario                  | success | email                  | emailOnFail            | plaintext
+        'success, failure only'   | true    | null                   | 'fail@example.invalid' | false
+        'no recipient'            | false   | null                   | null                   | false
+        'plaintext success'       | true    | 'test@example.invalid' | null                   | true
+        'plaintext failure only'  | false   | null                   | 'fail@example.invalid' | true
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/pull/71")
@@ -393,23 +459,28 @@ exec sleep 60
         report?.fileSystem?.close()
     }
 
-    @Issue("https://github.com/nf-core/nf-core-utils/issues/65")
-    def 'localReport copies a remote report to a local file'() {
+    @Issue(["https://github.com/nf-core/nf-core-utils/issues/65", "https://github.com/nf-core/nf-core-utils/issues/74"])
+    def 'localReport preserves remote basename #name and content'() {
         given:
-        def zip = zipWithReport('<html>report</html>')
+        def zip = zipWithReport('<html>report</html>', name)
         def fs = java.nio.file.FileSystems.newFileSystem(zip)
-        def remote = fs.getPath('/multiqc_report.html')
+        def remote = fs.getPath('/' + name)
 
         when:
         def local = NfcoreNotificationUtils.localReport(remote, 1024)
 
         then:
         NfcoreNotificationUtils.isLocal(local)
+        local.fileName.toString() == name
         local.toFile().text == '<html>report</html>'
 
         cleanup:
         java.nio.file.Files.deleteIfExists(local)
+        if (local?.parent?.fileName?.toString()?.startsWith('multiqc_report')) Files.deleteIfExists(local.parent)
         fs.close()
+
+        where:
+        name << ['multiqc_report.html', 'custom report.html']
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/issues/65")
@@ -419,10 +490,13 @@ exec sleep 60
         def fs = java.nio.file.FileSystems.newFileSystem(zip)
 
         expect:
-        NfcoreNotificationUtils.localReport(fs.getPath('/multiqc_report.html'), 10) == null
+        NfcoreNotificationUtils.localReport(fs.getPath('/multiqc_report.html'), limit) == null
 
         cleanup:
         fs.close()
+
+        where:
+        limit << [0, 10, 19] // The 19-byte report is also excluded at the exact limit.
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/issues/65")
@@ -444,10 +518,10 @@ exec sleep 60
         fs.close()
     }
 
-    private Path zipWithReport(String content) {
+    private Path zipWithReport(String content, String name = 'multiqc_report.html') {
         def zip = java.nio.file.Files.createTempFile('work', '.zip')
         new java.util.zip.ZipOutputStream(java.nio.file.Files.newOutputStream(zip)).withCloseable { out ->
-            out.putNextEntry(new java.util.zip.ZipEntry('multiqc_report.html'))
+            out.putNextEntry(new java.util.zip.ZipEntry(name))
             out.write(content.bytes)
             out.closeEntry()
         }

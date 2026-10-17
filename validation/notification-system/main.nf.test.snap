@@ -28,14 +28,13 @@
                 "Notification system functions tested successfully! \ud83d\ude80",
                 "WARN: Cannot send IM notification - hook URL is null or empty",
                 "WARN: Email template not found: [PATH]/notification-system/assets/email_template.txt",
-                "WARN: HTML email template not found: [PATH]/notification-system/assets/email_template.html",
-                "WARN: Sendmail template not found: [PATH]/notification-system/assets/sendmail_template.txt"
+                "WARN: HTML email template not found: [PATH]/notification-system/assets/email_template.html"
             ]
         ],
-        "timestamp": "2026-10-16T15:11:33.095045156",
         "meta": {
-            "nf-test": "0.9.5",
-            "nextflow": "25.10.0"
-        }
+            "nf-test": "0.9.3",
+            "nextflow": "25.10.4"
+        },
+        "timestamp": "2026-10-17T07:29:07.250466311"
     }
 }
