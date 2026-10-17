@@ -1,7 +1,9 @@
 package nfcore.plugin
 
+import nextflow.exception.AbortOperationException
 import nfcore.plugin.nfcore.NfcoreConfigValidator
 import org.slf4j.LoggerFactory
+import spock.lang.Issue
 import spock.lang.Specification
 
 class NfcoreConfigValidatorTest extends Specification {
@@ -40,6 +42,7 @@ class NfcoreConfigValidatorTest extends Specification {
         configFiles << [[], ['main.config'], ['main.config', 'custom.config']]
     }
 
+    @Issue('https://github.com/nf-core/nf-core-utils/issues/73')
     def 'should check profile validity and positional arguments'() {
         given:
         def validator = new NfcoreConfigValidator()
@@ -63,7 +66,7 @@ class NfcoreConfigValidatorTest extends Specification {
 
         then:
         if (shouldThrow) {
-            assert thrownException instanceof IllegalArgumentException
+            assert thrownException instanceof AbortOperationException
             assert thrownException.message.contains('cannot end with a trailing comma')
         } else if (shouldWarn) {
             assert logs.any { it.contains('nf-core pipelines do not accept positional arguments') }
@@ -86,6 +89,7 @@ class NfcoreConfigValidatorTest extends Specification {
         null    | []              || false       | false
     }
 
+    @Issue('https://github.com/nf-core/nf-core-utils/issues/73')
     def 'should add colors to profile error message when monochrome is disabled'() {
         given:
         def validator = new NfcoreConfigValidator()
@@ -99,7 +103,7 @@ class NfcoreConfigValidatorTest extends Specification {
         }
 
         then:
-        assert thrownException instanceof IllegalArgumentException
+        assert thrownException instanceof AbortOperationException
         def message = thrownException.message
         assert message.contains('\033[0;31m')  // red color code
         assert message.contains('\033[0;33m')  // yellow color code
@@ -108,6 +112,7 @@ class NfcoreConfigValidatorTest extends Specification {
         assert message.contains('HINT')
     }
 
+    @Issue('https://github.com/nf-core/nf-core-utils/issues/73')
     def 'should not add colors to profile error message when monochrome is enabled'() {
         given:
         def validator = new NfcoreConfigValidator()
@@ -121,7 +126,7 @@ class NfcoreConfigValidatorTest extends Specification {
         }
 
         then:
-        assert thrownException instanceof IllegalArgumentException
+        assert thrownException instanceof AbortOperationException
         def message = thrownException.message
         assert !message.contains('\033[')  // no color codes
         assert message.contains('ERROR')

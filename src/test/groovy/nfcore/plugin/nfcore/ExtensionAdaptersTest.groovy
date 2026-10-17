@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
+import nextflow.exception.AbortOperationException
 import org.slf4j.LoggerFactory
 import spock.lang.Narrative
 import spock.lang.Issue
@@ -68,7 +69,7 @@ class ExtensionAdaptersTest extends Specification {
         adapter.checkProfileProvided([], true)
 
         then:
-        thrown(IllegalArgumentException)
+        thrown(AbortOperationException)
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/issues/66")
@@ -96,6 +97,7 @@ class ExtensionAdaptersTest extends Specification {
         ['-profile', 'test', 'foo'] || 'foo'
     }
 
+    @Issue('https://github.com/nf-core/nf-core-utils/issues/73')
     def 'ValidationAdapter.checkProfileProvided detects trailing comma'() {
         given:
         def ctx = new PipelineExecutionContext(profile: 'test')
@@ -105,7 +107,7 @@ class ExtensionAdaptersTest extends Specification {
         adapter.checkProfileProvided(['-profile', 'test,'], true)
 
         then:
-        thrown(IllegalArgumentException)
+        thrown(AbortOperationException)
     }
 
     // --- VersionAdapter ---

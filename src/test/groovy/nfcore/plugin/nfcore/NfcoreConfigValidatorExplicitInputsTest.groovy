@@ -1,5 +1,6 @@
 package nfcore.plugin.nfcore
 
+import nextflow.exception.AbortOperationException
 import spock.lang.Narrative
 import spock.lang.Issue
 import spock.lang.See
@@ -16,12 +17,13 @@ hidden interface visible and testable without global state.
 @See("https://github.com/nf-core/nf-core-utils/blob/main/docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md#2-explicit-report-inputs")
 class NfcoreConfigValidatorExplicitInputsTest extends Specification {
 
+    @Issue('https://github.com/nf-core/nf-core-utils/issues/73')
     def 'validateConfig with explicit inputs detects trailing comma in profile'() {
         when:
         NfcoreConfigValidator.validateConfig('test,', '', 'pipe', [:])
 
         then:
-        thrown(IllegalArgumentException)
+        thrown(AbortOperationException)
     }
 
     def 'validateConfig with explicit inputs accepts valid profile'() {
@@ -59,6 +61,7 @@ class NfcoreConfigValidatorExplicitInputsTest extends Specification {
         noExceptionThrown()
     }
 
+    @Issue('https://github.com/nf-core/nf-core-utils/issues/73')
     def 'validateConfig with PipelineExecutionContext detects trailing comma'() {
         given:
         def ctx = new PipelineExecutionContext(
@@ -71,6 +74,6 @@ class NfcoreConfigValidatorExplicitInputsTest extends Specification {
         NfcoreConfigValidator.validateConfig(ctx)
 
         then:
-        thrown(IllegalArgumentException)
+        thrown(AbortOperationException)
     }
 }
