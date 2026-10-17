@@ -69,27 +69,62 @@ The plugin can be tested without a local Nextflow installation:
 
 ## Publish a release
 
-1. Set `version` in `build.gradle` and update the plugin pins in `validation/`.
-2. Add a dated release section to the [changelog](./CHANGELOG.md).
-3. Set `npr.apiKey` in `$HOME/.gradle/gradle.properties` to a Nextflow Plugin Registry token authorized to publish `nf-core-utils` for `nf-core`.
-   The Gradle plugin also accepts `NPR_API_KEY`. Do not commit credentials.
-4. Build and test the release:
+Use the manually triggered [Publish plugin release workflow](.github/workflows/release.yml).
+It publishes the commit selected when the workflow starts, not a later main-branch commit.
+
+### One-time setup
+
+Add an Actions secret named `NPR_API_KEY` to this repository, or grant it access to an organization secret with that name.
+The token must authorize publishing `nf-core-utils` for the `nf-core` provider in the Nextflow Plugin Registry.
+Enter the token through GitHub's secret input, not in source code, command arguments, or chat.
+The existing `nf_core_bot_auth_token` must also be available to the documentation workflow for its dispatch to `nf-core/website`.
+
+### Release a prepared version
+
+1. Compare main with the latest published tag. Use a minor version for new public functions and a patch version for compatible fixes.
+2. Set `version` in `build.gradle` and update the explicit `nf-core-utils@<version>` pins in `validation/`.
+3. Add a dated section to the [changelog](./CHANGELOG.md). Keep previously released entries under their original version.
+4. Commit the release preparation and land it on main through the repository's review process.
+5. In GitHub Actions, select **Publish plugin release**, choose **main**, and enter the prepared version without a `v` prefix.
+   Alternatively, run this command, replacing `0.7.0` with the prepared version:
 
    ```bash
-   mise run assemble
-   mise run test
-   mise run validate
+   gh workflow run release.yml --repo nf-core/nf-core-utils --ref main -f version=0.7.0
    ```
 
-5. Commit and push the release changes, then publish to the Nextflow Plugin Registry:
+The workflow rejects existing tags, GitHub releases, and registry versions. It then:
 
-   ```bash
-   mise run release
-   ```
+- Builds the plugin and runs unit tests and end-to-end validation.
+- Publishes to the Nextflow Plugin Registry and checks the package's SHA-512 checksum.
+- Downloads the published plugin into a fresh cache and reruns end-to-end validation against that download.
+- Creates the GitHub release and tag at the tested commit, using the changelog as release notes.
+- Dispatches `website-docs.yml` to request the documentation update on nf-co.re.
 
-6. Verify that `nextflow plugin install nf-core-utils@<version>` downloads the release into a fresh `NXF_PLUGINS_DIR`.
-7. Create a Git tag and GitHub release for the same commit, using the version number without a `v` prefix.
-   The GitHub release triggers the documentation update on nf-co.re.
+Check both the release run and the separate documentation workflow before reporting their status.
+A successful docs dispatch requests a website update; it does not prove that the resulting website pull request has merged.
+The release run retains its package, test evidence, registry metadata, and release notes as the `release-evidence` artifact.
+
+### Recover a partial release
+
+If the run fails before registry publication, fix the cause and rerun after confirming that the version is still unpublished.
+If publication may have started, inspect the exact registry version before retrying:
+
+```bash
+curl --fail --silent --show-error \
+  'https://registry.nextflow.io/api/v1/plugins/nf-core-utils/<version>'
+```
+
+Once a version is published, the workflow intentionally refuses to republish it.
+Use the failed run's commit and `release-evidence` artifact to verify the registry checksum and finish fresh-download validation before creating any missing GitHub release.
+If only the documentation dispatch failed, rerun `website-docs.yml` with the existing release tag as `ref_name`.
+Preserve published versions and tags. Fix a defective published package in a new version rather than replacing it.
+
+### Publish locally when CI is unavailable
 
 `releasePlugin` uploads the plugin to `https://registry.nextflow.io/api`. It does not run tests, create Git tags, or create GitHub releases.
+For an explicitly authorized local release, follow the same checks and ordering as the workflow.
+Set `npr.apiKey` in `$HOME/.gradle/gradle.properties`, or use `NPR_API_KEY`, then run `mise run release` only after testing.
+Check the actual Nextflow and nf-test versions: personal tools earlier in `PATH` can override mise's tools.
+For isolated local validation, use the executables from `mise which`, an empty `NXF_HOME`, and a temporary `CONDARC` containing the `conda-forge` and `bioconda` channels.
+Keep nf-test's default work directory so snapshot path normalization stays stable. Change neither personal configuration nor snapshots to make a release check pass.
 No pull request to the legacy plugin index is needed.
