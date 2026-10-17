@@ -248,6 +248,8 @@ HTML emails try `sendmail` first, then `mail` if the command cannot run, exits w
 
 Success means the local mail command exited successfully, not that the recipient received the email. HTML and text reports are saved under `outdir/pipeline_info` before delivery is attempted. If all attempts fail, the function logs a warning. Temporary attachment copies are removed after rendering; cleanup failures are warnings and do not prevent saving reports or attempting delivery.
 
+MultiQC attachments retain the original report basename, including reports on remote filesystems such as object storage. Remote reports are copied into a temporary directory only when an HTML email has a recipient and a sendmail template exists; both the copy and directory are removed after rendering, including when rendering fails. Reports at or above `params.max_multiqc_email_size` are not downloaded. Plaintext emails and successful runs with only `email_on_fail` do not read or download attachments or render the sendmail template. The HTML and text summary reports are still saved even when no email is sent.
+
 **Understanding Email Structure**
 
 Before implementing email notifications, let's understand what information needs to be organized:

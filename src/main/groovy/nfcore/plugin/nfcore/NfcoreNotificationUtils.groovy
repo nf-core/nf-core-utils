@@ -24,7 +24,6 @@ import nextflow.file.FileHelper
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import java.util.concurrent.TimeUnit
 
 /**
@@ -161,7 +160,8 @@ class NfcoreNotificationUtils {
 
     /**
      * The report as a local file, as the sendmail template of the pipelines reads it with `new File()`: a report on
-     * another file system, like the object storage work directory of a cloud run, is copied to a temporary file.
+     * another file system is copied under its original basename in a temporary directory.
+     * The caller must remove both the copy and its directory after rendering, but never the original local report.
      *
      * @param report The MultiQC report
      * @param maxSize The maximum size of the report to attach, in bytes
@@ -171,6 +171,7 @@ class NfcoreNotificationUtils {
         if (report == null) {
             return null
         }
+        Path directory = null
         Path local = null
         try {
             if (isLocal(report)) {
@@ -180,11 +181,13 @@ class NfcoreNotificationUtils {
             if (Files.size(report) >= maxSize) {
                 return null
             }
-            local = Files.createTempFile('multiqc_report', '.html')
-            Files.copy(report, local, StandardCopyOption.REPLACE_EXISTING)
+            directory = Files.createTempDirectory('multiqc_report')
+            local = directory.resolve(report.fileName.toString())
+            Files.copy(report, local)
             return local
         } catch (Exception e) {
             deleteTemporaryFile(local)
+            deleteTemporaryFile(directory)
             log.warn("Could not read the MultiQC report ${report.toUri()}: ${e.message}")
             return null
         }
@@ -325,9 +328,6 @@ class NfcoreNotificationUtils {
         email_fields['projectDir'] = wf?.projectDir
         email_fields['summary'] = summary << misc_fields
 
-        // On success try attach the multiqc report
-        def mqc_report = getSingleReport(multiqc_report)
-
         // Check if we are only sending emails on failure
         def email_address = email
         if (!email && email_on_fail && !wf?.success) {
@@ -359,34 +359,37 @@ class NfcoreNotificationUtils {
             log.warn("Failed to render email templates: ${e.message}")
         }
 
-        // Render the sendmail template
-        def max_multiqc_email_size = 0
-        if (config?.params?.containsKey('max_multiqc_email_size')) {
-            try {
-                max_multiqc_email_size = (config.params.max_multiqc_email_size as nextflow.util.MemoryUnit).toBytes()
-            } catch (Exception e) {
-                log.warn("Failed to parse max_multiqc_email_size: ${e.message}")
-            }
-        }
-
-        def mqc_file = localReport(mqc_report, max_multiqc_email_size as long)
-        def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${wf?.projectDir}", mqcFile: mqc_file, mqcMaxSize: max_multiqc_email_size]
         def sendmail_html = email_html  // Fallback content
-
-        try {
-            def sf = new File("${wf?.projectDir}/assets/sendmail_template.txt")
-            if (sf.exists()) {
-                def sendmail_template = TEMPLATE_ENGINE.createTemplate(sf).make(smail_fields)
-                sendmail_html = sendmail_template.toString()
-            } else {
-                log.warn("Sendmail template not found: ${sf.absolutePath}")
-            }
-        } catch (Exception e) {
-            log.warn("Failed to render sendmail template: ${e.message}")
-        } finally {
-            // the copy of a remote report
-            if (mqc_file != null && mqc_file != mqc_report) {
-                deleteTemporaryFile(mqc_file)
+        // Only sendmail can attach a report. Still render and persist the summaries when no email is sent.
+        if (email_address && !plaintext_email) {
+            Path mqc_report = null
+            Path mqc_file = null
+            try {
+                def sf = new File("${wf?.projectDir}/assets/sendmail_template.txt")
+                if (sf.exists()) {
+                    def max_multiqc_email_size = 0
+                    if (config?.params?.containsKey('max_multiqc_email_size')) {
+                        try {
+                            max_multiqc_email_size = (config.params.max_multiqc_email_size as nextflow.util.MemoryUnit).toBytes()
+                        } catch (Exception e) {
+                            log.warn("Failed to parse max_multiqc_email_size: ${e.message}")
+                        }
+                    }
+                    mqc_report = getSingleReport(multiqc_report, workflowName)
+                    mqc_file = localReport(mqc_report, max_multiqc_email_size as long)
+                    def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${wf?.projectDir}", mqcFile: mqc_file, mqcMaxSize: max_multiqc_email_size]
+                    def sendmail_template = TEMPLATE_ENGINE.createTemplate(sf).make(smail_fields)
+                    sendmail_html = sendmail_template.toString()
+                } else {
+                    log.warn("Sendmail template not found: ${sf.absolutePath}")
+                }
+            } catch (Exception e) {
+                log.warn("Failed to render sendmail template: ${e.message}")
+            } finally {
+                if (mqc_file != null && mqc_file != mqc_report) {
+                    deleteTemporaryFile(mqc_file)
+                    deleteTemporaryFile(mqc_file.parent)
+                }
             }
         }
 
