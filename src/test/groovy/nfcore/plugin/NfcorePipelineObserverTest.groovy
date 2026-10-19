@@ -7,17 +7,24 @@ import ch.qos.logback.core.read.ListAppender
 import java.nio.file.Paths
 import nextflow.Session
 import nextflow.script.ScriptBinding
-import nfcore.plugin.nfcore.NfcoreConfigValidator
 import org.slf4j.LoggerFactory
 import spock.lang.Issue
+import spock.lang.Narrative
 import spock.lang.Specification
+import spock.lang.Subject
+import spock.lang.Title
 
+@Title('Startup validation belongs to the pipeline, not the observer')
+@Narrative('''
+Pipelines call either exported validation functions or template-local checks.
+Observer-owned checks duplicate both kinds of warnings, and Nextflow swallows
+exceptions from observer callbacks instead of aborting the run.
+''')
+@Subject(NfcorePipelineObserver)
+@Issue('https://github.com/nf-core/nf-core-utils/issues/73')
 class NfcorePipelineObserverTest extends Specification {
-    // This file is now reserved for observer-specific logic tests.
-    // All config, version, and factory tests have been moved to dedicated files.
 
-    @Issue("https://github.com/nf-core/nf-core-utils/issues/66")
-    def 'onFlowCreate warns about the configuration and positional arguments of the run'() {
+    def 'onFlowCreate does not validate configuration or positional arguments'() {
         given:
         // a real Session: Nextflow keeps the profile and config files there, not in the config map
         def session = new Session()
@@ -34,34 +41,19 @@ class NfcorePipelineObserverTest extends Specification {
         def warnings = appender.list.findAll { it.level == Level.WARN }*.formattedMessage
 
         then:
-        warnings.any { it.contains('without any custom configuration') } == configWarning
-        warnings.any { it.contains('positional argument') } == positionalWarning
-        !warnings.any { it.contains('`nextflow`') }
+        noExceptionThrown()
+        warnings.empty
 
         cleanup:
         ((Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcoreConfigValidator")).detachAppender(appender)
 
         where:
-        profile    | configFiles                            | args       || configWarning | positionalWarning
-        'standard' | ['nextflow.config']                    | []         || true          | false
-        'docker'   | ['nextflow.config']                    | []         || false         | false
-        'standard' | ['nextflow.config', 'custom.config']   | []         || false         | false
-        'test'     | ['nextflow.config']                    | ['docker'] || false         | true
-    }
-
-    def 'onFlowCreate throws when called directly with a profile ending in a comma'() {
-        given:
-        def session = new Session()
-        session.profile = 'test,'
-        session.configFiles = [Paths.get('nextflow.config')]
-        session.binding = new ScriptBinding().setArgs(['docker'])
-
-        when:
-        new NfcorePipelineObserver().onFlowCreate(session)
-
-        then:
-        def error = thrown(IllegalArgumentException)
-        error.message.contains('cannot end with a trailing comma')
+        profile    | configFiles                          | args
+        'standard' | ['nextflow.config']                  | []
+        'docker'   | ['nextflow.config']                  | []
+        'standard' | ['nextflow.config', 'custom.config'] | []
+        'test'     | ['nextflow.config']                  | ['docker']
+        'test,'    | ['nextflow.config']                  | ['docker']
     }
 
     def 'onFlowCreate should log start message at TRACE level'() {

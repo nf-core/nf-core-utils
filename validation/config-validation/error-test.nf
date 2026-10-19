@@ -21,5 +21,5 @@ workflow {
 
     // Test with the monochrome_logs parameter from params
     def invalid_args = ['nextflow', 'run', 'main.nf', '-profile', 'docker,']
-    checkProfileProvided(invalid_args, params.monochrome_logs ?: true)
+    checkProfileProvided(invalid_args, params.monochrome_logs)
 }

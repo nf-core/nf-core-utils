@@ -45,6 +45,23 @@ Run unit tests with `mise run test` and end-to-end tests with `mise run validate
 Validation installs the plugin first. Regenerate snapshots only for intended
 behavior changes with `mise run update-snapshots`.
 
+### Nextflow compatibility
+
+The plugin requires Nextflow 25.10.4 or newer, as declared in `build.gradle`.
+CI runs the full end-to-end suite, including startup warning counts and exit
+statuses, on every supported stable release line: 25.10, 26.04, and 26.10.
+The [validation matrix](.github/workflows/validation.yml) pins the latest patch of
+each line (25.10.8, 26.04.7, and 26.10.2), plus the minimum 25.10.4 for the
+startup-validation regression. Keep this matrix current when adopting a new stable release line or
+changing the minimum supported version; edge releases are not part of it.
+
+To run the same suite against a matrix version locally, override the Nextflow
+runtime without changing the locked development toolchain:
+
+```bash
+NXF_VER=25.10.4 mise run validate
+```
+
 ### Build caching
 
 Gradle's local build cache is enabled by default for builds and unit tests. Unchanged,

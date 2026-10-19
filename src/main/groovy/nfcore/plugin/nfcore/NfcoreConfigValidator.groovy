@@ -18,6 +18,7 @@ package nfcore.plugin.nfcore
 
 import groovy.util.logging.Slf4j
 import nextflow.Session
+import nextflow.exception.AbortOperationException
 
 /**
  * Validates pipeline configurations and provides feedback
@@ -79,7 +80,7 @@ class NfcoreConfigValidator {
     static void checkProfileAndArgs(String profile, List args, boolean monochromeLogs = true) {
         if (profile?.endsWith(',')) {
             def colors = nfcore.plugin.nfcore.NfcoreNotificationUtils.logColours(monochromeLogs)
-            throw new IllegalArgumentException(
+            throw new AbortOperationException(
                     "${colors.red}ERROR${colors.reset} ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!\n" +
                             "${colors.yellow}HINT${colors.reset}: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
             )

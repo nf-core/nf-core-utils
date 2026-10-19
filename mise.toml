@@ -32,7 +32,10 @@ run = "./gradlew releasePlugin"
 description = "Install the plugin and run end-to-end validation"
 depends = ["install"]
 dir = "{{ config_root }}/validation"
-run = "nf-test test --verbose"
+run = """
+bash config-validation/startup-checks.sh
+nf-test test --verbose
+"""
 
 [tasks.update-snapshots]
 description = "Install the plugin and regenerate validation snapshots"
