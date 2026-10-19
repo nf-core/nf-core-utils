@@ -93,7 +93,7 @@ The plugin provides three main extension categories accessible via @Function ann
 
 - Uses `io.nextflow.nextflow-plugin` version `0.0.1-alpha3`
 - Plugin version: `0.3.0`
-- Nextflow compatibility: `25.10.0+` (see `build.gradle`)
+- Nextflow compatibility: `25.10.4+` (see `build.gradle`)
 - Extension points: `NfUtilsExtension` and `NfUtilsFactory`
 - Dependencies: SnakeYAML for YAML processing
 
@@ -145,7 +145,7 @@ The plugin implements trace observers for pipeline monitoring:
 
 ### Plugin Compatibility
 
-- Built for Nextflow 25.10.0+; CI tests every supported stable release line in `.github/workflows/validation.yml`
+- Built for Nextflow 25.10.4+; CI tests the minimum and every supported stable release line in `.github/workflows/validation.yml`
 - Uses modern Nextflow plugin development patterns
 - Follows nf-core community standards and conventions
 

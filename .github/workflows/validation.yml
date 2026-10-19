@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Latest patch of every supported stable line (>=25.10), plus the #73 regression version.
+        # Latest patch of every supported stable line, plus the minimum supported version (25.10.4).
         nextflow: ["25.10.4", "25.10.8", "26.04.7", "26.10.2"]
     env:
       NXF_VER: ${{ matrix.nextflow }}

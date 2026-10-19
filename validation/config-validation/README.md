@@ -18,8 +18,8 @@ exceptions. Explicit profile validation must exit 1 before the completion marker
 with one error label in both colour modes.
 
 `mise run validate` includes this regression. CI runs it and the full nf-test suite
-on each supported stable Nextflow line (25.10, 26.04, and 26.10), plus the exact
-25.10.4 regression version; see `.github/workflows/validation.yml` for the pins.
+on each supported stable Nextflow line (25.10, 26.04, and 26.10), plus the minimum
+supported version, 25.10.4; see `.github/workflows/validation.yml` for the pins.
 To check only the startup regression on Nextflow 25.10.4 locally:
 
 ```bash
