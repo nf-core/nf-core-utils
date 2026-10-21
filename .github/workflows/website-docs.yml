@@ -1,6 +1,7 @@
 name: Publish the docs on nf-co.re
 # On each release, ask the nf-core website to copy the docs of this release, as nf-core/tools does for its API docs:
-# the website opens a pull request with the docs in sites/docs/src/content/docs/nf-core-tools/nf-core-utils/.
+# the website runs scripts/website-docs.sh of this release and opens a pull request with the docs in
+# sites/docs/src/content/docs/nf-core-tools/nf-core-utils/.
 on:
   release:
     types: [published]
