@@ -8,7 +8,6 @@ include { generateVersionReport       } from 'plugin/nf-core-utils'
 include { getWorkflowVersion          } from 'plugin/nf-core-utils'
 include { processMixedCitationSources } from 'plugin/nf-core-utils'
 include { processMixedVersionSources  } from 'plugin/nf-core-utils'
-include { sayHello                    } from 'plugin/nf-core-utils'
 
 workflow {
 
@@ -19,10 +18,6 @@ workflow {
         ==========================================
         """.stripIndent().trim()
     )
-
-    // Test 1: Basic sayHello function
-    log.info("Testing sayHello function...")
-    sayHello("nf-utils integration test")
 
     // Test 2: Get workflow version
     log.info("Testing getWorkflowVersion function...")

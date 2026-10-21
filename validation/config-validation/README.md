@@ -2,6 +2,37 @@
 
 This validation test demonstrates and validates the configuration validation functions from the nf-core-utils plugin that ensure proper pipeline setup and execution environment.
 
+## Startup warning and failure regression
+
+`startup-checks.sh` covers [#73](https://github.com/nf-core/nf-core-utils/issues/73)
+through real Nextflow CLI runs. It uses a fresh `NXF_HOME` with no config file and
+disables agent-mode warning suppression. Unlike nf-test, it does not inject extra
+config files that would hide the missing-custom-config warning.
+
+The 15 cases assert console warning counts, error-label counts, exit status, and
+whether the workflow continues. They cover exported checks, representative
+template-local checks, a mixed migration (exported config / local profile), valid
+profiles, custom config, and observer-only runs. Observer-only runs deliberately
+do not validate, including trailing commas, and must not log swallowed validation
+exceptions. Explicit profile validation must exit 1 before the completion marker,
+with one error label in both colour modes.
+
+`mise run validate` includes this regression. CI runs it and the full nf-test suite
+on each supported stable Nextflow line (25.10, 26.04, and 26.10), plus the minimum
+supported version, 25.10.4; see `.github/workflows/validation.yml` for the pins.
+To check only the startup regression on Nextflow 25.10.4 locally:
+
+```bash
+mise run install
+NXF_VER=25.10.4 mise exec -- bash validation/config-validation/startup-checks.sh
+```
+
+Use `NXF_VER=25.10.4 mise run validate` for the full suite on that version.
+
+`NXF_PLUGINS_DIR` can select a separately installed build. Otherwise the script
+uses the plugin directory under the original `NXF_HOME` (or `~/.nextflow`). All
+temporary workflows and run files are removed on exit.
+
 ## Functions Tested
 
 ### `checkConfigProvided()`

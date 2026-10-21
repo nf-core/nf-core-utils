@@ -1,0 +1,8 @@
+Design System Reference (LLM-facing)
+
+Purpose: quick style and documentation conventions for autonomous contributors.
+
+- Prefer concise markdown with clear headings.
+- Use tables for status trackers and plan indexes.
+- Keep file names stable and predictable.
+- Record rationale (why), not only implementation details (what).

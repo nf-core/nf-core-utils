@@ -13,6 +13,8 @@ include { collectVersions } from 'plugin/nf-core-utils'
 
 workflow {
 
+    file(params.outdir).mkdirs()
+
     // Test 1: collectVersions with topic tuples (most common pattern)
     log.info("=== Testing collectVersions() with topic tuples ===")
 
@@ -24,12 +26,13 @@ workflow {
 
     // Collect all versions and process with single call
     ch_topic_versions
-        .collect()
+        .collect(flat: false)
         .map { versions ->
             log.info("Processing ${versions.size()} topic tuples")
             collectVersions(versions)
         }
         .subscribe { yaml ->
+            file("${params.outdir}/topic_versions.yml").text = yaml
             log.info("=== Topic tuple result ===")
             log.info(yaml)
             assert yaml.contains('fastqc')
@@ -67,6 +70,7 @@ workflow {
             collectVersions(files)
         }
         .subscribe { yaml ->
+            file("${params.outdir}/file_versions.yml").text = yaml
             log.info("=== File path result ===")
             log.info(yaml)
             assert yaml.contains('star')
@@ -78,18 +82,19 @@ workflow {
     log.info("=== Testing collectVersions() with mixed inputs ===")
 
     ch_mixed = channel.of(
-        ['BWA', 'bwa', '0.7.17'],                    // topic tuple
-        'hisat2: 2.2.1',                             // YAML string
-        [bowtie2: '2.4.5'],                          // Map
+        ['BWA', 'bwa', '0.7.17'],
+        'hisat2: 2.2.1',
+        [bowtie2: '2.4.5'],
     )
 
     ch_mixed
-        .collect()
+        .collect(flat: false)
         .map { mixed ->
             log.info("Processing mixed inputs: ${mixed.size()} items")
             collectVersions(mixed)
         }
         .subscribe { yaml ->
+            file("${params.outdir}/mixed_versions.yml").text = yaml
             log.info("=== Mixed input result ===")
             log.info(yaml)
             assert yaml.contains('bwa')

@@ -1,0 +1,138 @@
+name: Publish plugin release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version already committed on main, without a v prefix"
+        required: true
+        type: string
+
+concurrency:
+  group: plugin-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+      NXF_ANSI_LOG: "false"
+
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v4
+
+      - name: Check release prerequisites
+        env:
+          NPR_API_KEY: ${{ secrets.NPR_API_KEY }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == refs/heads/main ]] || { echo '::error::Run releases from main'; exit 1; }
+          [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo '::error::Expected a stable version such as 0.7.0'; exit 1; }
+          [[ -n "$NPR_API_KEY" ]] || { echo '::error::Configure the NPR_API_KEY Actions secret'; exit 1; }
+          grep -Fxq "version = '$VERSION'" build.gradle || { echo '::error::Version does not match build.gradle'; exit 1; }
+          for config in validation/nextflow.config validation/nf-test.config validation/citations-on-the-fly/nextflow.config validation/topic-channel-citations/nextflow.config; do
+            grep -Fq "id 'nf-core-utils@$VERSION'" "$config" ||
+              grep -Fq "options \"-plugins nf-core-utils@$VERSION " "$config" ||
+              { echo "::error::Update the plugin pin in $config"; exit 1; }
+          done
+          heading=$(grep -F "## [$VERSION] - " CHANGELOG.md) || { echo '::error::Add a dated changelog section'; exit 1; }
+          [[ "$heading" =~ ^##\ \[.*\]\ -\ [0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo '::error::Add a dated changelog section'; exit 1; }
+          awk -v heading="## [$VERSION] - " '
+            index($0, heading) == 1 { capture = 1; next }
+            capture && /^## / { exit }
+            capture { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
+          grep -q '^- ' "$RUNNER_TEMP/release-notes.md"
+
+          # An absent tag exits with 2. Treat transport/authentication failures separately.
+          status=0
+          git ls-remote --exit-code --tags origin "refs/tags/$VERSION" || status=$?
+          [[ "$status" == 2 ]] || { echo '::error::Tag already exists or the remote could not be checked'; exit 1; }
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" --jq '.[].tag_name' > "$RUNNER_TEMP/release-tags.txt"
+          if grep -Fxq "$VERSION" "$RUNNER_TEMP/release-tags.txt"; then
+            echo '::error::GitHub release already exists'
+            exit 1
+          fi
+          status=$(curl --silent --show-error --output "$RUNNER_TEMP/registry-before.json" --write-out '%{http_code}' "https://registry.nextflow.io/api/v1/plugins/nf-core-utils/$VERSION")
+          [[ "$status" == 404 ]] || { echo "::error::Expected an unpublished registry version, received HTTP $status. See README recovery instructions."; exit 1; }
+
+      - name: Set up tools
+        uses: jdx/mise-action@v5
+
+      - name: Set up Gradle and cache
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Conda setup
+        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3
+        with:
+          auto-update-conda: true
+          channels: conda-forge, bioconda
+          channel-priority: strict
+          conda-remove-defaults: true
+
+      - name: Build and test
+        run: |
+          mise run assemble
+          mise run test
+          mise run validate
+
+      - name: Publish to Nextflow Plugin Registry
+        env:
+          NPR_API_KEY: ${{ secrets.NPR_API_KEY }}
+        run: mise run release
+
+      - name: Verify published package checksum
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error "https://registry.nextflow.io/api/v1/plugins/nf-core-utils/$VERSION" > "$RUNNER_TEMP/registry-release.json"
+          jq -e --arg version "$VERSION" '.pluginRelease | .version == $version and .status == "PUBLISHED"' "$RUNNER_TEMP/registry-release.json"
+          expected=$(jq -er '.pluginRelease.sha512sum' "$RUNNER_TEMP/registry-release.json")
+          echo "$expected  build/distributions/nf-core-utils-$VERSION.zip" | sha512sum --check
+
+      - name: Download published plugin into a fresh cache
+        env:
+          NXF_PLUGINS_DIR: ${{ runner.temp }}/registry-plugins
+          NXF_PLUGINS_MODE: prod
+        run: |
+          mkdir "$NXF_PLUGINS_DIR"
+          mise exec -- nextflow plugin install "nf-core-utils@$VERSION"
+
+      - name: Validate registry-downloaded plugin
+        working-directory: validation
+        env:
+          NXF_PLUGINS_DIR: ${{ runner.temp }}/registry-plugins
+          NXF_PLUGINS_MODE: prod
+        run: mise exec -- nf-test test --verbose
+
+      - name: Create GitHub release and tag
+        run: |
+          gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" --title "$VERSION" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" --latest
+
+      - name: Dispatch documentation update
+        # GITHUB_TOKEN-created releases do not trigger release-event workflows.
+        run: |
+          gh workflow run website-docs.yml --repo "$GITHUB_REPOSITORY" \
+            --ref main -f "ref_name=$VERSION"
+
+      - name: Upload release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence
+          include-hidden-files: true
+          path: |
+            build/distributions/*.zip
+            build/test-results/
+            validation/.nf-test/tests/**/meta/
+            ${{ runner.temp }}/release-notes.md
+            ${{ runner.temp }}/registry-release.json

@@ -10,28 +10,29 @@ The nf-core-utils plugin transforms common pipeline tasks from complex subworkfl
 
 The plugin organizes functionality into six focused areas:
 
-- **🔧 Configuration & Validation**: Ensure proper pipeline setup and profile usage
-- **📧 Notifications & Logging**: Send completion emails, Slack/Teams messages, and terminal summaries
-- **📊 Reporting & MultiQC**: Generate pipeline reports and integrate with MultiQC
-- **🔖 Version Management**: Track software versions with topic channel support
-- **📚 Citation Management**: Extract and format tool citations automatically
-- **🎼 Orchestrated Reporting**: Coordinate comprehensive reporting workflows
+- **Configuration & Validation**: Ensure proper pipeline setup and profile usage
+- **Notifications & Logging**: Send completion emails, Slack/Teams messages, and terminal summaries
+- **Reporting & MultiQC**: Generate pipeline reports and integrate with MultiQC
+- **Version Management**: Track software versions with topic channel support
+- **Citation Management**: Extract and format tool citations automatically
+- **Orchestrated Reporting**: Coordinate comprehensive reporting workflows
 
 ### 1.2. Documentation Structure
 
 Each utility class has dedicated documentation with examples and best practices:
 
-| Category                          | Utility                                                                     | Purpose                                                                |
-| --------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| 🔧 **Configuration & Validation** | **[NfcoreConfigValidator](utilities/NfcoreConfigValidator.md)**             | Pipeline configuration validation and profile checking                 |
-| 📧 **Notifications & Logging**    | **[NfcoreNotificationUtils](utilities/NfcoreNotificationUtils.md)**         | Email notifications, Slack/Teams integration, and completion summaries |
-| 📊 **Reporting & MultiQC**        | **[NfcoreReportingUtils](utilities/NfcoreReportingUtils.md)**               | MultiQC integration and pipeline reporting utilities                   |
-| 🔖 **Version Management**         | **[NfcoreVersionUtils](utilities/NfcoreVersionUtils.md)**                   | Version tracking with topic channel support and migration utilities    |
-| 📚 **Citation Management**        | **[NfcoreCitationUtils](utilities/NfcoreCitationUtils.md)**                 | Citation extraction, processing, and topic channel integration         |
-| 🎼 **Orchestrated Reporting**     | **[NfcoreReportingOrchestrator](utilities/NfcoreReportingOrchestrator.md)** | Comprehensive reporting coordination for versions and citations        |
+| Category                       | Utility                                                                     | Purpose                                                                |
+| ------------------------------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Configuration & Validation** | **[NfcoreConfigValidator](utilities/NfcoreConfigValidator.md)**             | Pipeline configuration validation and profile checking                 |
+| **Notifications & Logging**    | **[NfcoreNotificationUtils](utilities/NfcoreNotificationUtils.md)**         | Email notifications, Slack/Teams integration, and completion summaries |
+| **Reporting & MultiQC**        | **[NfcoreReportingUtils](utilities/NfcoreReportingUtils.md)**               | MultiQC integration and pipeline reporting utilities                   |
+| **Version Management**         | **[NfcoreVersionUtils](utilities/NfcoreVersionUtils.md)**                   | Version tracking with topic channel support and migration utilities    |
+| **Citation Management**        | **[NfcoreCitationUtils](utilities/NfcoreCitationUtils.md)**                 | Citation extraction, processing, and topic channel integration         |
+| **Orchestrated Reporting**     | **[NfcoreReportingOrchestrator](utilities/NfcoreReportingOrchestrator.md)** | Comprehensive reporting coordination for versions and citations        |
 
-!!! tip "Where to Start"
+:::tip{title="Where to Start"}
 New to nf-core utilities? Begin with the **Configuration & Validation** section to understand pipeline setup, then explore **Notifications & Logging** for completion handling.
+:::
 
 ## 2. Quick Start Tutorial
 
@@ -116,13 +117,14 @@ include {
 
 // Advanced features for comprehensive pipelines
 include {
-    getCitation; autoToolCitationText;
+    citationsOnTheFly; getCitation; autoToolCitationText;
     generateComprehensiveReport
 } from 'plugin/nf-core-utils'
 ```
 
-!!! note "Import Strategy"
+:::note{title="Import Strategy"}
 Start with essential utilities and add advanced features as your pipeline grows. Each function is independent and can be imported separately.
+:::
 
 ## 3. Function Categories and Usage
 
@@ -131,6 +133,13 @@ Understanding when and how to use each function is key to building robust pipeli
 ### 3.1. Pipeline Initialization Functions
 
 These functions should be called early in your pipeline to validate setup:
+
+Startup validation is owned by the pipeline. Loading the plugin does not run these
+checks automatically. Call each check once, using either the exported function or
+your existing template-local implementation, not both. Pipelines that previously
+relied only on the observer must add these calls. In particular, call
+`checkProfileProvided(args, params.monochrome_logs)` to reject a trailing comma in
+`-profile` with a nonzero exit status; observer-only runs do not validate it.
 
 | Function                                      | When to Use                            | Example                                              |
 | --------------------------------------------- | -------------------------------------- | ---------------------------------------------------- |
@@ -173,10 +182,11 @@ These functions help integrate with MultiQC reporting:
 | `workflowSummaryMQC(summary, metadata, results)` | Create comprehensive MultiQC template | Process                  |
 | `getSingleReport(multiqc_reports)`               | Extract single report from Path/List  | Anywhere                 |
 
-### 3.4. Completion Handler Functions ⚠️
+### 3.4. Completion Handler Functions
 
-!!! warning "Session Context Required"
+:::warning{title="Session Context Required"}
 These functions require Nextflow session context and **MUST** be called from `workflow.onComplete` or `workflow.onError` handlers only. They will fail with null pointer exceptions if called from the main workflow block.
+:::
 
 | Function                                   | Purpose                                   | Usage Context                               |
 | ------------------------------------------ | ----------------------------------------- | ------------------------------------------- |
@@ -186,7 +196,7 @@ These functions require Nextflow session context and **MUST** be called from `wo
 
 ```nextflow title="Completion handler pattern"
 workflow.onComplete {
-    // ✅ CORRECT - These functions work here
+    // CORRECT - These functions work here
     completionSummary(params.monochrome_logs)
 
     if (params.email) {
@@ -199,7 +209,7 @@ workflow.onComplete {
 }
 
 workflow {
-    // ❌ WRONG - These functions will fail here
+    // WRONG - These functions will fail here
     // completionSummary(params.monochrome_logs)  // Error: session is null
 }
 ```
@@ -208,9 +218,33 @@ workflow {
 
 Citation management comes in two flavors: modern topic-channel based (recommended) and legacy file-based approaches.
 
-#### Modern Topic Channel Citations (Recommended)
+**Citations on the Fly (Recommended)**
 
-These functions work with the new topic channel citation system:
+The lowest-friction option: derive citations from the tools that actually ran (the `versions` topic every nf-core module already emits) and resolve their metadata from each module's `meta.yml`. No per-module changes, no hand-maintained tool list.
+
+| Function                                          | Purpose                                                | Usage Context       |
+| ------------------------------------------------- | ------------------------------------------------------ | ------------------- |
+| `toolsFromVersionsTopic(topicVersions)`           | Tool names that actually ran, from the `versions` data | Workflow completion |
+| `citationsOnTheFly(topicVersions, metaFilePaths)` | Citations for only the tools that ran, from `meta.yml` | Workflow completion |
+
+```nextflow title="Citations on the fly"
+include { citationsOnTheFly; methodsDescriptionText } from 'plugin/nf-core-utils'
+
+def meta_yml_paths = files("${projectDir}/modules/**/meta.yml").collect { it.toString() }
+
+ch_methods_description = channel.topic('versions')
+    .collect(flat: false)
+    .map { versions ->
+        def citations = citationsOnTheFly(versions, meta_yml_paths)
+        methodsDescriptionText("${projectDir}/assets/methods_description_template.yml", citations, [:])
+    }
+```
+
+See [NfcoreCitationUtils](utilities/NfcoreCitationUtils.md#citations-on-the-fly-recommended) for the full walkthrough.
+
+**Modern Topic Channel Citations**
+
+These functions work with a dedicated `citation` topic that each module emits to:
 
 | Function                                   | Purpose                                        | Usage Context        |
 | ------------------------------------------ | ---------------------------------------------- | -------------------- |
@@ -247,7 +281,7 @@ workflow {
 }
 ```
 
-#### Legacy File-Based Citations
+**Legacy File-Based Citations**
 
 These functions support the older meta.yml file approach:
 
@@ -258,7 +292,7 @@ These functions support the older meta.yml file approach:
 | `toolBibliographyText(citationsMap)`       | Generate bibliography HTML from citations       | Anywhere      |
 | `collectCitationsFromFiles(metaFilePaths)` | Collect citations from multiple meta.yml files  | Anywhere      |
 
-#### Migration and Mixed Approaches
+**Migration and Mixed Approaches**
 
 For pipelines transitioning between approaches:
 
@@ -325,14 +359,15 @@ The plugin supports a progressive migration path from legacy approaches to moder
 | **Transition** | Mixed file and topic approaches | `processMixedCitationSources(topics, files)` |
 | **Modern**     | Pure topic channel approach     | `processCitationsFromTopic(topicCitations)`  |
 
-!!! tip "Migration Strategy"
+:::tip{title="Migration Strategy"}
 Start by converting high-priority modules to topic channels while keeping legacy modules unchanged. The mixed approach allows gradual migration without breaking existing functionality.
+:::
 
 ### 4.4. Software Versions Collection with `softwareVersionsToYAML()`
 
 The `softwareVersionsToYAML()` function provides a unified way to collect and format software versions from any source. It's the recommended approach for version management in both new and migrating pipelines.
 
-#### Basic Usage Pattern
+**Basic Usage Pattern**
 
 ```nextflow title="simple_versions.nf"
 include { softwareVersionsToYAML } from 'plugin/nf-core-utils'
@@ -353,7 +388,7 @@ workflow {
 }
 ```
 
-#### With Custom Nextflow Version
+**With Custom Nextflow Version**
 
 ```nextflow title="custom_nf_version.nf"
 // Override detected Nextflow version (useful for testing)
@@ -369,7 +404,7 @@ ch_versions_yaml = softwareVersionsToYAML(
 )
 ```
 
-#### Mixed Input Types (Migration Scenario)
+**Mixed Input Types (Migration Scenario)**
 
 The function automatically handles different version formats, making it perfect for pipelines in transition:
 
@@ -400,7 +435,7 @@ workflow {
 }
 ```
 
-#### Direct Processing (No Channel)
+**Direct Processing (No Channel)**
 
 For use cases where you already have collected versions as a list:
 
@@ -424,7 +459,7 @@ workflow.onComplete {
 }
 ```
 
-#### Output Format
+**Output Format**
 
 The function generates structured, sorted YAML:
 
@@ -449,8 +484,9 @@ Key features:
 - **Tool name cleaning** (removes `tool:` prefixes)
 - **Automatic workflow metadata** inclusion
 
-!!! tip "Best Practice"
+:::tip{title="Best Practice"}
 Use `softwareVersionsToYAML()` as your primary version collection function. It handles all input types, making your pipeline future-proof and migration-friendly.
+:::
 
 ## 5. Complete Pipeline Example
 
@@ -586,8 +622,9 @@ workflow.onComplete { completionSummary(params.monochrome_logs) }
 
 ### 6.3. Error Handling
 
-!!! warning "Common Pitfall: Session Context"
+:::warning{title="Common Pitfall: Session Context"}
 The most common error is calling notification functions outside completion handlers. Always use `workflow.onComplete` or `workflow.onError` for these functions.
+:::
 
 ## 7. Troubleshooting
 

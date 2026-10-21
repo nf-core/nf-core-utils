@@ -1,0 +1,7 @@
+uv Reference (LLM-facing)
+
+`uv` is not a primary tool in this repository today.
+If Python helper tooling is added with `uv`, document:
+- lockfile policy,
+- virtual environment expectations,
+- reproducible command patterns for CI and local runs.

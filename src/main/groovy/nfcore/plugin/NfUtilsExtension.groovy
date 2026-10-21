@@ -20,26 +20,41 @@ import groovy.util.logging.Slf4j
 import groovyx.gpars.dataflow.DataflowReadChannel
 import groovyx.gpars.dataflow.DataflowWriteChannel
 import nextflow.Session
+import nextflow.Nextflow
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
 import nfcore.plugin.nfcore.NfcoreConfigValidator
 import nfcore.plugin.nfcore.NfcoreVersionUtils
 import nfcore.plugin.nfcore.NfcoreCitationUtils
 import nfcore.plugin.nfcore.NfcoreReportingOrchestrator
+import nfcore.plugin.nfcore.PipelineExecutionContext
+import nfcore.plugin.nfcore.ValidationAdapter
+import nfcore.plugin.nfcore.VersionAdapter
+import nfcore.plugin.nfcore.ReportingAdapter
 import nfcore.plugin.ReferencesUtils
 
 /**
- * Implements a custom function which can be imported by
- * Nextflow scripts.
+ * Thin extension point — delegates to focused adapter modules initialized
+ * with {@link PipelineExecutionContext}.
+ *
+ * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §5
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfUtilsExtension')
 class NfUtilsExtension extends PluginExtensionPoint {
 
     private Session session
+    private PipelineExecutionContext ctx
+    private ValidationAdapter validationAdapter
+    private VersionAdapter versionAdapter
+    private ReportingAdapter reportingAdapter
 
     @Override
     protected void init(Session session) {
         this.session = session
+        this.ctx = PipelineExecutionContext.fromSession(session)
+        this.validationAdapter = new ValidationAdapter(ctx)
+        this.versionAdapter = new VersionAdapter(ctx)
+        this.reportingAdapter = new ReportingAdapter(ctx)
     }
 
     /**
@@ -77,7 +92,14 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void completionSummary(boolean monochromeLogs) {
-        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionSummary(monochromeLogs)
+        def manifest = this.session?.getManifest()
+        def workflowName = manifest?.getName() ?: 'unknown'
+        def statsObserver = this.session?.getStatsObserver()
+        def stats = statsObserver ? statsObserver.getStats() : null
+        def ignoredCount = (stats != null) ? stats.getIgnoredCount() : 0
+        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionSummary(
+            workflowName, this.session?.success ?: false, ignoredCount, monochromeLogs
+        )
     }
 
     /**
@@ -97,15 +119,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void checkProfileProvided(List args, boolean monochromeLogs = true) {
-        String profile = null
-        for (int i = 0; i < args.size(); i++) {
-            if (args[i] == '-profile' && i + 1 < args.size()) {
-                profile = args[i + 1]
-                break
-            }
-        }
-        String commandLine = args.join(' ')
-        NfcoreConfigValidator.checkProfileProvided(profile, commandLine, monochromeLogs)
+        validationAdapter.checkProfileProvided(args, monochromeLogs)
     }
 
     /**
@@ -114,13 +128,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     boolean checkConfigProvided() {
-        def meta = this.session?.getWorkflowMetadata()
-        def config = this.session?.config
-        String projectName = null
-        if (meta != null && meta.metaClass?.hasProperty(meta, 'projectName')) {
-            projectName = meta.projectName
-        }
-        return NfcoreConfigValidator.checkConfigProvided(projectName, config)
+        return validationAdapter.checkConfigProvided()
     }
 
     // --- Methods from ReferencesExtension ---
@@ -169,7 +177,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     void dumpParametersToJSON(String outdir, Map params) {
         if (outdir == null) return
-        java.nio.file.Path outdirPath = java.nio.file.Paths.get(outdir)
+        java.nio.file.Path outdirPath = Nextflow.file(outdir)
         nfcore.plugin.nextflow.NextflowPipelineUtils.dumpParametersToJSON(outdirPath, params)
     }
 
@@ -429,8 +437,8 @@ class NfUtilsExtension extends PluginExtensionPoint {
         String mqcMethodsYamlPath = null
     ) {
         def mqcFile = mqcMethodsYamlPath ? new File(mqcMethodsYamlPath) : null
-        return NfcoreReportingOrchestrator.generateComprehensiveReport(
-            topicVersions, legacyVersions, metaFilePaths, mqcFile, this.session
+        return reportingAdapter.generateComprehensiveReport(
+            topicVersions, legacyVersions, metaFilePaths, mqcFile
         )
     }
 
@@ -443,7 +451,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     Map generateVersionReport(List<List> topicVersions, List<String> legacyVersions = []) {
-        return NfcoreReportingOrchestrator.generateVersionReport(topicVersions, legacyVersions, this.session)
+        return reportingAdapter.generateVersionReport(topicVersions, legacyVersions)
     }
 
     /**
@@ -456,7 +464,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     Map generateCitationReport(List<String> metaFilePaths, String mqcMethodsYamlPath = null) {
         def mqcFile = mqcMethodsYamlPath ? new File(mqcMethodsYamlPath) : null
-        return NfcoreReportingOrchestrator.generateCitationReport(metaFilePaths, mqcFile, this.session)
+        return reportingAdapter.generateCitationReport(metaFilePaths, mqcFile)
     }
 
     // --- Enhanced Citation Topic Channel Functions ---
@@ -542,6 +550,37 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     String autoToolBibliographyText(List topicCitations = []) {
         return NfcoreCitationUtils.autoToolBibliographyText(topicCitations)
+    }
+
+    /**
+     * Extract the unique set of tool names that actually ran, from collected
+     * 'versions' topic data ([process, tool, version] tuples).
+     *
+     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect()
+     * @return Sorted, de-duplicated list of tool names
+     */
+    @Function
+    List<String> toolsFromVersionsTopic(List topicVersions) {
+        return NfcoreCitationUtils.toolsFromVersionsTopic(topicVersions)
+    }
+
+    /**
+     * Citations on the fly: build citations for only the tools that ran,
+     * resolved from module meta.yml.
+     *
+     * Intersects the 'versions' topic (what executed) with citations parsed from
+     * the supplied meta.yml files. The returned map feeds directly into
+     * {@link #toolCitationText}, {@link #toolBibliographyText} and
+     * {@link #methodsDescriptionText}.
+     *
+     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect(flat: false)
+     * @param metaFilePaths Paths to module meta.yml files
+     * @param extraTools Extra tool names to cite even though they did not emit a version (e.g. multiqcsav)
+     * @return Citations map (tool -> [citation, bibliography]) for tools that ran
+     */
+    @Function
+    Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<String> extraTools = []) {
+        return NfcoreCitationUtils.citationsOnTheFly(topicVersions, metaFilePaths, extraTools)
     }
 
     /**

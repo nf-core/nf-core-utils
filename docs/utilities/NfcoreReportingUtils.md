@@ -24,7 +24,7 @@ Structured reporting solves these challenges by consolidating information into s
 
 ## Available Functions
 
-### `paramsSummaryMultiqc(Map summaryParams)`
+### `paramsSummaryMultiqc()`
 
 **Description:**  
 Generates a YAML-formatted string from a map of summary parameters for MultiQC workflow summary integration. This function creates properly structured YAML that MultiQC can parse and display in its workflow summary section.
@@ -103,7 +103,7 @@ process MULTIQC {
 
 ---
 
-### `workflowSummaryMQC(Map summary, List<String> nfMetadataList, Map results)`
+### `workflowSummaryMQC()`
 
 **Description:**  
 Creates a comprehensive workflow summary template for MultiQC with both HTML and text formats. This function generates detailed workflow metadata including execution information, parameters, and results.
@@ -220,7 +220,7 @@ workflow COMPREHENSIVE_REPORTING {
 
 ---
 
-### `sectionLogs(Map sections, boolean monochrome = false)`
+### `sectionLogs()`
 
 **Description:**  
 Generates formatted log messages for different pipeline sections with optional color coding. This function creates consistent, readable terminal output for section-based logging.
@@ -351,7 +351,7 @@ workflow COLOR_AWARE_LOGGING {
 Structure parameters logically for better MultiQC display:
 
 ```nextflow
-// ✅ GOOD - Grouped structure
+// GOOD - Grouped structure
 def summary_params = [
     'Core Nextflow options': [
         'runName': workflow.runName,
@@ -368,7 +368,7 @@ def summary_params = [
     ]
 ]
 
-// ❌ AVOID - Flat structure
+// AVOID - Flat structure
 def summary_params = [
     runName: workflow.runName,
     input: params.input,
@@ -736,4 +736,4 @@ workflow MEMORY_EFFICIENT_REPORTING {
 }
 ```
 
-For more information on MultiQC integration and pipeline reporting, see the [MultiQC documentation](https://multiqc.info/) and [nf-core reporting guidelines](https://nf-co.re/docs/contributing/pipelines/reporting).
+For more information on MultiQC integration and pipeline reporting, see the [MultiQC documentation](https://multiqc.info/) and [nf-core reporting guidelines](https://nf-co.re/docs/developing/components/automated-methods-text).

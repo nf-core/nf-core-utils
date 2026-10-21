@@ -16,6 +16,11 @@
 
 package nfcore.plugin.nextflow
 
+import nextflow.extension.FilesEx
+import nextflow.script.types.Duration
+import nextflow.script.types.MemoryUnit
+import nextflow.script.types.VersionNumber
+
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.yaml.snakeyaml.Yaml
@@ -26,7 +31,7 @@ import java.nio.file.Path
  * Implements utility functions for Nextflow pipelines that were previously
  * available in the utils_nextflow_pipeline subworkflow.
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NextflowPipelineUtils')
 @CompileStatic
 class NextflowPipelineUtils {
 
@@ -52,17 +57,28 @@ class NextflowPipelineUtils {
             def timestamp = new java.util.Date().format('yyyy-MM-dd_HH-mm-ss')
             def filename = "params_${timestamp}.json"
 
-            // Create a temp file in the system temp directory
+            // Create a JSON string for the parameters
+            def jsonGenerator = new groovy.json.JsonGenerator.Options()
+                .excludeNulls()
+                .addConverter(Path) { Path path -> path.toUriString() }
+                .addConverter(Duration) { Duration duration -> duration.toMillis() }
+                .addConverter(MemoryUnit) { MemoryUnit memory -> memory.toBytes() }
+                .addConverter(VersionNumber) { VersionNumber version -> version.toString() }
+                .build()
+            def jsonStr = jsonGenerator.toJson(params)
+
+            // Create a temp file in the system temp directory, then copy via Nextflow
+            // so remote/staged paths are handled consistently with other pipeline outputs.
             def temp_pf = File.createTempFile("params_", ".json")
-            def jsonStr = groovy.json.JsonOutput.toJson(params ?: [:])
             temp_pf.text = groovy.json.JsonOutput.prettyPrint(jsonStr)
 
-            // Ensure pipeline_info directory exists
-            def pipeline_info_dir = outdir.resolve("pipeline_info")
-            java.nio.file.Files.createDirectories(pipeline_info_dir)
-
-            nextflow.extension.FilesEx.copyTo(temp_pf.toPath(), pipeline_info_dir.resolve(filename))
-            temp_pf.delete()
+            try {
+                def pipeline_info_dir = outdir.resolve('pipeline_info')
+                java.nio.file.Files.createDirectories(pipeline_info_dir)
+                FilesEx.copyTo(temp_pf.toPath(), pipeline_info_dir.resolve(filename))
+            } finally {
+                temp_pf.delete()
+            }
         } catch (Exception e) {
             log.error("Failed to dump parameters to JSON: ${e.message}")
         }

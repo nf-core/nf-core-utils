@@ -67,9 +67,7 @@ workflow {
             ],
         ]
 
-        def mock_multiqc_reports = [
-            './results/multiqc/multiqc_report.html'
-        ]
+        def mock_multiqc_reports = ['./results/multiqc/multiqc_report.html']
 
         // Test 1: completionSummary() function
         log.info("=== Testing completionSummary() function ===")
@@ -79,26 +77,23 @@ workflow {
         completionSummary(true)
         log.info("✅ completionSummary(monochrome) completed successfully")
 
-        // Test 2: completionEmail() function
+        // Exercise report generation without external delivery. Transport behavior is covered by hermetic unit tests.
         log.info("=== Testing completionEmail() function ===")
         completionEmail(
             mock_summary_params,
-            'test@example.com',
-            'admin@example.com',
+            null,
+            null,
             false,
             './results',
             false,
             mock_multiqc_reports,
         )
-        log.info("✅ completionEmail completed successfully")
+        log.info("✅ completionEmail exercised")
 
-        // Test 3: imNotification() function
+        // Exercise the disabled-notification path without depending on Slack or the network.
         log.info("=== Testing imNotification() function ===")
-        imNotification(
-            mock_summary_params,
-            'https://hooks.slack.com/services/test/webhook',
-        )
-        log.info("✅ imNotification completed successfully")
+        imNotification(mock_summary_params, null)
+        log.info("✅ imNotification exercised")
 
         log.info(
             """

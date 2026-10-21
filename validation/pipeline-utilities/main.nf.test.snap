@@ -3,10 +3,8 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/pipeline-utilities/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
-                "==========================================",
+                "Launching `[PATH]/pipeline-utilities/./main.nf` [RUN_NAME] - revision: [REVISION]",
                 "Pipeline Utilities Validation Test",
-                "==========================================",
                 "=== Testing getWorkflowVersion() function ===",
                 "Default workflow version: v1.12.0",
                 "Explicit version (2.1.0): v2.1.0",
@@ -21,25 +19,20 @@
                 "=== Validating outputs ===",
                 "=== Validating version strings ===",
                 "\u2705 All version string validations passed",
-                "==========================================",
                 "Pipeline Utilities Validation Complete",
-                "==========================================",
                 "Pipeline Utilities Validation Results",
-                "==========================================",
                 "\u2705 getWorkflowVersion() function tested successfully",
                 "\u2705 dumpParametersToJSON() function tested successfully",
                 "\u2705 Edge cases handled properly",
                 "\u2705 Output validation completed",
                 "Functions ready for use in fetchngs pipeline! \ud83d\ude80",
-                "==========================================",
-                "WARN: Graphviz is required to render the execution DAG in the given format -- See http://www.graphviz.org for more info.",
                 "WARN: JSON file not found at: [PATH]/tests/[NFT_HASH]/work/validation_output/params.json"
             ]
         ],
+        "timestamp": "2026-05-22T12:18:13.286028",
         "meta": {
-            "nf-test": "0.9.2",
-            "nextflow": "25.04.6"
-        },
-        "timestamp": "2025-09-08T18:18:56.487587663"
+            "nf-test": "0.9.5",
+            "nextflow": "25.10.3"
+        }
     }
 }

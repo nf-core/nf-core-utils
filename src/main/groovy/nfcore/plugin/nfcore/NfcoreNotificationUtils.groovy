@@ -19,13 +19,17 @@ package nfcore.plugin.nfcore
 import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.extension.FilesEx
+import nextflow.file.FileHelper
 
+import java.nio.file.FileSystems
+import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.TimeUnit
 
 /**
  * Utility functions for nf-core pipeline notifications
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcoreNotificationUtils')
 class NfcoreNotificationUtils {
 
     // Reusable template engine instance to avoid creating multiple instances
@@ -123,30 +127,142 @@ class NfcoreNotificationUtils {
     }
 
     /**
-     * Return a single report from an object that may be a Path or List
+     * Return a single report from an object that may be a Path or List.
+     * Explicit-input overload: accepts workflowName directly, no global session read.
+     *
      * @param multiqc_reports The reports object
+     * @param workflowName Pipeline name for log messages
      * @return A single report Path or null
+     * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §2
      */
-    static Path getSingleReport(def multiqc_reports) {
-        def session = (Session) nextflow.Nextflow.session
-        def manifest = session.getManifest()
-        def workflowName = manifest?.getName() ?: 'unknown'
+    static Path getSingleReport(def multiqc_reports, String workflowName) {
+        // FileHelper keeps the file system of a path given as a string (s3://, gs://, az://), unlike Paths.get()
+        def toPath = { it instanceof Path ? it : (it != null ? FileHelper.asPath(it.toString()) : null) }
 
         if (multiqc_reports instanceof Path) {
             return multiqc_reports
+        } else if (multiqc_reports instanceof CharSequence) {
+            return toPath(multiqc_reports)
         } else if (multiqc_reports instanceof List) {
             if (multiqc_reports.size() == 0) {
                 log.warn("[${workflowName}] No reports found from process 'MULTIQC'")
                 return null
             } else if (multiqc_reports.size() == 1) {
-                return multiqc_reports.first()
+                return toPath(multiqc_reports.first())
             } else {
                 log.warn("[${workflowName}] Found multiple reports from process 'MULTIQC', will use only one")
-                return multiqc_reports.first()
+                return toPath(multiqc_reports.first())
             }
         } else {
             return null
         }
+    }
+
+    /**
+     * The report as a local file, as the sendmail template of the pipelines reads it with `new File()`: a report on
+     * another file system is copied under its original basename in a temporary directory.
+     * The caller must remove both the copy and its directory after rendering, but never the original local report.
+     *
+     * @param report The MultiQC report
+     * @param maxSize The maximum size of the report to attach, in bytes
+     * @return The report on the local file system, null when there is none, or when it is too large to be attached
+     */
+    static Path localReport(Path report, long maxSize) {
+        if (report == null) {
+            return null
+        }
+        Path directory = null
+        Path local = null
+        try {
+            if (isLocal(report)) {
+                return report
+            }
+            // not downloaded when the template would not attach it
+            if (Files.size(report) >= maxSize) {
+                return null
+            }
+            directory = Files.createTempDirectory('multiqc_report')
+            local = directory.resolve(report.fileName.toString())
+            Files.copy(report, local)
+            return local
+        } catch (Exception e) {
+            deleteTemporaryFile(local)
+            deleteTemporaryFile(directory)
+            log.warn("Could not read the MultiQC report ${report.toUri()}: ${e.message}")
+            return null
+        }
+    }
+
+    private static void deleteTemporaryFile(Path path) {
+        if (path == null) {
+            return
+        }
+        try {
+            Files.deleteIfExists(path)
+        } catch (Exception e) {
+            log.warn("Could not remove temporary file ${path}: ${e.class.simpleName}")
+        }
+    }
+
+    static boolean isLocal(Path path) {
+        return path.fileSystem == FileSystems.getDefault()
+    }
+
+    /**
+     * The commands to send the completion e-mail with, tried in order: sendmail with the HTML e-mail and the MultiQC
+     * report, then mail with the HTML e-mail, or mail with the text e-mail for a plaintext e-mail.
+     *
+     * @return The command, its input and its name for the logs, for each
+     */
+    static List<Map> emailCommands(boolean plaintextEmail, String subject, String emailAddress,
+                                   String sendmailContent, String emailHtml, String emailTxt) {
+        if (plaintextEmail) {
+            return [[command: ['mail', '-s', subject, emailAddress], input: emailTxt, name: 'mail']]
+        }
+        return [
+            [command: ['sendmail', '-t'], input: sendmailContent, name: 'sendmail'],
+            [command: ['mail', '-s', subject, '--content-type=text/html', emailAddress], input: emailHtml, name: 'mail'],
+        ]
+    }
+
+    /** Execute a mail command with a deadline, including time spent reading its input. */
+    static int runEmailCommand(List<String> command, String input, long timeoutSeconds) {
+        Path message = Files.createTempFile('nfcore-email-', '.txt')
+        Process process = null
+        try {
+            Files.writeString(message, input)
+            // A file avoids a blocking parent-side pipe write when the mail command stops reading.
+            process = new ProcessBuilder(command)
+                .redirectInput(message.toFile())
+                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start()
+            if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
+                throw new IOException("Mail command timed out after ${timeoutSeconds} seconds")
+            }
+            return process.exitValue()
+        } finally {
+            try {
+                if (process?.isAlive()) {
+                    process.descendants().withCloseable { children -> children.forEach { it.destroyForcibly() } }
+                    process.destroyForcibly()
+                    process.waitFor(5, TimeUnit.SECONDS)
+                }
+            } finally {
+                deleteTemporaryFile(message)
+            }
+        }
+    }
+
+    /**
+     * @deprecated Use {@link #getSingleReport(Object, String)} with explicit workflowName
+     */
+    @Deprecated
+    static Path getSingleReport(def multiqc_reports) {
+        def session = (Session) nextflow.Nextflow.session
+        def manifest = session.getManifest()
+        def workflowName = manifest?.getName() ?: 'unknown'
+        return getSingleReport(multiqc_reports, workflowName)
     }
 
     /**
@@ -171,52 +287,50 @@ class NfcoreNotificationUtils {
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def config = session.config
+        def wf = session.getWorkflowMetadata()
 
         // Set up the e-mail variables
-        def subject = "[${workflowName}] Successful: ${session.runName ?: 'unknown'}"
-        if (!session.success) {
-            subject = "[${workflowName}] FAILED: ${session.runName ?: 'unknown'}"
+        def subject = "[${workflowName}] Successful: ${wf?.runName ?: 'unknown'}"
+        if (!wf?.success) {
+            subject = "[${workflowName}] FAILED: ${wf?.runName ?: 'unknown'}"
         }
 
         def summary = processSummaryParams(summary_params)
 
         def misc_fields = [:]
-        misc_fields['Date Started'] = session.start
-        misc_fields['Date Completed'] = session.complete
-        misc_fields['Pipeline script file path'] = session.scriptFile
-        misc_fields['Pipeline script hash ID'] = session.scriptId
-        if (session.repository) {
-            misc_fields['Pipeline repository Git URL'] = session.repository
+        misc_fields['Date Started'] = wf?.start
+        misc_fields['Date Completed'] = wf?.complete
+        misc_fields['Pipeline script file path'] = wf?.scriptFile
+        misc_fields['Pipeline script hash ID'] = wf?.scriptId
+        if (wf?.repository) {
+            misc_fields['Pipeline repository Git URL'] = wf.repository
         }
-        if (session.commitId) {
-            misc_fields['Pipeline repository Git Commit'] = session.commitId
+        if (wf?.commitId) {
+            misc_fields['Pipeline repository Git Commit'] = wf.commitId
         }
-        if (session.revision) {
-            misc_fields['Pipeline Git branch/tag'] = session.revision
+        if (wf?.revision) {
+            misc_fields['Pipeline Git branch/tag'] = wf.revision
         }
-        misc_fields['Nextflow Version'] = session.nextflow.version
-        misc_fields['Nextflow Build'] = session.nextflow.build
-        misc_fields['Nextflow Compile Timestamp'] = session.nextflow.timestamp
+        misc_fields['Nextflow Version'] = wf?.nextflow?.version
+        misc_fields['Nextflow Build'] = wf?.nextflow?.build
+        misc_fields['Nextflow Compile Timestamp'] = wf?.nextflow?.timestamp
 
         def email_fields = [:]
         email_fields['version'] = NfcoreVersionUtils.getWorkflowVersion(session)
-        email_fields['runName'] = session.runName
-        email_fields['success'] = session.success
-        email_fields['dateComplete'] = session.complete
-        email_fields['duration'] = session.duration
-        email_fields['exitStatus'] = session.exitStatus
-        email_fields['errorMessage'] = (session.errorMessage ?: 'None')
-        email_fields['errorReport'] = (session.errorReport ?: 'None')
-        email_fields['commandLine'] = session.commandLine
-        email_fields['projectDir'] = session.projectDir
+        email_fields['runName'] = wf?.runName
+        email_fields['success'] = wf?.success
+        email_fields['dateComplete'] = wf?.complete
+        email_fields['duration'] = wf?.duration
+        email_fields['exitStatus'] = wf?.exitStatus
+        email_fields['errorMessage'] = (wf?.errorMessage ?: 'None')
+        email_fields['errorReport'] = (wf?.errorReport ?: 'None')
+        email_fields['commandLine'] = wf?.commandLine
+        email_fields['projectDir'] = wf?.projectDir
         email_fields['summary'] = summary << misc_fields
-
-        // On success try attach the multiqc report
-        def mqc_report = getSingleReport(multiqc_report)
 
         // Check if we are only sending emails on failure
         def email_address = email
-        if (!email && email_on_fail && !session.success) {
+        if (!email && email_on_fail && !wf?.success) {
             email_address = email_on_fail
         }
 
@@ -225,7 +339,7 @@ class NfcoreNotificationUtils {
         def email_html = "<html><body>Default email content</body></html>"
 
         try {
-            def tf = new File("${session.projectDir}/assets/email_template.txt")
+            def tf = new File("${wf?.projectDir}/assets/email_template.txt")
             if (tf.exists()) {
                 def txt_template = TEMPLATE_ENGINE.createTemplate(tf).make(email_fields)
                 email_txt = txt_template.toString()
@@ -234,7 +348,7 @@ class NfcoreNotificationUtils {
             }
 
             // Render the HTML template
-            def hf = new File("${session.projectDir}/assets/email_template.html")
+            def hf = new File("${wf?.projectDir}/assets/email_template.html")
             if (hf.exists()) {
                 def html_template = TEMPLATE_ENGINE.createTemplate(hf).make(email_fields)
                 email_html = html_template.toString()
@@ -245,69 +359,58 @@ class NfcoreNotificationUtils {
             log.warn("Failed to render email templates: ${e.message}")
         }
 
-        // Render the sendmail template
-        def max_multiqc_email_size = 0
-        if (config?.params?.containsKey('max_multiqc_email_size')) {
-            try {
-                max_multiqc_email_size = (config.params.max_multiqc_email_size as nextflow.util.MemoryUnit).toBytes()
-            } catch (Exception e) {
-                log.warn("Failed to parse max_multiqc_email_size: ${e.message}")
-            }
-        }
-
-        def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${session.projectDir}", mqcFile: mqc_report, mqcMaxSize: max_multiqc_email_size]
         def sendmail_html = email_html  // Fallback content
-
-        try {
-            def sf = new File("${session.projectDir}/assets/sendmail_template.txt")
-            if (sf.exists()) {
-                def sendmail_template = TEMPLATE_ENGINE.createTemplate(sf).make(smail_fields)
-                sendmail_html = sendmail_template.toString()
-            } else {
-                log.warn("Sendmail template not found: ${sf.absolutePath}")
-            }
-        } catch (Exception e) {
-            log.warn("Failed to render sendmail template: ${e.message}")
-        }
-
-        // Send the HTML e-mail
-        def colors = logColours(monochrome_logs) as Map
-        if (email_address) {
+        // Only sendmail can attach a report. Still render and persist the summaries when no email is sent.
+        if (email_address && !plaintext_email) {
+            Path mqc_report = null
+            Path mqc_file = null
             try {
-                if (plaintext_email) {
-                    new org.codehaus.groovy.GroovyException('Send plaintext e-mail, not HTML')
+                def sf = new File("${wf?.projectDir}/assets/sendmail_template.txt")
+                if (sf.exists()) {
+                    def max_multiqc_email_size = 0
+                    if (config?.params?.containsKey('max_multiqc_email_size')) {
+                        try {
+                            max_multiqc_email_size = (config.params.max_multiqc_email_size as nextflow.util.MemoryUnit).toBytes()
+                        } catch (Exception e) {
+                            log.warn("Failed to parse max_multiqc_email_size: ${e.message}")
+                        }
+                    }
+                    mqc_report = getSingleReport(multiqc_report, workflowName)
+                    mqc_file = localReport(mqc_report, max_multiqc_email_size as long)
+                    def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${wf?.projectDir}", mqcFile: mqc_file, mqcMaxSize: max_multiqc_email_size]
+                    def sendmail_template = TEMPLATE_ENGINE.createTemplate(sf).make(smail_fields)
+                    sendmail_html = sendmail_template.toString()
+                } else {
+                    log.warn("Sendmail template not found: ${sf.absolutePath}")
                 }
-                // Try to send HTML e-mail using sendmail
-                def sendmail_tf = new File(session.launchDir.toString(), ".sendmail_tmp.html")
-                sendmail_tf.withWriter { w -> w << sendmail_html }
-                ['sendmail', '-t'].execute() << sendmail_html
-                log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address} (sendmail)-")
-            }
-            catch (Exception msg) {
-                log.debug(msg.toString())
-                log.debug("Trying with mail instead of sendmail")
-                // Catch failures and try with plaintext
-                def mail_cmd = ['mail', '-s', subject, '--content-type=text/html', email_address]
-                mail_cmd.execute() << email_html
-                log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address} (mail)-")
+            } catch (Exception e) {
+                log.warn("Failed to render sendmail template: ${e.message}")
+            } finally {
+                if (mqc_file != null && mqc_file != mqc_report) {
+                    deleteTemporaryFile(mqc_file)
+                    deleteTemporaryFile(mqc_file.parent)
+                }
             }
         }
 
-        // Write summary e-mail HTML to a file
+        // Persist the reports before attempting external mail delivery.
         if (outdir != null) {
             try {
-                def output_hf = new File(session.launchDir.toString(), ".pipeline_report.html")
+                def output_hf = new File(wf?.launchDir.toString(), ".pipeline_report.html")
                 output_hf.withWriter { w -> w << email_html }
 
-                // Ensure pipeline_info directory exists
-                def pipeline_info_dir = new File("${outdir}/pipeline_info")
-                pipeline_info_dir.mkdirs()
+                // Ensure pipeline_info directory exists, in a local outdir: copyTo creates it in a remote one, where
+                // new File() would make a local directory named after it (`s3:/bucket/results/pipeline_info`)
+                def pipeline_info_dir = FileHelper.asPath("${outdir}/pipeline_info")
+                if (isLocal(pipeline_info_dir)) {
+                    Files.createDirectories(pipeline_info_dir)
+                }
 
                 FilesEx.copyTo(output_hf.toPath(), "${outdir}/pipeline_info/pipeline_report.html")
                 output_hf.delete()
 
                 // Write summary e-mail TXT to a file
-                def output_tf = new File(session.launchDir.toString(), ".pipeline_report.txt")
+                def output_tf = new File(wf?.launchDir.toString(), ".pipeline_report.txt")
                 output_tf.withWriter { w -> w << email_txt }
                 FilesEx.copyTo(output_tf.toPath(), "${outdir}/pipeline_info/pipeline_report.txt")
                 output_tf.delete()
@@ -317,22 +420,44 @@ class NfcoreNotificationUtils {
         } else {
             log.warn("Cannot write email reports - output directory is null")
         }
+
+        // Send the e-mail
+        def colors = logColours(monochrome_logs) as Map
+        if (email_address) {
+            def sent = emailCommands(plaintext_email, subject, email_address, sendmail_html, email_html, email_txt).find { command ->
+                try {
+                    def exitCode = runEmailCommand(command.command as List<String>, command.input as String, 30)
+                    if (exitCode != 0) {
+                        log.debug("Could not send the summary e-mail with ${command.name}: exit status ${exitCode}")
+                        return false
+                    }
+                    log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address} (${command.name})-")
+                    return true
+                } catch (Exception e) {
+                    log.debug("Could not send the summary e-mail with ${command.name}: ${e}")
+                    return false
+                }
+            }
+            if (!sent) {
+                log.warn("[${workflowName}] Could not send the summary e-mail to ${email_address}")
+            }
+        }
     }
 
     /**
-     * Print pipeline summary on completion
+     * Print pipeline summary on completion.
+     * Explicit-input overload: accepts domain facts directly, no global session read.
+     *
+     * @param workflowName Pipeline name for log messages
+     * @param success Whether the pipeline succeeded
+     * @param ignoredCount Number of errored/ignored processes (0 = fully clean)
      * @param monochrome_logs Whether to use monochrome logs
+     * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §2
      */
-    static void completionSummary(boolean monochrome_logs = true) {
-        def session = (Session) nextflow.Nextflow.session
-        def manifest = session.getManifest()
-        def workflowName = manifest?.getName() ?: 'unknown'
-
+    static void completionSummary(String workflowName, boolean success, int ignoredCount, boolean monochrome_logs = true) {
         def colors = logColours(monochrome_logs) as Map
-        def statsObserver = session.getStatsObserver()
-        def stats = statsObserver ? statsObserver.getStats() : null
-        if (session.success) {
-            if (stats && stats.getIgnoredCount() == 0) {
+        if (success) {
+            if (ignoredCount == 0) {
                 log.info("-${colors.purple}[${workflowName}]${colors.green} Pipeline completed successfully${colors.reset}-")
             } else {
                 log.info("-${colors.purple}[${workflowName}]${colors.yellow} Pipeline completed successfully, but with errored process(es) ${colors.reset}-")
@@ -340,6 +465,23 @@ class NfcoreNotificationUtils {
         } else {
             log.info("-${colors.purple}[${workflowName}]${colors.red} Pipeline completed with errors${colors.reset}-")
         }
+    }
+
+    /**
+     * Print pipeline summary on completion.
+     * Reads global Nextflow session for backward compatibility.
+     * @param monochrome_logs Whether to use monochrome logs
+     * @deprecated Use {@link #completionSummary(String, boolean, int, boolean)} with explicit inputs
+     */
+    @Deprecated
+    static void completionSummary(boolean monochrome_logs = true) {
+        def session = (Session) nextflow.Nextflow.session
+        def manifest = session.getManifest()
+        def workflowName = manifest?.getName() ?: 'unknown'
+        def statsObserver = session.getStatsObserver()
+        def stats = statsObserver ? statsObserver.getStats() : null
+        def ignoredCount = (stats != null) ? stats.getIgnoredCount() : 0
+        completionSummary(workflowName, session.success, ignoredCount, monochrome_logs)
     }
 
     /**
@@ -359,37 +501,38 @@ class NfcoreNotificationUtils {
             return
         }
 
+        def wf = session.getWorkflowMetadata()
         def summary = processSummaryParams(summary_params)
 
         def misc_fields = [:]
-        misc_fields['start'] = session.start
-        misc_fields['complete'] = session.complete
-        misc_fields['scriptfile'] = session.scriptFile
-        misc_fields['scriptid'] = session.scriptId
-        if (session.repository) {
-            misc_fields['repository'] = session.repository
+        misc_fields['start'] = wf?.start
+        misc_fields['complete'] = wf?.complete
+        misc_fields['scriptfile'] = wf?.scriptFile
+        misc_fields['scriptid'] = wf?.scriptId
+        if (wf?.repository) {
+            misc_fields['repository'] = wf.repository
         }
-        if (session.commitId) {
-            misc_fields['commitid'] = session.commitId
+        if (wf?.commitId) {
+            misc_fields['commitid'] = wf.commitId
         }
-        if (session.revision) {
-            misc_fields['revision'] = session.revision
+        if (wf?.revision) {
+            misc_fields['revision'] = wf.revision
         }
-        misc_fields['nxf_version'] = session.nextflow.version
-        misc_fields['nxf_build'] = session.nextflow.build
-        misc_fields['nxf_timestamp'] = session.nextflow.timestamp
+        misc_fields['nxf_version'] = wf?.nextflow?.version
+        misc_fields['nxf_build'] = wf?.nextflow?.build
+        misc_fields['nxf_timestamp'] = wf?.nextflow?.timestamp
 
         def msg_fields = [:]
         msg_fields['version'] = NfcoreVersionUtils.getWorkflowVersion(session)
-        msg_fields['runName'] = session.runName
-        msg_fields['success'] = session.success
-        msg_fields['dateComplete'] = session.complete
-        msg_fields['duration'] = session.duration
-        msg_fields['exitStatus'] = session.exitStatus
-        msg_fields['errorMessage'] = (session.errorMessage ?: 'None')
-        msg_fields['errorReport'] = (session.errorReport ?: 'None')
-        msg_fields['commandLine'] = session.commandLine.replaceFirst(/ +--hook_url +[^ ]+/, "")
-        msg_fields['projectDir'] = session.projectDir
+        msg_fields['runName'] = wf?.runName
+        msg_fields['success'] = wf?.success
+        msg_fields['dateComplete'] = wf?.complete
+        msg_fields['duration'] = wf?.duration
+        msg_fields['exitStatus'] = wf?.exitStatus
+        msg_fields['errorMessage'] = (wf?.errorMessage ?: 'None')
+        msg_fields['errorReport'] = (wf?.errorReport ?: 'None')
+        msg_fields['commandLine'] = wf?.commandLine?.replaceFirst(/ +--hook_url +[^ ]+/, "") ?: ''
+        msg_fields['projectDir'] = wf?.projectDir
         msg_fields['summary'] = summary << misc_fields
 
         // Render the JSON template
@@ -398,7 +541,7 @@ class NfcoreNotificationUtils {
             // Different JSON depending on the service provider
             // Defaults to "Adaptive Cards" (https://adaptivecards.io), except Slack which has its own format
             def json_path = hook_url.contains("hooks.slack.com") ? "slackreport.json" : "adaptivecard.json"
-            def hf = new File("${session.projectDir}/assets/${json_path}")
+            def hf = new File("${wf?.projectDir}/assets/${json_path}")
 
             if (hf.exists()) {
                 def json_template = TEMPLATE_ENGINE.createTemplate(hf).make(msg_fields)
@@ -411,7 +554,7 @@ class NfcoreNotificationUtils {
                 ])
             }
         } catch (Exception e) {
-            log.warn("Failed to render IM notification template: ${e.message}")
+            log.warn("Failed to render IM notification template (${e.class.simpleName})")
             return
         }
 
@@ -421,21 +564,16 @@ class NfcoreNotificationUtils {
             post.setRequestMethod("POST")
             post.setDoOutput(true)
             post.setRequestProperty("Content-Type", "application/json")
-            post.getOutputStream().write(json_message.getBytes("UTF-8"))
+            post.getOutputStream().withCloseable { it.write(json_message.getBytes("UTF-8")) }
             def postRC = post.getResponseCode()
             if (postRC < 200 || postRC >= 300) {
-                def errorText = ""
-                try {
-                    errorText = post.getErrorStream()?.getText() ?: "Unknown error"
-                } catch (Exception ignored) {
-                    errorText = "Could not read error stream"
-                }
-                log.warn("IM notification failed with response code ${postRC}: ${errorText}")
+                // Response bodies and exception messages can echo webhook credentials.
+                log.warn("IM notification failed with response code ${postRC}")
             } else {
-                log.info("IM notification sent successfully to ${hook_url}")
+                log.info("IM notification sent successfully")
             }
         } catch (Exception e) {
-            log.warn("Failed to send IM notification: ${e.message}")
+            log.warn("Failed to send IM notification (${e.class.simpleName})")
         }
     }
 }

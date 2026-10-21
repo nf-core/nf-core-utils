@@ -50,7 +50,7 @@ import org.yaml.snakeyaml.Yaml
  *   <li>{@link #processMixedVersionSources} - use collectVersions() instead</li>
  * </ul>
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcoreVersionUtils')
 class NfcoreVersionUtils {
 
     // =========================================================================
@@ -94,35 +94,45 @@ class NfcoreVersionUtils {
      * @return YAML string with merged versions, sorted alphabetically by process and tool
      */
     static String collectVersions(Object input, Session session = null, Object nextflowVersion = null) {
-        // Convert input to list for uniform processing
-        List inputList = normalizeInputToList(input)
+        def report = new SoftwareVersionReport()
+        report.addInput(input)
 
-        // Accumulate versions: process -> tools map
-        Map<String, Map<String, Object>> merged = [:].withDefault { [:] as Map<String, Object> }
-
-        // Process all entries
-        inputList.each { entry -> processVersionEntry(entry, merged) }
-
-        // Sort processes and tools alphabetically
-        Map<String, Map<String, Object>> sortedMerged = merged.sort().collectEntries { processName, toolsMap ->
-            [(processName): toolsMap.sort()]
-        }
-
-        // Format output
-        String versionsYaml = sortedMerged ? new Yaml().dumpAsMap(sortedMerged).trim() : ''
-
-        // Add workflow version if session provided
         if (session) {
-            def workflowYaml = workflowVersionToYAML(session, nextflowVersion)
-            return ([versionsYaml, workflowYaml].findAll { it && it != '{}' }.join("\n")).trim()
+            def manifest = session.getManifest()
+            def wfName = manifest?.getName() ?: 'unknown'
+            def wfVersion = getWorkflowVersion(session)
+            report.addWorkflowVersion(wfName, wfVersion, resolveNextflowVersion(session, nextflowVersion))
         }
 
-        return versionsYaml
+        return report.renderYaml()
     }
 
     // =========================================================================
     // WORKFLOW INFO METHODS (not deprecated - different concern)
     // =========================================================================
+
+    /**
+     * The Nextflow version for the version reports: the one given, else the one of the config or NXF_VER, else the
+     * version of the running Nextflow
+     */
+    static String resolveNextflowVersion(Session session, Object nextflowVersion = null) {
+        return nextflowVersion?.toString() ?:
+            session?.getConfig()?.get('nextflow')?.get('version')?.toString() ?:
+            System.getenv('NXF_VER') ?:
+            runningNextflowVersion() ?:
+            'unknown'
+    }
+
+    /**
+     * The version of the running Nextflow, null when it can't be read
+     */
+    static String runningNextflowVersion() {
+        try {
+            return nextflow.BuildInfo.version
+        } catch (Throwable ignored) {
+            return null
+        }
+    }
 
     /**
      * Generate workflow version string
@@ -133,8 +143,11 @@ class NfcoreVersionUtils {
      * @return A formatted version string
      */
     static String getWorkflowVersion(Session session = null, String version = null, String commitId = null) {
-        // Get version from session if not explicitly provided
+        // Get the version, and the commit of the run when neither is given, from the session
         if (session && !version) {
+            if (!commitId) {
+                commitId = session.getWorkflowMetadata()?.commitId
+            }
             def manifest = session.getManifest()
             version = manifest?.getVersion()
         }
@@ -147,7 +160,7 @@ class NfcoreVersionUtils {
 
         // Add git commit information if provided
         if (commitId) {
-            def gitShortsha = commitId.substring(0, 7)
+            def gitShortsha = commitId.take(7)
             versionString += "-g${gitShortsha}"
         }
 
@@ -252,11 +265,9 @@ class NfcoreVersionUtils {
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'Workflow'
         def workflowVersion = getWorkflowVersion(session)
-        // Get Nextflow version from session config, fall back to environment variable
-        def nextflowVersion = session?.getConfig()?.get('nextflow')?.get('version') ?: System.getenv('NXF_VER') ?: 'unknown'
         return [
             ['Workflow', workflowName, workflowVersion],
-            ['Workflow', 'Nextflow', nextflowVersion]
+            ['Workflow', 'Nextflow', resolveNextflowVersion(session)]
         ]
     }
 
@@ -267,11 +278,7 @@ class NfcoreVersionUtils {
         def manifest = session.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def workflowVersion = getWorkflowVersion(session)
-        // Use provided version, or try session config, or fall back to environment variable
-        def nfVer = nextflowVersion?.toString() ?:
-                    session?.getConfig()?.get('nextflow')?.get('version') ?:
-                    System.getenv('NXF_VER') ?:
-                    'unknown'
+        def nfVer = resolveNextflowVersion(session, nextflowVersion)
         return """
         Workflow:
             ${workflowName}: ${workflowVersion}

@@ -3,31 +3,38 @@
         "content": [
             [
                 "N E X T F L O W  ~  version [VERSION]",
-                "Launching `[PATH]/notification-system/./main.nf` [RUN_NAME] DSL2 - revision: [REVISION]",
-                "==========================================",
+                "Launching `[PATH]/notification-system/./main.nf` [RUN_NAME] - revision: [REVISION]",
                 "Notification System Validation Test",
-                "==========================================",
                 "Testing notification functions import and availability...",
                 "\u2705 completionEmail function available: true",
                 "\u2705 completionSummary function available: true",
                 "\u2705 imNotification function available: true",
                 "Notification functions imported successfully",
                 "Pipeline execution complete - notification functions will be tested in completion handlers",
-                "===========================================",
                 "Testing notification functions in completion handler",
-                "===========================================",
                 "=== Testing completionSummary() function ===",
+                "-\u001b[0;35m[unknown]\u001b[0;32m Pipeline completed successfully\u001b[0m-",
                 "\u2705 completionSummary(colored) completed successfully",
+                "-[unknown] Pipeline completed successfully-",
                 "\u2705 completionSummary(monochrome) completed successfully",
                 "=== Testing completionEmail() function ===",
-                " -- Check script '[PATH]/notification-system/main.nf' at line: 84 or see '[PATH]/tests/[NFT_HASH]/meta/nextflow.log' file for more details",
-                "ERROR ~ Failed to invoke `workflow.onComplete` event handler"
+                "\u2705 completionEmail exercised",
+                "=== Testing imNotification() function ===",
+                "\u2705 imNotification exercised",
+                "Notification System Validation Results",
+                "\u2705 completionSummary() - Pipeline completion logging tested",
+                "\u2705 completionEmail() - Email notification functionality tested",
+                "\u2705 imNotification() - Instant messenger integration tested",
+                "Notification system functions tested successfully! \ud83d\ude80",
+                "WARN: Cannot send IM notification - hook URL is null or empty",
+                "WARN: Email template not found: [PATH]/notification-system/assets/email_template.txt",
+                "WARN: HTML email template not found: [PATH]/notification-system/assets/email_template.html"
             ]
         ],
         "meta": {
             "nf-test": "0.9.3",
-            "nextflow": "25.10.0"
+            "nextflow": "25.10.4"
         },
-        "timestamp": "2025-10-29T10:49:36.874294981"
+        "timestamp": "2026-10-17T07:29:07.250466311"
     }
 }

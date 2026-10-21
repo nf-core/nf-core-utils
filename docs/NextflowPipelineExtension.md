@@ -10,8 +10,9 @@ The Nextflow Pipeline Extension offers three core utilities designed to enhance 
 - **Parameter Documentation**: Export pipeline parameters for reproducibility
 - **Environment Validation**: Verify conda channel configurations
 
-!!! note "Migration from Legacy Subworkflows"
+:::note{title="Migration from Legacy Subworkflows"}
 These functions replace those previously found in the `utils_nextflow_pipeline` subworkflow. The plugin-based approach provides easier imports, better maintenance, and improved reliability.
+:::
 
 ## 2. Getting Started
 
@@ -29,8 +30,9 @@ workflow {
 }
 ```
 
-!!! tip "Function Selection"
+:::tip{title="Function Selection"}
 Import only the functions you need. Each function is independent and can be imported separately for lighter dependency management.
+:::
 
 ### 2.2. Quick Start Example
 
@@ -59,7 +61,7 @@ workflow {
 workflow.onComplete {
     // Save parameters for reproducibility
     if (params.outdir) {
-        dumpParametersToJSON(params.outdir, params, workflow.launchDir)
+        dumpParametersToJSON(params.outdir, params)
     }
 }
 ```
@@ -82,7 +84,7 @@ Each function serves a specific purpose in pipeline management. Let's explore th
 
 The `getWorkflowVersion` function creates consistent, git-aware version strings for your pipeline. It combines your manifest version with git commit information to provide traceable version identifiers.
 
-#### Basic Usage
+**Basic Usage**
 
 Let's start with a simple version string generation:
 
@@ -100,7 +102,7 @@ log.info "Version: ${version_str}"
 Version: v1.0.0
 ```
 
-#### Git-Aware Versioning
+**Git-Aware Versioning**
 
 For better traceability, include git commit information:
 
@@ -118,14 +120,16 @@ log.info "Full version: ${version_str}"
 Full version: v1.0.0-gabc1234
 ```
 
-#### Function Parameters
+Called without arguments, `getWorkflowVersion()` takes both from the running workflow, so it gives the same result.
+
+**Function Parameters**
 
 | Parameter         | Type              | Description                           | Example                 |
 | ----------------- | ----------------- | ------------------------------------- | ----------------------- |
 | `manifestVersion` | String            | Version from nextflow.config manifest | `"1.0.0"` or `"v1.0.0"` |
 | `commitId`        | String (optional) | Full git SHA hash                     | `"abc1234def5678..."`   |
 
-#### Version Format Rules
+**Version Format Rules**
 
 The function applies these formatting rules:
 
@@ -133,16 +137,17 @@ The function applies these formatting rules:
 2. **Git Shortening**: Uses first 7 characters of commit ID
 3. **Git Prefix**: Adds 'g' prefix to git hash (`abc1234` → `gabc1234`)
 
-!!! tip "Best Practice"
+:::tip{title="Best Practice"}
 Always use `workflow.manifest.version` and `workflow.commitId` for automatic version detection in pipelines.
+:::
 
 ---
 
 ### 3.2. dumpParametersToJSON - Parameter Documentation
 
-The `dumpParametersToJSON` function creates JSON documentation of your pipeline run parameters, essential for reproducibility and troubleshooting. It automatically timestamps and organizes parameter files for easy reference.
+The `dumpParametersToJSON` function creates JSON documentation of your pipeline run parameters, essential for reproducibility and troubleshooting. It automatically timestamps and organizes parameter files for easy reference, serializes common Nextflow parameter types, and writes via Nextflow file handling so local and cloud-backed output paths are supported.
 
-#### Understanding Parameter Documentation
+**Understanding Parameter Documentation**
 
 Before diving into usage, let's understand why parameter documentation matters:
 
@@ -155,7 +160,7 @@ Before diving into usage, let's understand why parameter documentation matters:
 
 Parameter documentation solves these challenges by creating a permanent record.
 
-#### Basic Parameter Export
+**Basic Parameter Export**
 
 Let's implement basic parameter logging:
 
@@ -177,7 +182,7 @@ workflow {
 workflow.onComplete {
     // Save parameters after successful completion
     if (params.outdir) {
-        dumpParametersToJSON(params.outdir, params, workflow.launchDir)
+        dumpParametersToJSON(params.outdir, params)
     }
 }
 ```
@@ -201,24 +206,26 @@ results/
 }
 ```
 
-#### Function Parameters
+**Function Parameters**
 
-| Parameter   | Type        | Required | Description                         |
-| ----------- | ----------- | -------- | ----------------------------------- |
-| `outdir`    | Path/String | Yes      | Output directory for parameter file |
-| `params`    | Map         | Yes      | Pipeline parameters to document     |
-| `launchDir` | Path        | Yes      | Temporary file creation directory   |
+| Parameter | Type        | Required | Description                         |
+| --------- | ----------- | -------- | ----------------------------------- |
+| `outdir`  | Path/String | Yes      | Output directory for parameter file |
+| `params`  | Map         | Yes      | Pipeline parameters to document     |
 
-#### File Organization
+**File Organization**
 
 The function follows nf-core conventions for file organization:
 
 - **Location**: `${outdir}/pipeline_info/`
 - **Filename**: `params_<timestamp>.json`
 - **Format**: Pretty-printed JSON for readability
+- **Type handling**: `Path`, `Duration`, `MemoryUnit`, and `VersionNumber` parameters are converted to JSON-safe values
+- **Path handling**: files are copied with Nextflow file utilities so remote/cloud output locations behave consistently with other pipeline outputs
 
-!!! warning "Safety Check"
+:::warning{title="Safety Check"}
 The function safely handles null `outdir` values by returning immediately without error, preventing pipeline crashes.
+:::
 
 ---
 
@@ -226,7 +233,7 @@ The function safely handles null `outdir` values by returning immediately withou
 
 The `checkCondaChannels` function validates your conda environment setup, ensuring that required bioinformatics channels are properly configured. This prevents common dependency resolution issues in conda-based pipelines.
 
-#### Understanding Conda Channel Priority
+**Understanding Conda Channel Priority**
 
 Conda channels have priority order that affects package resolution:
 
@@ -244,7 +251,7 @@ Wrong channel order can lead to:
 - Outdated software versions
 - Failed environment creation
 
-#### Basic Channel Validation
+**Basic Channel Validation**
 
 Let's implement conda channel checking:
 
@@ -271,7 +278,7 @@ workflow {
 }
 ```
 
-#### Example Output Scenarios
+**Example Output Scenarios**
 
 **Correct Configuration:**
 
@@ -289,7 +296,7 @@ WARN  [main] - Expected channel order: [conda-forge, bioconda]
 WARN  [main] - Current channel order: [bioconda, conda-forge]
 ```
 
-#### Function Return Values
+**Function Return Values**
 
 | Return Value | Condition          | Description                                          |
 | ------------ | ------------------ | ---------------------------------------------------- |
@@ -297,7 +304,7 @@ WARN  [main] - Current channel order: [bioconda, conda-forge]
 | `true`       | Conda unavailable  | Conda not installed or command failed (non-blocking) |
 | `false`      | Channels incorrect | Required channels missing or wrong order             |
 
-#### Validation Process
+**Validation Process**
 
 The function performs these steps:
 
@@ -306,8 +313,9 @@ The function performs these steps:
 3. **Validate**: Checks for conda-forge and bioconda presence and order
 4. **Report**: Provides clear feedback on issues found
 
-!!! tip "Non-Blocking Design"
+:::tip{title="Non-Blocking Design"}
 The function is designed to be non-blocking. If conda is not available or checking fails, it returns `true` to allow pipeline continuation.
+:::
 
 ---
 
@@ -359,7 +367,7 @@ workflow {
 workflow.onComplete {
     // Document run parameters
     if (params.outdir) {
-        dumpParametersToJSON(params.outdir, params, workflow.launchDir)
+        dumpParametersToJSON(params.outdir, params)
         log.info "Parameters saved to ${params.outdir}/pipeline_info/"
     }
 
@@ -423,7 +431,7 @@ workflow {
 workflow.onComplete {
     // Always save parameters for reproducibility
     if (params.outdir && workflow.success) {
-        dumpParametersToJSON(params.outdir, params, workflow.launchDir)
+        dumpParametersToJSON(params.outdir, params)
     }
 }
 
@@ -440,19 +448,33 @@ workflow.onError {
 
 ### 5.1. Version Management
 
-> [!TIP] "Version String Usage"
->
-> - Include version in all log messages
-> - Add version to output filenames for traceability
-> - Use consistent version format across your organization
+:::tip{title="Version String Usage"}
+
+- Include version in all log messages
+- Add version to output filenames for traceability
+- Use consistent version format across your organization
+
+:::
 
 ### 5.2. Parameter Documentation
 
-!!! warning "Documentation Timing" - Call `dumpParametersToJSON` in `workflow.onComplete` for successful runs only - Consider saving parameters on error for debugging failed runs - Include the timestamp to distinguish between multiple runs
+:::warning{title="Documentation Timing"}
+
+- Call `dumpParametersToJSON` in `workflow.onComplete` for successful runs only
+- Consider saving parameters on error for debugging failed runs
+- Include the timestamp to distinguish between multiple runs
+
+:::
 
 ### 5.3. Environment Validation
 
-!!! note "Validation Strategy" - Check conda channels early in pipeline execution - Make validation non-fatal in development environments - Provide clear fixing instructions in error messages
+:::note{title="Validation Strategy"}
+
+- Check conda channels early in pipeline execution
+- Make validation non-fatal in development environments
+- Provide clear fixing instructions in error messages
+
+:::
 
 ## 6. Migration Guide
 

@@ -80,7 +80,10 @@ workflow {
 
     def versions_ch = Channel.of('fastqc: 0.12.1')
 
-    def result4 = softwareVersionsToYAML(versions_ch, nextflowVersion: '24.10.0')
+    def result4 = softwareVersionsToYAML(
+        softwareVersions: versions_ch,
+        nextflowVersion: '24.10.0',
+    )
     result4.view { yaml ->
         log.info("Result with custom Nextflow version:")
         log.info(yaml)

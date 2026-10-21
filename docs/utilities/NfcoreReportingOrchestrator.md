@@ -4,11 +4,12 @@ Orchestrated comprehensive reporting utilities for nf-core pipelines.
 
 ## Overview
 
-The `NfcoreReportingOrchestrator` utility provides high-level orchestration of reporting functionality by coordinating the `NfcoreVersionUtils` and `NfcoreCitationUtils` classes. This unified approach ensures consistent processing, error handling, and output formatting across version management and citation handling.
+The `NfcoreReportingOrchestrator` utility provides high-level orchestration of reporting functionality by coordinating `SoftwareVersionReport` and `NfcoreCitationUtils`. Public extension functions remain stable, while the internal implementation now uses `PipelineExecutionContext` so report generation receives explicit workflow, manifest, and configuration metadata instead of reading global Nextflow session state.
 
 ### Key Benefits
 
 - **Unified Interface**: Single entry point for comprehensive pipeline reporting
+- **Explicit Context**: Manifest and workflow metadata are passed through `PipelineExecutionContext`, including data used by methods-description templates
 - **Coordinated Processing**: Ensures consistent handling of both versions and citations
 - **Error Resilience**: Robust error handling with graceful degradation
 - **Performance Optimization**: Efficient processing of large datasets
@@ -16,7 +17,7 @@ The `NfcoreReportingOrchestrator` utility provides high-level orchestration of r
 
 ## Available Functions
 
-### `generateComprehensiveReport(List<List> topicVersions, List<String> legacyVersions = [], List<String> metaFilePaths = [], String mqcMethodsYamlPath = null)`
+### `generateComprehensiveReport()`
 
 **Description:**  
 Generates a complete pipeline report including version information, tool citations, bibliography, and methods description. This is the primary function for full pipeline reporting that combines all available reporting capabilities.
@@ -115,7 +116,7 @@ workflow {
 
 ---
 
-### `generateVersionReport(List<List> topicVersions, List<String> legacyVersions = [])`
+### `generateVersionReport()`
 
 **Description:**  
 Generates a version-only report when citations are not needed or handled separately. This function focuses exclusively on version aggregation and formatting.
@@ -176,7 +177,7 @@ workflow VERSION_TRACKING {
 
 ---
 
-### `generateCitationReport(List<String> metaFilePaths, String mqcMethodsYamlPath = null)`
+### `generateCitationReport()`
 
 **Description:**  
 Generates a citation-only report when versions are handled separately. This function focuses exclusively on citation extraction, processing, and methods description generation.
@@ -646,4 +647,4 @@ workflow BENCHMARK_REPORTING {
 }
 ```
 
-For more information on orchestrated reporting and utility coordination, see the individual utility documentation and [nf-core reporting best practices](https://nf-co.re/docs/contributing/pipelines/reporting).
+For more information on orchestrated reporting and utility coordination, see the individual utility documentation and [nf-core reporting best practices](https://nf-co.re/docs/developing/components/automated-methods-text).

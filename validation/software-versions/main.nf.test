@@ -1,7 +1,7 @@
 nextflow_pipeline {
 
     name "Test softwareVersionsToYAML() function"
-    script "main.nf"
+    script "./main.nf"
     tag "software_versions"
     tag "integration"
 

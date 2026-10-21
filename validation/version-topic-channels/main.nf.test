@@ -6,12 +6,23 @@ nextflow_pipeline {
 
     test("Version utilities") {
 
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+        }
 
         then {
             assert workflow.success
-            assert snapshot(
-                filterNextflowOutput(workflow.stdout + workflow.stderr, keepAnsi: true),
-            ).match()
+
+            // Channels finish independently; compare each complete report, not console arrival order.
+            def reports = ['topic', 'file', 'mixed'].collectEntries { kind ->
+                def lines = path("${params.outdir}/${kind}_versions.yml").text.readLines().collect { line ->
+                    line.replaceAll(/^(\s*Nextflow: )\S+$/, '$1[VERSION]')
+                }
+                [kind, lines]
+            }
+            assert snapshot(reports).match()
         }
     }
 }
