@@ -4,7 +4,13 @@ import spock.lang.Narrative
 import spock.lang.Issue
 import spock.lang.See
 import spock.lang.Specification
+import spock.lang.TempDir
 import spock.lang.Title
+import org.yaml.snakeyaml.Yaml
+
+import java.nio.file.FileSystems
+import java.nio.file.Files
+import java.nio.file.Path
 
 @Title("SoftwareVersionReport collects heterogeneous version inputs and renders YAML")
 @Narrative("""
@@ -16,6 +22,9 @@ as thin adapters.
 @Issue("https://github.com/nf-core/nf-core-utils/pull/41")
 @See("https://github.com/nf-core/nf-core-utils/blob/main/docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md#3-software-version-report-module")
 class SoftwareVersionReportTest extends Specification {
+
+    @TempDir
+    Path tempDir
 
     def 'renders empty report as empty string'() {
         given:
@@ -82,6 +91,31 @@ class SoftwareVersionReportTest extends Specification {
 
         cleanup:
         tempFile.delete()
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/23")
+    def 'reads #provider Path inputs with collected=#collected without losing legacy versions'() {
+        given:
+        def archive = FileSystems.newFileSystem(URI.create("jar:${tempDir.resolve('versions.zip').toUri()}"), [create: 'true'])
+        def versionsPath = provider == 'local' ? tempDir.resolve('versions.yml') : archive.getPath('/versions.yml')
+        Files.writeString(versionsPath, 'PIPELINE:ALIGN:\n  samtools: "1.17"\n  bwa: "0.7.17"\n')
+        def report = new SoftwareVersionReport()
+
+        when:
+        report.addInput(collected ? [versionsPath, ['PIPELINE:ALIGN', 'samtools', '1.17']] : versionsPath)
+
+        then:
+        new Yaml().load(report.renderYaml()) == [ALIGN: [bwa: '0.7.17', samtools: '1.17']]
+
+        cleanup:
+        archive.close()
+
+        where:
+        provider | collected
+        'local'  | false
+        'local'  | true
+        'zip'    | false
+        'zip'    | true
     }
 
     def 'handles mixed inputs in a single addInput call'() {

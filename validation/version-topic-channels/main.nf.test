@@ -16,13 +16,32 @@ nextflow_pipeline {
             assert workflow.success
 
             // Channels finish independently; compare each complete report, not console arrival order.
-            def reports = ['topic', 'file', 'mixed'].collectEntries { kind ->
+            def reports = ['topic', 'file', 'mixed', 'live'].collectEntries { kind ->
                 def lines = path("${params.outdir}/${kind}_versions.yml").text.readLines().collect { line ->
                     line.replaceAll(/^(\s*Nextflow: )\S+$/, '$1[VERSION]')
                 }
                 [kind, lines]
             }
+            // Do not normalize the explicit override: a broken positional call must fail.
+            reports.single = path("${params.outdir}/single_versions.yml").text.readLines()
             assert snapshot(reports).match()
+        }
+    }
+
+    test("Empty versions topic still writes workflow metadata") {
+        when {
+            params {
+                outdir = "$outputDir"
+                empty_topics = true
+            }
+        }
+
+        then {
+            assert workflow.success
+            def lines = path("${params.outdir}/live_versions.yml").text.readLines().collect { line ->
+                line.replaceAll(/^(\s*Nextflow: )\S+$/, '$1[VERSION]')
+            }
+            assert snapshot(lines).match()
         }
     }
 }

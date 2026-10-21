@@ -31,13 +31,44 @@
                     "Workflow:",
                     "    nf-core-utils-validation: v1.0.0",
                     "    Nextflow: [VERSION]"
+                ],
+                "live": [
+                    "LEGACY_TOOL:",
+                    "  legacy: '2.0'",
+                    "TOPIC_TOOL:",
+                    "  fastqc: 0.12.1",
+                    "  samtools: '1.17'",
+                    "Workflow:",
+                    "    nf-core-utils-validation: v1.0.0",
+                    "    Nextflow: [VERSION]"
+                ],
+                "single": [
+                    "LEGACY_TOOL:",
+                    "  legacy: '2.0'",
+                    "Workflow:",
+                    "    nf-core-utils-validation: v1.0.0",
+                    "    Nextflow: 99.1.0"
                 ]
             }
         ],
         "meta": {
             "nf-test": "0.9.3",
-            "nextflow": "26.04.7"
+            "nextflow": "26.10.2"
         },
-        "timestamp": "2026-10-17T13:05:38.010426865"
+        "timestamp": "2026-10-21T03:59:43.055347456"
+    },
+    "Empty versions topic still writes workflow metadata": {
+        "content": [
+            [
+                "Workflow:",
+                "    nf-core-utils-validation: v1.0.0",
+                "    Nextflow: [VERSION]"
+            ]
+        ],
+        "meta": {
+            "nf-test": "0.9.3",
+            "nextflow": "26.10.2"
+        },
+        "timestamp": "2026-10-21T03:59:48.488767661"
     }
 }

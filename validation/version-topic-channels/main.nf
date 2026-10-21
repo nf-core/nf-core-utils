@@ -15,6 +15,28 @@ workflow {
 
     file(params.outdir).mkdirs()
 
+    // Real topic producers: repeated tuples and legacy Path outputs on one topic.
+    TOPIC_TOOL(
+        params.empty_topics
+            ? channel.empty()
+            : channel.of(
+                ['samtools', '1.17'],
+                ['fastqc', '0.12.1'],
+                ['samtools', '1.17'],
+            )
+    )
+    LEGACY_TOOL(params.empty_topics ? channel.empty() : channel.value('sample'))
+
+    channel.topic('versions')
+        .toList()
+        .map { entries -> collectVersions(entries) }
+        .collectFile(name: 'live_versions.yml', storeDir: params.outdir, newLine: true)
+
+    // Exercise a single Path through the public plugin function, plus its positional override.
+    LEGACY_TOOL.out.versions
+        .map { versions -> collectVersions(versions, '99.1.0') }
+        .collectFile(name: 'single_versions.yml', storeDir: params.outdir, newLine: true)
+
     // Test 1: collectVersions with topic tuples (most common pattern)
     log.info("=== Testing collectVersions() with topic tuples ===")
 
@@ -26,7 +48,7 @@ workflow {
 
     // Collect all versions and process with single call
     ch_topic_versions
-        .collect(flat: false)
+        .toList()
         .map { versions ->
             log.info("Processing ${versions.size()} topic tuples")
             collectVersions(versions)
@@ -63,7 +85,7 @@ workflow {
     }
 
     ch_version_files
-        .collect()
+        .toList()
         .map { files ->
             log.info("Processing ${files.size()} version files")
             // collectVersions handles File objects directly
@@ -88,7 +110,7 @@ workflow {
     )
 
     ch_mixed
-        .collect(flat: false)
+        .toList()
         .map { mixed ->
             log.info("Processing mixed inputs: ${mixed.size()} items")
             collectVersions(mixed)
@@ -125,4 +147,33 @@ workflow {
             """.stripIndent().trim()
         )
     }
+}
+
+process TOPIC_TOOL {
+    input:
+    tuple val(tool), val(version)
+
+    output:
+    tuple val(task.process), val(tool), eval("printf '%s' '${version}'"), topic: versions
+
+    script:
+    """
+    true
+    """
+}
+
+process LEGACY_TOOL {
+    input:
+    val sample
+
+    output:
+    path 'versions.yml', topic: versions, emit: versions
+
+    script:
+    """
+    cat > versions.yml <<'END_VERSIONS'
+    PIPELINE:LEGACY_TOOL:
+      legacy: '2.0'
+    END_VERSIONS
+    """
 }

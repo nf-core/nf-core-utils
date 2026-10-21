@@ -19,6 +19,9 @@ package nfcore.plugin.nfcore
 import groovy.util.logging.Slf4j
 import org.yaml.snakeyaml.Yaml
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 /**
  * Collects heterogeneous software version inputs and renders a merged YAML report.
  *
@@ -88,6 +91,8 @@ class SoftwareVersionReport {
         if (input == null) return []
         if (input instanceof CharSequence) return [input.toString()]
         if (input instanceof Map) return [input]
+        // Path is Iterable over its components, not a collection of version sources.
+        if (input instanceof Path) return [input]
         if (input instanceof List) return input
         if (input.getClass().isArray()) return (input as Object[]).toList()
         if (input instanceof Iterable) return input.toList()
@@ -102,6 +107,9 @@ class SoftwareVersionReport {
                 processStringEntry(entry.toString().trim())
             } else if (entry instanceof File) {
                 processFileEntry(entry)
+            } else if (entry instanceof Path) {
+                // Read through the provider; remote paths need not support toFile().
+                processYamlContent(Files.readString(entry))
             } else if (entry instanceof Map) {
                 mergeParsedYaml(entry as Map)
             } else if (hasToFileMethod(entry)) {

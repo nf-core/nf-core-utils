@@ -211,12 +211,12 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * <h3>Example Usage</h3>
      * <pre>
      * // From collected channel
-     * ch_versions.collect().map { versions ->
-     *     workflow.collectVersions(versions)
+     * ch_versions.toList().map { versions ->
+     *     collectVersions(versions)
      * }
      *
      * // With custom Nextflow version
-     * workflow.collectVersions(versions, nextflowVersion: workflow.nextflow.version)
+     * collectVersions(versions, workflow.nextflow.version)
      * </pre>
      *
      * @param input Single input or List of mixed inputs

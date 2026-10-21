@@ -1,150 +1,140 @@
-# Version Utilities
+# Version utilities
 
-Software version collection and reporting for nf-core pipelines.
+Use `collectVersions` to merge software versions from topic tuples, legacy YAML files, or both into one YAML report. The plugin adds workflow metadata automatically.
 
-## 1. Overview
-
-The `NfcoreVersionUtils` utility handles collecting, merging, and formatting software versions from pipeline processes. It supports legacy YAML files, modern topic channel tuples, and any combination of the two.
-
-### 1.1. Recommended API
-
-**`collectVersions(input, nextflowVersion?)`** is the single entry point for version collection. It accepts any mix of input formats and returns a sorted YAML string with workflow metadata included.
-
-For workflow version strings (e.g. `v1.2.3-gabcdef1`), use **`getWorkflowVersion(version?, commitId?)`**.
-
-## 2. `collectVersions`
-
-Collects software versions from heterogeneous sources and merges them into a single YAML string.
+## `collectVersions()`
 
 ```nextflow
 include { collectVersions } from 'plugin/nf-core-utils'
+
+// Returns a YAML String, not a channel.
+collectVersions(input)
+collectVersions(input, nextflowVersion)
 ```
 
-### 2.1. Supported Input Types
+| Input                                      | Example                                                    |
+| ------------------------------------------ | ---------------------------------------------------------- |
+| YAML string                                | `'fastqc: 0.12.1'`                                         |
+| Local filename, `File`, or Nextflow `Path` | `file('versions.yml')`                                     |
+| List of topic tuples                       | `[['FASTQC', 'fastqc', '0.12.1']]`                         |
+| Map                                        | `[fastqc: '0.12.1']` or `[FASTQC: [fastqc: '0.12.1']]`     |
+| Mixed list                                 | `[file('versions.yml'), ['SAMTOOLS', 'samtools', '1.17']]` |
 
-| Type | Example |
-|------|---------|
-| `String` | YAML content or file path (auto-detected) |
-| `File` / `Path` | Reads YAML from the file |
-| `List<List>` | Topic channel tuples `[[process, tool, version], ...]` |
-| `List<String>` | Paths to `versions.yml` files |
-| `Map` | Direct version data `[tool: version]` |
-| Mixed `List` | Any combination of the above |
+Pass tuples inside a list, even for one tuple. For remote files, pass a Nextflow `Path` from `file(...)` or a process output, not a URI string. The filesystem provider must be available in the running pipeline.
 
-### 2.2. Basic Usage
+### Collect from a topic
+
+Processes can publish `[process, tool, version]` tuples to the `versions` topic:
 
 ```nextflow
+process FASTQC {
+    input:
+    path reads
+
+    output:
+    tuple val(task.process), val('fastqc'), eval("fastqc --version | sed 's/FastQC v//'"), topic: versions
+
+    script:
+    """
+    fastqc ${reads}
+    """
+}
+
 workflow {
-    ch_versions = Channel.empty()
+    FASTQC(channel.fromPath(params.reads))
 
-    FASTQC(samples)
-    SAMTOOLS(mapped)
-
-    ch_versions = ch_versions
-        .mix(FASTQC.out.versions)
-        .mix(SAMTOOLS.out.versions)
-
-    // Collect all versions into YAML
-    ch_versions.collect().map { versions ->
-        collectVersions(versions)
-    }.set { ch_versions_yaml }
-
-    ch_versions_yaml.collectFile(
-        name: 'software_versions.yml',
-        storeDir: "${params.outdir}/pipeline_info"
-    )
+    channel.topic('versions')
+        .toList()
+        .map { versions -> collectVersions(versions) }
+        .collectFile(
+            name: 'software_versions.yml',
+            storeDir: "${params.outdir}/pipeline_info",
+            newLine: true
+        )
 }
 ```
 
-### 2.3. Custom Nextflow Version
+Use **`.toList()`**, not `.collect()`: it preserves tuple boundaries and emits an empty list when no tasks publish versions, so the workflow metadata is still written. The report is produced after the topic closes. A process consuming this report must not also publish to the same topic, or the workflow can deadlock.
+
+### Mix topic tuples and legacy files
+
+A `versions` topic may contain both tuples and YAML `Path` outputs. Pass them through the same collection without branching or converting paths to strings.
+
+For legacy modules that expose `versions.yml` through ordinary output channels, mix those outputs into the topic stream:
 
 ```nextflow
-collectVersions(versions, nextflowVersion: '25.04.0')
+channel.topic('versions')
+    .mix(LEGACY_TOOL.out.versions)
+    .toList()
+    .map { versions -> collectVersions(versions) }
+    .collectFile(name: 'software_versions.yml', newLine: true)
 ```
 
-### 2.4. Output Format
+If your pipeline uses a separate `versions_file` topic, mix `channel.topic('versions_file')` in the same way. For a pipeline without topics, start from its existing `ch_versions` channel and use `.toList().map { collectVersions(it) }`.
+
+### Workflow metadata and output
+
+```nextflow
+// Optional positional override; this is not a named-options Map.
+collectVersions(versions, workflow.nextflow.version)
+```
+
+Without an override, the Nextflow version comes from session configuration, `NXF_VER`, or the running Nextflow version. Workflow name, manifest version, and the run's git commit come from the session.
+
+For input `[['PIPELINE:FASTQC', 'fastqc', '0.12.1'], [samtools: '1.17']]`, a report looks like:
 
 ```yaml
 FASTQC:
   fastqc: 0.12.1
-SAMTOOLS:
-  samtools: 1.17
+Software:
+  samtools: "1.17"
 Workflow:
-  nf-core/mypipeline: v1.0.0
-  Nextflow: 25.04.0
+  nf-core/mypipeline: v1.0.0-gabcdef1
+  Nextflow: 26.10.2
 ```
 
-Processes and tools are sorted alphabetically. Duplicates are merged automatically. Workflow name, version, and Nextflow version are appended.
+- Processes and tools are sorted alphabetically; the workflow section follows them.
+- Topic process names and YAML process keys lose their colon-delimited prefixes. Flat tool maps appear under `Software`.
+- Repeated entries for the same process and tool occupy one key. **The last value wins**, even if the versions differ. Arrival order from mixed channels is not deterministic, so this is not a conflict-resolution policy. Keep distinct process names when different tool versions must be reported separately.
+- Missing or malformed entries can be skipped; read/parse failures log warnings. This function is not a strict input validator.
 
-## 3. `getWorkflowVersion`
-
-Returns a formatted version string combining the manifest version with the git commit ID.
+## `getWorkflowVersion()`
 
 ```nextflow
 include { getWorkflowVersion } from 'plugin/nf-core-utils'
 
-def version = getWorkflowVersion()
-// => "v1.2.3-gabcdef1"
+getWorkflowVersion()                      // e.g. v1.2.3-gabcdef1
+getWorkflowVersion('2.0.0')               // v2.0.0; does not append the run's commit
+getWorkflowVersion('2.0.0', 'abcdef1234') // v2.0.0-gabcdef1
 ```
 
-Both parameters are optional — defaults come from the workflow session metadata.
+Without an explicit version, the function uses the workflow manifest version and, unless overridden, the run's commit. Commit IDs are shortened to at most seven characters.
+
+## Migration from older functions
+
+Existing exports remain available. Prefer `collectVersions` for new pipelines, but review the output shape when migrating: `processVersionsFromTopic` returns a flat tool map, and `processVersionsFromFile` preserves legacy YAML structure. They do not add workflow metadata. `collectVersions` groups tools by process and includes workflow metadata.
 
 ```nextflow
-// Explicit override
-getWorkflowVersion('2.0.0', 'abc123')
-```
-
-## 4. Helper Functions
-
-These are public `@Function` methods that may be useful during migration but are not needed for most pipelines.
-
-| Function | Purpose |
-|----------|---------|
-| `convertLegacyYamlToEvalSyntax(yamlContent, processName?)` | Converts YAML string to `[process, tool, version]` tuples |
-| `generateYamlFromEvalSyntax(evalData, includeWorkflow?)` | Converts tuples back to YAML for reporting |
-| `workflowVersionToChannel()` | Returns workflow metadata as `[process, name, version]` tuples |
-
-## 5. Migration from Legacy APIs
-
-### 5.1. From `softwareVersionsToYAML`
-
-```nextflow
-// Before (deprecated)
+// Before: channel-aware compatibility API
 softwareVersionsToYAML(ch_versions)
 
-// After
-ch_versions.collect().map { collectVersions(it) }
-```
+// After: collect the channel explicitly, preserving tuples and empty input
+ch_versions.toList().map { collectVersions(it) }
 
-### 5.2. From `processVersionsFromTopic` / `processVersionsFromFile`
-
-```nextflow
-// Before (deprecated)
-processVersionsFromTopic(topicData)
-processVersionsFromFile(fileList)
-
-// After — collectVersions handles both formats
-collectVersions(topicData)
-collectVersions(fileList)
-```
-
-### 5.3. From `processMixedVersionSources`
-
-```nextflow
-// Before (deprecated)
+// Before: already-collected lists of tuples and filenames
 processMixedVersionSources(topicVersions, legacyFiles)
 
-// After — just combine the inputs
+// After: one list containing both formats
 collectVersions(topicVersions + legacyFiles)
 ```
 
-## 6. Deprecated Functions
+| Deprecated export                                          | Replacement for already-collected input          |
+| ---------------------------------------------------------- | ------------------------------------------------ |
+| `softwareVersionsToYAML(versions, options?)`               | `collectVersions(versions, nextflowVersion?)`    |
+| `processMixedVersionSources(topicVersions, versionsFiles)` | `collectVersions(topicVersions + versionsFiles)` |
+| `processVersionsFromTopic(topicData)`                      | `collectVersions(topicData)`                     |
+| `processVersionsFromFile(versionsFiles)`                   | `collectVersions(versionsFiles)`                 |
 
-The following `@Function` methods still work but are deprecated in favour of `collectVersions`:
+The conversion helpers `convertLegacyYamlToEvalSyntax(yamlContent, processName?)`, `generateYamlFromEvalSyntax(evalData, includeWorkflow?)`, and `workflowVersionToChannel()` also remain exported. The first two use flat tool mappings rather than `collectVersions`' process-grouped report; they are not required for mixed-input collection. `workflowVersionToChannel()` returns a list of tuples, not a channel.
 
-- `softwareVersionsToYAML(versions, options?)` — use `collectVersions(input)`
-- `processMixedVersionSources(topicVersions, versionsFiles)` — use `collectVersions(combined)`
-- `processVersionsFromTopic(topicData)` — use `collectVersions(topicData)`
-- `processVersionsFromFile(versionsFiles)` — use `collectVersions(versionsFiles)`
-
-> **Note:** `processVersionsFromYAML` and `workflowVersionToYAML` are internal utilities, not plugin `@Function` calls. Do not import them from `plugin/nf-core-utils`.
+`processVersionsFromYAML` and `workflowVersionToYAML` are internal utilities, **not plugin exports**. Do not import them from `plugin/nf-core-utils`.
