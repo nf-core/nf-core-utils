@@ -239,8 +239,8 @@ String processMixedVersionSources(List<List> topicVersions, List<String> version
 
 **Parameters:**
 
-- `topicVersions` (List<List>): Topic channel data in `[process, name, version]` format
-- `versionsFiles` (List<String>): List of paths to legacy `versions.yml` files
+- `topicVersions` (List\<List\>): Topic channel data in `[process, name, version]` format
+- `versionsFiles` (List\<String\>): List of paths to legacy `versions.yml` files
 
 **Returns:**
 
@@ -358,7 +358,7 @@ String generateYamlFromEvalSyntax(List<List> evalData, boolean includeWorkflow =
 
 **Parameters:**
 
-- `evalData` (List<List>): Topic channel data in `[process, name, version]` format
+- `evalData` (List\<List\>): Topic channel data in `[process, name, version]` format
 - `includeWorkflow` (boolean, optional): Include workflow version information (defaults to true)
 
 **Returns:**
@@ -421,7 +421,7 @@ String processVersionsFromTopic(List<List> topicData)
 
 **Parameters:**
 
-- `topicData` (List<List>): Topic channel data in `[process, name, version]` format
+- `topicData` (List\<List\>): Topic channel data in `[process, name, version]` format
 
 **Returns:**
 
@@ -490,7 +490,7 @@ String processVersionsFromFile(List<String> versionsFiles)
 
 **Parameters:**
 
-- `versionsFiles` (List<String>): List of paths to `versions.yml` files
+- `versionsFiles` (List\<String\>): List of paths to `versions.yml` files
 
 **Returns:**
 

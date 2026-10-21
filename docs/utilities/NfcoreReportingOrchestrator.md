@@ -35,9 +35,9 @@ Map generateComprehensiveReport(
 
 **Parameters:**
 
-- `topicVersions` (List<List>): Version data from topic channels in `[process, name, version]` format
-- `legacyVersions` (List<String>, optional): List of legacy YAML version strings
-- `metaFilePaths` (List<String>, optional): List of paths to module meta.yml files for citations
+- `topicVersions` (List\<List\>): Version data from topic channels in `[process, name, version]` format
+- `legacyVersions` (List\<String\>, optional): List of legacy YAML version strings
+- `metaFilePaths` (List\<String\>, optional): List of paths to module meta.yml files for citations
 - `mqcMethodsYamlPath` (String, optional): Path to MultiQC methods description template
 
 **Returns:**
@@ -129,8 +129,8 @@ Map generateVersionReport(List<List> topicVersions, List<String> legacyVersions 
 
 **Parameters:**
 
-- `topicVersions` (List<List>): Version data from topic channels in `[process, name, version]` format
-- `legacyVersions` (List<String>, optional): List of legacy YAML version strings
+- `topicVersions` (List\<List\>): Version data from topic channels in `[process, name, version]` format
+- `legacyVersions` (List\<String\>, optional): List of legacy YAML version strings
 
 **Returns:**
 
@@ -190,7 +190,7 @@ Map generateCitationReport(List<String> metaFilePaths, String mqcMethodsYamlPath
 
 **Parameters:**
 
-- `metaFilePaths` (List<String>): List of paths to module meta.yml files
+- `metaFilePaths` (List\<String\>): List of paths to module meta.yml files
 - `mqcMethodsYamlPath` (String, optional): Path to MultiQC methods description template
 
 **Returns:**

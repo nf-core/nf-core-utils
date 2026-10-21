@@ -58,8 +58,8 @@ Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths)
 **Parameters:**
 
 - `topicVersions` (List): Collected `versions` topic data — `[process, tool, version]` tuples. Collect with `.collect(flat: false)` so the tuples are preserved (plain `.collect()` flattens them, and the function logs a warning if it receives flattened data).
-- `metaFilePaths` (List<String>): Paths to module `meta.yml` files to resolve citation metadata from.
-- `extraTools` (List<String>, optional): Tool names to cite even though they never emit a version — e.g. a MultiQC plugin like `multiqcsav`. They're resolved from `meta.yml` like everything else (with no version segment), so you can still add a tool by hand: `citationsOnTheFly(versions, meta_yml_paths, ['multiqcsav'])`.
+- `metaFilePaths` (List\<String\>): Paths to module `meta.yml` files to resolve citation metadata from.
+- `extraTools` (List\<String\>, optional): Tool names to cite even though they never emit a version — e.g. a MultiQC plugin like `multiqcsav`. They're resolved from `meta.yml` like everything else (with no version segment), so you can still add a tool by hand: `citationsOnTheFly(versions, meta_yml_paths, ['multiqcsav'])`.
 
 **Returns:**
 
@@ -471,7 +471,7 @@ Map collectCitationsFromFiles(List<String> metaFilePaths)
 
 **Parameters:**
 
-- `metaFilePaths` (List<String>): List of paths to module meta.yml files
+- `metaFilePaths` (List\<String\>): List of paths to module meta.yml files
 
 **Returns:**
 
@@ -510,8 +510,8 @@ Map processMixedCitationSources(List<List> topicCitations, List<String> citation
 
 **Parameters:**
 
-- `topicCitations` (List<List>): Citation data from topic channels
-- `citationFiles` (List<String>): List of meta.yml file paths
+- `topicCitations` (List\<List\>): Citation data from topic channels
+- `citationFiles` (List\<String\>): List of meta.yml file paths
 
 **Returns:**
 
@@ -594,7 +594,7 @@ Map processCitationsFromTopic(List<List> topicData)
 
 **Parameters:**
 
-- `topicData` (List<List>): List of `[module, tool, citation_data]` tuples
+- `topicData` (List\<List\>): List of `[module, tool, citation_data]` tuples
 
 **Returns:**
 
@@ -637,7 +637,7 @@ Map processCitationsFromFile(List<String> citationFiles)
 
 **Parameters:**
 
-- `citationFiles` (List<String>): List of file paths to meta.yml files
+- `citationFiles` (List\<String\>): List of file paths to meta.yml files
 
 **Returns:**
 
