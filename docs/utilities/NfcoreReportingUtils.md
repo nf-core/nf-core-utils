@@ -117,7 +117,7 @@ static Map workflowSummaryMQC(Map summary, List<String> nfMetadataList, Map resu
 **Parameters:**
 
 - `summary` (Map): Map of workflow parameters and metadata
-- `nfMetadataList` (List<String>): List of metadata fields to include from workflow
+- `nfMetadataList` (List\<String\>): List of metadata fields to include from workflow
 - `results` (Map): Map of pipeline results and statistics
 
 **Returns:**
