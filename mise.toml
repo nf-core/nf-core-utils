@@ -20,8 +20,13 @@ rm -rf validation/trace.txt validation/timeline.html validation/report.html
 description = "Run plugin unit tests"
 run = "./gradlew test"
 
+[tasks.check]
+description = "Run unit tests, then install and validate the plugin"
+depends = ["test", "validate"]
+
 [tasks.install]
 description = "Install the plugin into the local Nextflow plugins directory"
+wait_for = ["test"]
 run = "./gradlew install"
 
 [tasks.release]
