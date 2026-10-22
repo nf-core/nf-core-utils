@@ -23,7 +23,7 @@ versions and checksums for Linux and macOS on x64 and ARM64. CI uses the same
 configuration via `jdx/mise-action`.
 
 Make is no longer used: replace `make <target>` with `mise run <target>`.
-Available tasks are `assemble`, `test`, `clean`, `install`, `validate`,
+Available tasks are `assemble`, `test`, `check`, `clean`, `install`, `validate`,
 `update-snapshots`, and `release`. The Gradle wrapper still manages Gradle itself.
 
 Use `mise exec -- <command>` for tools outside a task (for example,
@@ -41,9 +41,14 @@ To build the plugin:
 mise run assemble
 ```
 
-Run unit tests with `mise run test` and end-to-end tests with `mise run validate`.
-Validation installs the plugin first. Regenerate snapshots only for intended
-behavior changes with `mise run update-snapshots`.
+Run all checks with `mise run check`: unit tests finish before plugin installation,
+then startup checks and end-to-end tests run against the installed plugin.
+Validation requires Conda with the `conda-forge` and `bioconda` channels, as in CI.
+
+Run only unit tests with `mise run test`, or install and run end-to-end tests with
+`mise run validate`. Standalone `install` and `validate` do not run unit tests.
+Regenerate snapshots only for intended behavior changes with
+`mise run update-snapshots`.
 
 ### Nextflow compatibility
 
@@ -68,6 +73,10 @@ Gradle's local build cache is enabled by default for builds and unit tests. Unch
 cacheable tasks can restore their outputs even after `./gradlew clean`; Gradle
 invalidates entries when their declared inputs change. Use `--no-build-cache` to
 disable reuse for a run, or `--rerun-tasks` to force task execution.
+
+Mise handles task ordering, not build freshness: each invocation reaches Gradle,
+which decides whether work is up to date or cacheable. Startup and end-to-end
+validation always rerun.
 
 The build and validation workflows use `gradle/actions/setup-gradle` to cache
 Gradle distributions, dependencies, and build outputs between GitHub Actions runs.

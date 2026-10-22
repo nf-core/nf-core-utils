@@ -76,7 +76,7 @@ class NfcoreVersionUtils {
      * <h3>Example Usage</h3>
      * <pre>
      * // From collected channel (most common)
-     * ch_versions.collect().map { versions ->
+     * ch_versions.toList().map { versions ->
      *     NfcoreVersionUtils.collectVersions(versions, workflow.session)
      * }
      *
