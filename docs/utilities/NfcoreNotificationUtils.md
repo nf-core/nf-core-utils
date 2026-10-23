@@ -249,18 +249,18 @@ Emails are delivered with Nextflow's built-in [`sendMail()`](https://docs.seqera
 1. AWS Simple Email Service when `NXF_ENABLE_AWS_SES=true` (requires the `nf-amazon` plugin)
 2. SMTP when the `mail.smtp` config scope is set, for example:
 
-    ```groovy title="nextflow.config"
-    mail {
-        from = 'pipeline@example.com'
-        smtp.host = 'email-smtp.us-east-1.amazonaws.com'
-        smtp.port = 587
-        smtp.user = secrets.SMTP_USER
-        smtp.password = secrets.SMTP_PASSWORD
-        smtp.auth = true
-        smtp.starttls.enable = true
-        smtp.starttls.required = true
-    }
-    ```
+   ```groovy title="nextflow.config"
+   mail {
+       from = 'pipeline@example.com'
+       smtp.host = 'email-smtp.us-east-1.amazonaws.com'
+       smtp.port = 587
+       smtp.user = secrets.SMTP_USER
+       smtp.password = secrets.SMTP_PASSWORD
+       smtp.auth = true
+       smtp.starttls.enable = true
+       smtp.starttls.required = true
+   }
+   ```
 
 3. AWS SES when `AWS_REGION` or `AWS_DEFAULT_REGION` is set and `nf-amazon` is loaded
 4. The local `sendmail` command, then `mail` (the `mail` command sends the plain text only, without attachments)
