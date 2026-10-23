@@ -110,6 +110,10 @@ Gradle project is declared as `[monorepo.projects."gradle::"]` because
 tasks only for changed projects. If multi-project Gradle `include`s are added
 later, remove the `gradle::` override so the Gradle provider can infer membership.
 
+`gradle.properties` includes `org.gradle.java.installations.fromEnv=JAVA_HOME`
+so Gradle toolchains pick up the JDK selected by mise. Verify with
+`mise exec -- ./gradlew -q javaToolchains`.
+
 ## Testing Strategy
 
 ### Test Structure

@@ -42,6 +42,12 @@ Put personal overrides in the ignored `mise.local.toml`. After changing tool
 versions, run `mise lock --platform linux-x64,linux-arm64,macos-x64,macos-arm64`
 and commit both configuration and lockfile.
 
+`gradle.properties` sets `org.gradle.java.installations.fromEnv=JAVA_HOME` so
+Gradle's [toolchain detection](https://mise.jdx.dev/lang/java.html#gradle-toolchains-detection)
+sees mise's selected JDK. Confirm with
+`mise exec -- ./gradlew -q javaToolchains` (run `mise exec -- ./gradlew --stop`
+first if a daemon was started before that property was set).
+
 ## Building
 
 To build the plugin:
