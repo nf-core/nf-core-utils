@@ -44,9 +44,12 @@ and commit both configuration and lockfile.
 
 `gradle.properties` sets `org.gradle.java.installations.fromEnv=JAVA_HOME` so
 Gradle's [toolchain detection](https://mise.jdx.dev/lang/java.html#gradle-toolchains-detection)
-sees mise's selected JDK. Confirm with
+offers mise's selected JDK as a candidate. Confirm with
 `mise exec -- ./gradlew -q javaToolchains` (run `mise exec -- ./gradlew --stop`
-first if a daemon was started before that property was set).
+first if a daemon was started before that property was set). When Gradle itself
+runs on that JDK, the listing shows `Detected by: Current JVM` for the same
+home; `fromEnv` still registers it for toolchain resolution when the daemon JVM
+differs.
 
 ## Building
 
