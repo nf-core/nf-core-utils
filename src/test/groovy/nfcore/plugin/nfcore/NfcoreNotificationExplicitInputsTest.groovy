@@ -8,6 +8,8 @@ import com.sun.net.httpserver.HttpServer
 import nextflow.Nextflow
 import nextflow.Session
 import nextflow.config.Manifest
+import nextflow.mail.Mail
+import nextflow.mail.Mailer
 import nextflow.script.WorkflowMetadata
 import org.slf4j.LoggerFactory
 import spock.util.mop.ConfineMetaClassChanges
@@ -169,59 +171,35 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
 
     // --- sending the completion e-mail ---
 
-    @Issue(["https://github.com/nf-core/nf-core-utils/pull/71", "https://github.com/nf-core/nf-core-utils/issues/74"])
+    @Issue(["https://github.com/nf-core/tools/issues/112", "https://github.com/nf-core/nf-core-utils/issues/65", "https://github.com/nf-core/nf-core-utils/issues/74"])
     @ConfineMetaClassChanges(Nextflow)
-    def 'completionEmail preserves attachments and output when plaintext=#plaintext, sendmail=#sendmailExit, mail=#mailExit, cleanupFails=#cleanupFails, renderFails=#renderFails'() {
+    def 'completionEmail sends through Nextflow sendMail when plaintext=#plaintext, logo=#hasLogo, maxSize=#maxSize, sendFails=#sendFails, cleanupFails=#cleanupFails'() {
         given:
-        def assets = tempDir.resolve('assets').toFile()
-        assets.mkdirs()
-        new File(assets, 'email_template.txt').text = 'Plain summary'
-        new File(assets, 'email_template.html').text = '<p>HTML summary</p>'
-        new File(assets, 'sendmail_template.txt').text = '''<%
-def report = new File("$mqcFile")
-out << 'Content-Disposition: attachment; filename="' << report.name << '"' << System.lineSeparator()
-out << report.bytes.encodeBase64().toString()
-new File("$projectDir/attachment-path").text = report.path
-%>'''
-        if (renderFails) {
-            new File(assets, 'sendmail_template.txt') << '<% throw new IllegalStateException("broken template") %>'
+        def assets = Files.createDirectories(tempDir.resolve('assets'))
+        assets.resolve('email_template.txt').text = 'Plain summary'
+        assets.resolve('email_template.html').text = '<p>HTML summary <img src="cid:nfcorepipelinelogo"></p>'
+        def logo = assets.resolve('nf-core-review_logo_light.png')
+        if (hasLogo) {
+            logo.bytes = [1, 2, 3] as byte[]
         }
-        if (cleanupFails) {
-            new File(assets, 'sendmail_template.txt') << '''<%
-report.delete()
-report.mkdir()
-new File(report, 'keep').text = 'prevent deletion'
-%>'''
-        }
-        // This unused path must not prevent sending or saving the reports.
-        tempDir.resolve('.sendmail_tmp.html').toFile().mkdir()
-        def zip = zipWithReport('<html>report</html>')
-        def fs = FileSystems.newFileSystem(URI.create("jar:${zip.toUri()}"), [:])
+        // Registered by URI, so that the outdir URI resolves to this file system instance
+        def fs = FileSystems.newFileSystem(URI.create("jar:${zipWithReport('<html>report</html>').toUri()}"), [:])
         def outdir = fs.getPath('/results')
-        def metadata = Mock(WorkflowMetadata) {
-            getLaunchDir() >> tempDir
-            getProjectDir() >> tempDir
-            getSuccess() >> true
-        }
-        def session = Stub(Session) {
-            getManifest() >> Stub(Manifest) { getName() >> 'review'; getVersion() >> '1.0' }
-            getConfig() >> [params: [max_multiqc_email_size: '1 MB']]
-            getWorkflowMetadata() >> metadata
-        }
-        Nextflow.metaClass.static.getSession = { -> session }
-        [sendmail: sendmailExit, mail: mailExit].each { name, status ->
-            tempDir.resolve(name).toFile().text = """#!/bin/sh
-cat > "\$0.body"
-echo finished > "\$0.finished"
-exit ${status}
-"""
-        }
-        GroovySpy(NfcoreNotificationUtils, global: true)
-        NfcoreNotificationUtils.emailCommands(_, _, _, _, _, _) >> {
-            assert Files.readString(outdir.resolve('pipeline_info/pipeline_report.html')) == '<p>HTML summary</p>'
+        stubSession(true, maxSize)
+        def sent = []
+        def staged = []
+        Nextflow.metaClass.static.sendMail = { Closure params ->
             assert Files.readString(outdir.resolve('pipeline_info/pipeline_report.txt')) == 'Plain summary'
-            callRealMethod().collect { entry ->
-                entry + [command: ['sh', tempDir.resolve(entry.name).toString()] + entry.command.drop(1)]
+            def mail = mailOf(params)
+            staged.addAll(mail.attachments.findAll { !it.contentId }*.file)
+            if (sendFails) {
+                throw new IOException('SMTP unavailable')
+            }
+            def mime = new ByteArrayOutputStream()
+            new Mailer().createMimeMessage(mail).writeTo(mime)
+            sent << [mail: mail, mime: mime.toString('UTF-8')]
+            if (cleanupFails) {
+                staged.each { it.delete(); it.mkdir(); new File(it, 'keep').text = 'prevent deletion' }
             }
         }
         def appender = captureLogsFor(NfcoreNotificationUtils)
@@ -231,73 +209,61 @@ exit ${status}
 
         then:
         noExceptionThrown()
-        tempDir.resolve('sendmail.finished').toFile().exists() == !plaintext
-        tempDir.resolve('mail.finished').toFile().exists() == (plaintext || sendmailExit != 0)
-        plaintext || tempDir.resolve('sendmail.body').toFile().text == (renderFails ? '<p>HTML summary</p>' : 'Content-Disposition: attachment; filename="multiqc_report.html"\nPGh0bWw+cmVwb3J0PC9odG1sPg==')
-        !(plaintext || sendmailExit != 0) || tempDir.resolve('mail.body').toFile().text == (plaintext ? 'Plain summary' : '<p>HTML summary</p>')
-        logMessages(appender).count { it.contains('Sent summary e-mail') } == (deliveredBy ? 1 : 0)
-        !deliveredBy || logMessages(appender).any { it.contains("(${deliveredBy})-") }
-        logMessages(appender).any { it.contains('[review] Could not send the summary e-mail') } == !deliveredBy
-        Files.readString(outdir.resolve('pipeline_info/pipeline_report.html')) == '<p>HTML summary</p>'
+        Files.readString(outdir.resolve('pipeline_info/pipeline_report.html')) == '<p>HTML summary <img src="cid:nfcorepipelinelogo"></p>'
         Files.readString(outdir.resolve('pipeline_info/pipeline_report.txt')) == 'Plain summary'
         Files.readString(fs.getPath('/multiqc_report.html')) == '<html>report</html>'
-        tempDir.resolve('attachment-path').toFile().exists() == !plaintext
-        if (!plaintext) {
-            def attachment = new File(tempDir.resolve('attachment-path').toFile().text)
-            assert attachment.exists() == cleanupFails
-            assert attachment.parentFile.exists() == cleanupFails
+        sent.size() == (sendFails ? 0 : 1)
+        if (!sendFails) {
+            Mail mail = sent.first().mail
+            def attachments = mail.attachments ?: []
+            verifyAll {
+                mail.to == 'test@example.invalid'
+                mail.subject == '[nf-core/review] Successful: happy_run'
+                mail.text == 'Plain summary'
+                mail.body == (plaintext ? null : '<p>HTML summary <img src="cid:nfcorepipelinelogo"></p>')
+                attachments.findAll { it.contentId }.collect { [it.contentId, it.disposition, it.file] } ==
+                    (logoAttached ? [['<nfcorepipelinelogo>', 'inline', logo.toFile()]] : [])
+                attachments.findAll { !it.contentId }*.fileName == (reportAttached ? ['multiqc_report.html'] : [])
+                sent.first().mime.contains('Content-ID: <nfcorepipelinelogo>') == logoAttached
+                sent.first().mime.contains('Content-Disposition: attachment; filename=multiqc_report.html') == reportAttached
+                sent.first().mime.contains('<html>report</html>') == reportAttached
+            }
         }
+        // The local copy of the remote report is removed after sending, also when sending fails.
+        staged.size() == (reportAttached ? 1 : 0)
+        staged.every { it.exists() == cleanupFails && it.parentFile.exists() == cleanupFails }
+        logMessages(appender).count { it.contains('Sent summary e-mail to test@example.invalid') } == (sendFails ? 0 : 1)
+        logMessages(appender).any { it == '[nf-core/review] Could not send the summary e-mail to test@example.invalid: SMTP unavailable' } == sendFails
         logMessages(appender).any { it.contains('Could not remove temporary file') } == cleanupFails
-        logMessages(appender).any { it.contains('Failed to render sendmail template') } == renderFails
 
         cleanup:
         detachAppender(appender)
         fs?.close()
-        if (tempDir.resolve('attachment-path').toFile().exists()) {
-            def attachment = new File(tempDir.resolve('attachment-path').toFile().text)
-            attachment.deleteDir()
-            // Do not remove the system temp directory when running against the old implementation.
-            if (attachment.parentFile.name.startsWith('multiqc_report')) attachment.parentFile.deleteDir()
-        }
+        staged.each { it.deleteDir(); it.parentFile.deleteDir() }
 
         where:
-        plaintext | sendmailExit | mailExit | cleanupFails | renderFails || deliveredBy
-        false     | 0            | 0        | false        | false       || 'sendmail'
-        false     | 75           | 0        | false        | false       || 'mail'
-        false     | 75           | 1        | false        | false       || null
-        true      | 0            | 0        | false        | false       || 'mail'
-        false     | 0            | 0        | true         | false       || 'sendmail'
-        false     | 0            | 0        | false        | true        || 'sendmail'
+        plaintext | hasLogo | maxSize | sendFails | cleanupFails || logoAttached | reportAttached
+        false     | true    | '1 MB'  | false     | false        || true         | true
+        false     | false   | '1 MB'  | false     | false        || false        | true
+        false     | true    | '10 B'  | false     | false        || true         | false
+        true      | true    | '1 MB'  | false     | false        || false        | false
+        false     | true    | '1 MB'  | true      | false        || true         | true
+        false     | true    | '1 MB'  | false     | true         || true         | true
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/issues/74")
     @ConfineMetaClassChanges(Nextflow)
-    def 'completionEmail skips attachment access and sendmail rendering for #scenario'() {
+    def 'completionEmail skips attachment access for #scenario'() {
         given:
         def assets = Files.createDirectories(tempDir.resolve('assets'))
         assets.resolve('email_template.txt').text = 'Plain summary'
         assets.resolve('email_template.html').text = '<p>HTML summary</p>'
-        assets.resolve('sendmail_template.txt').text = '<% throw new IllegalStateException("sendmail must not render") %>'
         def fs = FileSystems.newFileSystem(zipWithReport('<html>report</html>'))
         def report = fs.getPath('/multiqc_report.html')
         fs.close() // Any size check or download now fails visibly, as in the issue reproducer.
-        def metadata = Mock(WorkflowMetadata) {
-            getLaunchDir() >> tempDir
-            getProjectDir() >> tempDir
-            getSuccess() >> success
-        }
-        def session = Stub(Session) {
-            getManifest() >> Stub(Manifest) { getName() >> 'review'; getVersion() >> '1.0' }
-            getConfig() >> [params: [max_multiqc_email_size: '1 MB']]
-            getWorkflowMetadata() >> metadata
-        }
-        Nextflow.metaClass.static.getSession = { -> session }
-        def script = tempDir.resolve('mail.sh')
-        script.text = 'cat > "$0.body"'
-        GroovySpy(NfcoreNotificationUtils, global: true)
-        NfcoreNotificationUtils.emailCommands(_, _, _, _, _, _) >> {
-            callRealMethod().collect { entry -> entry + [command: ['sh', script.toString()]] }
-        }
+        stubSession(success, '1 MB')
+        def sent = []
+        Nextflow.metaClass.static.sendMail = { Closure params -> sent << mailOf(params) }
         def appender = captureLogsFor(NfcoreNotificationUtils)
 
         when:
@@ -305,8 +271,8 @@ exit ${status}
 
         then:
         !appender.list.any { it.level == Level.WARN || it.level == Level.ERROR }
-        tempDir.resolve('mail.sh.body').toFile().exists() == plaintext
-        !plaintext || tempDir.resolve('mail.sh.body').text == 'Plain summary'
+        sent*.to == (plaintext ? [email ?: emailOnFail] : [])
+        sent.every { it.text == 'Plain summary' && it.body == null && !it.attachments }
         tempDir.resolve('results/pipeline_info/pipeline_report.html').text == '<p>HTML summary</p>'
         tempDir.resolve('results/pipeline_info/pipeline_report.txt').text == 'Plain summary'
 
@@ -319,36 +285,6 @@ exit ${status}
         'no recipient'            | false   | null                   | null                   | false
         'plaintext success'       | true    | 'test@example.invalid' | null                   | true
         'plaintext failure only'  | false   | null                   | 'fail@example.invalid' | true
-    }
-
-    @Issue("https://github.com/nf-core/nf-core-utils/pull/71")
-    def 'mail command deadline terminates a process that stalls with consumeInput=#consumeInput'() {
-        given:
-        def pidFile = tempDir.resolve('pid').toFile()
-        def script = tempDir.resolve('stall.sh').toFile()
-        script.text = """#!/bin/sh
-echo \$\$ > '${pidFile}'
-${consumeInput ? 'cat > /dev/null' : ''}
-exec sleep 60
-"""
-        def started = System.nanoTime()
-
-        when:
-        NfcoreNotificationUtils.runEmailCommand(['sh', script.toString()], 'x' * 1_048_576, 1)
-
-        then:
-        def error = thrown(IOException)
-        error.message.contains('timed out')
-        (System.nanoTime() - started) / 1e9 < 10
-        !ProcessHandle.of(pidFile.text.trim().toLong()).map { it.isAlive() }.orElse(false)
-
-        cleanup:
-        if (pidFile.exists()) {
-            ProcessHandle.of(pidFile.text.trim().toLong()).ifPresent { it.destroyForcibly() }
-        }
-
-        where:
-        consumeInput << [true, false]
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/pull/71")
@@ -391,20 +327,6 @@ exec sleep 60
 
         where:
         status << [200, 401]
-    }
-
-    def 'emailCommands sends the text e-mail with mail for a plaintext e-mail'() {
-        expect:
-        NfcoreNotificationUtils.emailCommands(true, 'subject', 'a@b.c', 'sendmail', '<p>html</p>', 'text') ==
-            [[command: ['mail', '-s', 'subject', 'a@b.c'], input: 'text', name: 'mail']]
-    }
-
-    def 'emailCommands tries sendmail with the full e-mail, then mail with the HTML e-mail'() {
-        expect:
-        NfcoreNotificationUtils.emailCommands(false, 'subject', 'a@b.c', 'sendmail', '<p>html</p>', 'text') == [
-            [command: ['sendmail', '-t'], input: 'sendmail', name: 'sendmail'],
-            [command: ['mail', '-s', 'subject', '--content-type=text/html', 'a@b.c'], input: '<p>html</p>', name: 'mail'],
-        ]
     }
 
     // --- reports on a remote file system (#65): a zip file system stands for object storage ---
@@ -500,14 +422,16 @@ exec sleep 60
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/issues/65")
-    def 'localReport keeps a local report, and warns about a missing remote one'() {
+    def 'localReport keeps a local report under the size limit, and warns about a missing remote one'() {
         given:
         def local = java.nio.file.Files.createTempFile('report', '.html')
+        local.text = 'x'
         def fs = java.nio.file.FileSystems.newFileSystem(zipWithReport('x'))
         def appender = captureLogsFor(NfcoreNotificationUtils)
 
         expect:
-        NfcoreNotificationUtils.localReport(local, 0) == local
+        NfcoreNotificationUtils.localReport(local, 1024) == local
+        NfcoreNotificationUtils.localReport(local, 1) == null
         NfcoreNotificationUtils.localReport(null, 1024) == null
         NfcoreNotificationUtils.localReport(fs.getPath('/missing.html'), 1024) == null
         logMessages(appender).any { it.contains('Could not read the MultiQC report') }
@@ -530,6 +454,31 @@ exec sleep 60
     }
 
     // --- helpers ---
+
+    private void stubSession(boolean success, String maxMultiqcEmailSize) {
+        def metadata = Mock(WorkflowMetadata) {
+            getLaunchDir() >> tempDir
+            getProjectDir() >> tempDir
+            getRunName() >> 'happy_run'
+            getSuccess() >> success
+        }
+        def session = Stub(Session) {
+            getManifest() >> Stub(Manifest) { getName() >> 'nf-core/review'; getVersion() >> '1.0' }
+            getConfig() >> [params: [max_multiqc_email_size: maxMultiqcEmailSize]]
+            getWorkflowMetadata() >> metadata
+        }
+        Nextflow.metaClass.static.getSession = { -> session }
+    }
+
+    /** Evaluate a sendMail closure the way {@link Mailer#send(Closure)} does, without sending it. */
+    private static Mail mailOf(Closure params) {
+        def mail = new Mail()
+        def copy = (Closure) params.clone()
+        copy.resolveStrategy = Closure.DELEGATE_FIRST
+        copy.delegate = mail
+        copy.call(mail)
+        return mail
+    }
 
     private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {
         def appender = new ListAppender<ILoggingEvent>()
