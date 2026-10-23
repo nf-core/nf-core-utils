@@ -17,14 +17,16 @@
 package nfcore.plugin.nfcore
 
 import groovy.util.logging.Slf4j
+import nextflow.Nextflow
 import nextflow.Session
 import nextflow.extension.FilesEx
 import nextflow.file.FileHelper
+import nextflow.mail.Mail
+import nextflow.util.MemoryUnit
 
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.concurrent.TimeUnit
 
 /**
  * Utility functions for nf-core pipeline notifications
@@ -34,6 +36,8 @@ class NfcoreNotificationUtils {
 
     // Reusable template engine instance to avoid creating multiple instances
     private static final groovy.text.GStringTemplateEngine TEMPLATE_ENGINE = new groovy.text.GStringTemplateEngine()
+
+    private static final String LOGO_CONTENT_ID = '<nfcorepipelinelogo>'
 
     /**
      * Process summary parameters from a Map, extracting nested group data
@@ -159,9 +163,9 @@ class NfcoreNotificationUtils {
     }
 
     /**
-     * The report as a local file, as the sendmail template of the pipelines reads it with `new File()`: a report on
-     * another file system is copied under its original basename in a temporary directory.
-     * The caller must remove both the copy and its directory after rendering, but never the original local report.
+     * The report as a local file to attach: a report on another file system is copied under its original basename in
+     * a temporary directory, which Nextflow's mail attachment would otherwise leave behind.
+     * The caller must remove both the copy and its directory after sending, but never the original local report.
      *
      * @param report The MultiQC report
      * @param maxSize The maximum size of the report to attach, in bytes
@@ -174,12 +178,11 @@ class NfcoreNotificationUtils {
         Path directory = null
         Path local = null
         try {
-            if (isLocal(report)) {
-                return report
-            }
-            // not downloaded when the template would not attach it
             if (Files.size(report) >= maxSize) {
                 return null
+            }
+            if (isLocal(report)) {
+                return report
             }
             directory = Files.createTempDirectory('multiqc_report')
             local = directory.resolve(report.fileName.toString())
@@ -206,52 +209,6 @@ class NfcoreNotificationUtils {
 
     static boolean isLocal(Path path) {
         return path.fileSystem == FileSystems.getDefault()
-    }
-
-    /**
-     * The commands to send the completion e-mail with, tried in order: sendmail with the HTML e-mail and the MultiQC
-     * report, then mail with the HTML e-mail, or mail with the text e-mail for a plaintext e-mail.
-     *
-     * @return The command, its input and its name for the logs, for each
-     */
-    static List<Map> emailCommands(boolean plaintextEmail, String subject, String emailAddress,
-                                   String sendmailContent, String emailHtml, String emailTxt) {
-        if (plaintextEmail) {
-            return [[command: ['mail', '-s', subject, emailAddress], input: emailTxt, name: 'mail']]
-        }
-        return [
-            [command: ['sendmail', '-t'], input: sendmailContent, name: 'sendmail'],
-            [command: ['mail', '-s', subject, '--content-type=text/html', emailAddress], input: emailHtml, name: 'mail'],
-        ]
-    }
-
-    /** Execute a mail command with a deadline, including time spent reading its input. */
-    static int runEmailCommand(List<String> command, String input, long timeoutSeconds) {
-        Path message = Files.createTempFile('nfcore-email-', '.txt')
-        Process process = null
-        try {
-            Files.writeString(message, input)
-            // A file avoids a blocking parent-side pipe write when the mail command stops reading.
-            process = new ProcessBuilder(command)
-                .redirectInput(message.toFile())
-                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                .redirectError(ProcessBuilder.Redirect.DISCARD)
-                .start()
-            if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-                throw new IOException("Mail command timed out after ${timeoutSeconds} seconds")
-            }
-            return process.exitValue()
-        } finally {
-            try {
-                if (process?.isAlive()) {
-                    process.descendants().withCloseable { children -> children.forEach { it.destroyForcibly() } }
-                    process.destroyForcibly()
-                    process.waitFor(5, TimeUnit.SECONDS)
-                }
-            } finally {
-                deleteTemporaryFile(message)
-            }
-        }
     }
 
     /**
@@ -359,40 +316,6 @@ class NfcoreNotificationUtils {
             log.warn("Failed to render email templates: ${e.message}")
         }
 
-        def sendmail_html = email_html  // Fallback content
-        // Only sendmail can attach a report. Still render and persist the summaries when no email is sent.
-        if (email_address && !plaintext_email) {
-            Path mqc_report = null
-            Path mqc_file = null
-            try {
-                def sf = new File("${wf?.projectDir}/assets/sendmail_template.txt")
-                if (sf.exists()) {
-                    def max_multiqc_email_size = 0
-                    if (config?.params?.containsKey('max_multiqc_email_size')) {
-                        try {
-                            max_multiqc_email_size = (config.params.max_multiqc_email_size as nextflow.util.MemoryUnit).toBytes()
-                        } catch (Exception e) {
-                            log.warn("Failed to parse max_multiqc_email_size: ${e.message}")
-                        }
-                    }
-                    mqc_report = getSingleReport(multiqc_report, workflowName)
-                    mqc_file = localReport(mqc_report, max_multiqc_email_size as long)
-                    def smail_fields = [email: email_address, subject: subject, email_txt: email_txt, email_html: email_html, projectDir: "${wf?.projectDir}", mqcFile: mqc_file, mqcMaxSize: max_multiqc_email_size]
-                    def sendmail_template = TEMPLATE_ENGINE.createTemplate(sf).make(smail_fields)
-                    sendmail_html = sendmail_template.toString()
-                } else {
-                    log.warn("Sendmail template not found: ${sf.absolutePath}")
-                }
-            } catch (Exception e) {
-                log.warn("Failed to render sendmail template: ${e.message}")
-            } finally {
-                if (mqc_file != null && mqc_file != mqc_report) {
-                    deleteTemporaryFile(mqc_file)
-                    deleteTemporaryFile(mqc_file.parent)
-                }
-            }
-        }
-
         // Persist the reports before attempting external mail delivery.
         if (outdir != null) {
             try {
@@ -421,27 +344,66 @@ class NfcoreNotificationUtils {
             log.warn("Cannot write email reports - output directory is null")
         }
 
-        // Send the e-mail
+        if (!email_address) {
+            return
+        }
+
+        // Nextflow's mailer honours the `mail` config scope and NXF_ENABLE_AWS_SES, then falls back to sendmail/mail.
         def colors = logColours(monochrome_logs) as Map
-        if (email_address) {
-            def sent = emailCommands(plaintext_email, subject, email_address, sendmail_html, email_html, email_txt).find { command ->
-                try {
-                    def exitCode = runEmailCommand(command.command as List<String>, command.input as String, 30)
-                    if (exitCode != 0) {
-                        log.debug("Could not send the summary e-mail with ${command.name}: exit status ${exitCode}")
-                        return false
+        Path mqc_report = null
+        Path mqc_file = null
+        try {
+            Path logo = null
+            if (!plaintext_email) {
+                mqc_report = getSingleReport(multiqc_report, workflowName)
+                mqc_file = localReport(mqc_report, maxMultiqcEmailSize(config))
+                logo = pipelineLogo(wf?.projectDir, workflowName)
+            }
+            Nextflow.sendMail { Mail mail ->
+                mail.to(email_address)
+                mail.subject(subject)
+                mail.text(email_txt)
+                if (!plaintext_email) {
+                    mail.body(email_html)
+                    mail.type('text/html')
+                    if (logo != null) {
+                        mail.attach([contentId: LOGO_CONTENT_ID, disposition: 'inline'], logo)
                     }
-                    log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address} (${command.name})-")
-                    return true
-                } catch (Exception e) {
-                    log.debug("Could not send the summary e-mail with ${command.name}: ${e}")
-                    return false
+                    if (mqc_file != null) {
+                        mail.attach(mqc_file)
+                    }
                 }
             }
-            if (!sent) {
-                log.warn("[${workflowName}] Could not send the summary e-mail to ${email_address}")
+            log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address}-")
+        } catch (Exception e) {
+            log.warn("[${workflowName}] Could not send the summary e-mail to ${email_address}: ${e.message}")
+        } finally {
+            if (mqc_file != null && mqc_file != mqc_report) {
+                deleteTemporaryFile(mqc_file)
+                deleteTemporaryFile(mqc_file.parent)
             }
         }
+    }
+
+    private static long maxMultiqcEmailSize(Map config) {
+        if (!config?.params?.containsKey('max_multiqc_email_size')) {
+            return 0
+        }
+        try {
+            return (config.params.max_multiqc_email_size as MemoryUnit).toBytes()
+        } catch (Exception e) {
+            log.warn("Failed to parse max_multiqc_email_size: ${e.message}")
+            return 0
+        }
+    }
+
+    /** The logo the HTML e-mail template shows as `cid:nfcorepipelinelogo`, null when the pipeline has none. */
+    static Path pipelineLogo(Path projectDir, String workflowName) {
+        if (projectDir == null) {
+            return null
+        }
+        def logo = projectDir.resolve("assets/${workflowName.replace('/', '-')}_logo_light.png")
+        return Files.exists(logo) ? logo : null
     }
 
     /**

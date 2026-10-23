@@ -244,11 +244,34 @@ workflow.onComplete {
 
 Email notifications provide comprehensive pipeline reports that users can refer to later.
 
-HTML emails try `sendmail` first, then `mail` if the command cannot run, exits with a nonzero status, or exceeds its 30-second deadline. Plaintext emails use `mail` directly. Input is supplied through a temporary file so a command that stops reading cannot block the caller. Timed-out commands are terminated, with up to five seconds allowed for process cleanup.
+Emails are delivered with Nextflow's built-in [`sendMail()`](https://docs.seqera.io/nextflow/notifications), so `--email` uses the same mail settings as `nextflow run -N`. Nextflow picks the transport in this order:
 
-Success means the local mail command exited successfully, not that the recipient received the email. HTML and text reports are saved under `outdir/pipeline_info` before delivery is attempted. If all attempts fail, the function logs a warning. Temporary attachment copies are removed after rendering; cleanup failures are warnings and do not prevent saving reports or attempting delivery.
+1. AWS Simple Email Service when `NXF_ENABLE_AWS_SES=true` (requires the `nf-amazon` plugin)
+2. SMTP when the `mail.smtp` config scope is set, for example:
 
-MultiQC attachments retain the original report basename, including reports on remote filesystems such as object storage. Remote reports are copied into a temporary directory only when an HTML email has a recipient and a sendmail template exists; both the copy and directory are removed after rendering, including when rendering fails. Reports at or above `params.max_multiqc_email_size` are not downloaded. Plaintext emails and successful runs with only `email_on_fail` do not read or download attachments or render the sendmail template. The HTML and text summary reports are still saved even when no email is sent.
+    ```groovy title="nextflow.config"
+    mail {
+        from = 'pipeline@example.com'
+        smtp.host = 'email-smtp.us-east-1.amazonaws.com'
+        smtp.port = 587
+        smtp.user = secrets.SMTP_USER
+        smtp.password = secrets.SMTP_PASSWORD
+        smtp.auth = true
+        smtp.starttls.enable = true
+        smtp.starttls.required = true
+    }
+    ```
+
+3. AWS SES when `AWS_REGION` or `AWS_DEFAULT_REGION` is set and `nf-amazon` is loaded
+4. The local `sendmail` command, then `mail` (the `mail` command sends the plain text only, without attachments)
+
+The `onComplete` handler runs on the machine that launched the pipeline, so mail credentials and environment variables must be available there, not in task containers.
+
+HTML emails contain the rendered `assets/email_template.html` with `assets/email_template.txt` as the plain-text alternative, the pipeline logo `assets/<name>_logo_light.png` (the manifest name with `/` replaced by `-`) inline as `cid:nfcorepipelinelogo`, and the MultiQC report when it is smaller than `params.max_multiqc_email_size`. Plaintext emails (`plaintext_email`) contain only the text template. `assets/sendmail_template.txt` is no longer used.
+
+HTML and text reports are saved under `outdir/pipeline_info` before delivery is attempted. If delivery fails, the function logs a warning and the run is not failed. Success means the mail transport accepted the message, not that the recipient received it.
+
+MultiQC attachments retain the original report basename, including reports on remote filesystems such as object storage. Remote reports are copied into a temporary directory only when an HTML email has a recipient; both the copy and directory are removed after sending, including when sending fails, and cleanup failures are warnings. Reports at or above `params.max_multiqc_email_size` are not attached or downloaded. Some transports, such as AWS SES, limit the message size further. Plaintext emails and successful runs with only `email_on_fail` do not read or download attachments. The HTML and text summary reports are still saved even when no email is sent.
 
 **Understanding Email Structure**
 
@@ -739,9 +762,11 @@ workflow.onComplete {
 
 **Common Causes:**
 
-1. SMTP configuration not set up in Nextflow config
+1. No mail transport available: configure `mail.smtp` or `NXF_ENABLE_AWS_SES`, or install `sendmail` on the launch machine (see section 3.2)
 2. Email parameters not provided
 3. MultiQC report path incorrect
+
+The warning `Could not send the summary e-mail to ...` includes the error from Nextflow's mailer. Set `mail.debug = true` to log the SMTP session.
 
 **Solution:**
 
