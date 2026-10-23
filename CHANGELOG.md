@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Enabled the mise workspace project graph for this single-root Gradle plugin (`monorepo_root`, `config_roots`, and an explicit `gradle::` project) so `mise tasks graph` and `mise run --affected` work without literal `include` directives in `settings.gradle`.
 - Added a manually triggered release workflow that validates the plugin, publishes to the Nextflow Plugin Registry, verifies a fresh download, creates the GitHub release, and dispatches the documentation update.
 - Added full end-to-end CI validation for every supported stable Nextflow line (25.10, 26.04, and 26.10), retaining 25.10.4 as an additional startup-validation regression target.
 

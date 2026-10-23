@@ -22,9 +22,18 @@ by the Gradle plugin), Nextflow 26.10.2, and nf-test 0.9.3. `mise.lock` records 
 versions and checksums for Linux and macOS on x64 and ARM64. CI uses the same
 configuration via `jdx/mise-action`.
 
+The repo is a mise [monorepo root](https://mise.jdx.dev/tasks/workspace-graph.html)
+with a single Gradle workspace project (`gradle::` at `.`). There are no
+`include` directives in `settings.gradle`, so the project is declared under
+`[monorepo.projects]` rather than inferred. Inspect it with
+`mise tasks graph` (add `--explain` or `--json` as needed). Run tasks only in
+projects touched by a change with `mise run --affected <task>` (for example
+`mise run --affected test`).
+
 Make is no longer used: replace `make <target>` with `mise run <target>`.
 Available tasks are `assemble`, `test`, `clean`, `install`, `validate`,
-`update-snapshots`, and `release`. The Gradle wrapper still manages Gradle itself.
+`update-snapshots`, and `release` (also as `//:assemble`, and so on). The Gradle
+wrapper still manages Gradle itself.
 
 Use `mise exec -- <command>` for tools outside a task (for example,
 `mise exec -- nextflow -version`), or optionally
