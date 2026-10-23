@@ -15,6 +15,7 @@ Guide for autonomous contributors (LLMs and humans).
    - `mise install --locked`
    - `mise run assemble`
    - `mise run test`
+4. Optional: `mise tasks graph` / `mise run --affected <task>` (Gradle project is `gradle::`).
 
 ## Guardrails
 

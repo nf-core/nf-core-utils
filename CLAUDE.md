@@ -103,6 +103,13 @@ Define common development tasks and lock Java 21, Nextflow, and nf-test for loca
 development and CI. Use `mise tasks ls` to list commands. Gradle itself is managed
 by the Gradle wrapper.
 
+`monorepo_root = true` enables the workspace project graph. The single root
+Gradle project is declared as `[monorepo.projects."gradle::"]` because
+`settings.gradle` has no literal `include` directives for mise to parse. Use
+`mise tasks graph` to inspect projects and `mise run --affected <task>` to run
+tasks only for changed projects. If multi-project Gradle `include`s are added
+later, remove the `gradle::` override so the Gradle provider can infer membership.
+
 ## Testing Strategy
 
 ### Test Structure
