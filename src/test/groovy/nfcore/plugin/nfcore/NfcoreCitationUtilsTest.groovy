@@ -1036,6 +1036,30 @@ ${tool_bibliography}
         result.multiqcsav.citation == 'multiqcsav (<a href=\'https://github.com/MultiQC/MultiQC_SAV/\'>https://github.com/MultiQC/MultiQC_SAV/</a>)'
     }
 
+    // --- toolName fallback for DOI-only entries ---
+
+    def "formatBibliographyFromData uses toolName fallback for DOI-only entries (no publication)"() {
+        given:
+        def metaFile = File.createTempFile('doi_only', '.yml')
+        metaFile.text = '''
+        name: test_module
+        tools:
+          - samtools:
+              doi: "10.1093/bioinformatics/btp352"
+              homepage: "https://www.htslib.org/"
+        '''.stripIndent()
+
+        when:
+        def result = NfcoreCitationUtils.generateModuleToolCitation(metaFile)
+
+        then: 'bibliography entry includes tool name even without publication block'
+        result.samtools.bibliography.contains('samtools')
+        result.samtools.bibliography.contains('10.1093/bioinformatics/btp352')
+
+        cleanup:
+        metaFile.delete()
+    }
+
     // --- log capture helpers ---
 
     private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {

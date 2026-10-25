@@ -251,7 +251,7 @@ class NfcoreCitationUtils {
         def pub = citationData.publication instanceof Map ? citationData.publication : [:]
         def author = pub.author?.toString()?.replaceAll(/\.\s*$/, '') ?: ""
         def year = pub.year ? "(${pub.year})" : ""
-        def title = pub.title ?: ""
+        def title = pub.title ?: (citationData.doi ? toolName : "")
         def source = pub.source ?: ""
         def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
         def url = citationData.homepage ?: ""

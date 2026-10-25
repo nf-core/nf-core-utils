@@ -157,7 +157,54 @@ class NfUtilsExtension extends PluginExtensionPoint {
         return nfcore.plugin.references.ReferencesUtils.getReferencesValue(referencesList, param, attribute)
     }
 
-    // --- Methods from NextflowPipelineExtension ---
+    /**
+     * Select the first valid reference row from a list of datasheet rows.
+     * Validates that the list is non-empty and has exactly one record.
+     * @param rows List of reference rows from the datasheet
+     * @return The first row as a Map
+     * @throws IllegalArgumentException if list is empty or has multiple records
+     */
+    @Function
+    Map selectReferenceRow(List rows) {
+        if (!(rows instanceof List) || rows.isEmpty()) {
+            throw new IllegalArgumentException("Reference datasheet did not contain any genome records")
+        }
+        if (rows.size() > 1) {
+            def names = rows.collect { row -> referenceMeta(row).genome }.findAll { name -> name }
+            throw new IllegalArgumentException("Reference datasheet has multiple genomes (${names.join(', ')}). Use a datasheet with one genome record.")
+        }
+        return rows[0] instanceof Map ? rows[0] : (rows[0] instanceof List && rows[0][0] instanceof Map ? rows[0][0] : [:])
+    }
+
+    /**
+     * Extract reference metadata from a datasheet row, filtering nulls and empty values.
+     * Handles both Map and List [Map, ...] formats.
+     * @param row A reference row from the datasheet
+     * @return Map of metadata attributes
+     */
+    @Function
+    Map referenceMeta(Map row) {
+        if (row instanceof Map) {
+            return row.findAll { _key, value -> value != null && value != '' }
+        }
+        if (row instanceof List && row && row[0] instanceof Map) {
+            Map meta = row[0] as Map
+            return meta.findAll { _key, value -> value != null && value != '' }
+        }
+        throw new IllegalArgumentException("Reference datasheet record is not a genome mapping: ${row}")
+    }
+
+    /**
+     * Build the datasheet URL for a genome key from the references datasheets path.
+     * The catalogue tree is source/assembly.yml; keys are used verbatim (no dot transformation).
+     * @param genomeKey The genome key (e.g., 'Ensembl/GRCh38')
+     * @param basePath The base URL for references datasheets (defaults to params.references_datasheets_path)
+     * @return The datasheet URL
+     */
+    @Function
+    String referencesDatasheetUrl(String genomeKey, String basePath = null) {
+        return nfcore.plugin.references.ReferencesUtils.referencesDatasheetUrl(genomeKey, basePath)
+    }
     /**
      * Generate version string for a workflow
      * @param version The workflow version (optional)
