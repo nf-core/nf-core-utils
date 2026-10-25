@@ -27,6 +27,11 @@ import nextflow.util.MemoryUnit
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.FutureTask
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * Utility functions for nf-core pipeline notifications
@@ -350,38 +355,58 @@ class NfcoreNotificationUtils {
 
         // Nextflow's mailer honours the `mail` config scope and NXF_ENABLE_AWS_SES, then falls back to sendmail/mail.
         def colors = logColours(monochrome_logs) as Map
-        Path mqc_report = null
-        Path mqc_file = null
-        try {
-            Path logo = null
-            if (!plaintext_email) {
-                mqc_report = getSingleReport(multiqc_report, workflowName)
-                mqc_file = localReport(mqc_report, maxMultiqcEmailSize(config))
-                logo = pipelineLogo(wf?.projectDir, workflowName)
-            }
-            Nextflow.sendMail { Mail mail ->
-                mail.to(email_address)
-                mail.subject(subject)
-                mail.text(email_txt)
+        def delivery = new FutureTask<Void>({
+            Path mqc_report = null
+            Path mqc_file = null
+            try {
+                Path logo = null
                 if (!plaintext_email) {
-                    mail.body(email_html)
-                    mail.type('text/html')
-                    if (logo != null) {
-                        mail.attach([contentId: LOGO_CONTENT_ID, disposition: 'inline'], logo)
-                    }
-                    if (mqc_file != null) {
-                        mail.attach(mqc_file)
+                    mqc_report = getSingleReport(multiqc_report, workflowName)
+                    mqc_file = localReport(mqc_report, maxMultiqcEmailSize(config))
+                    logo = pipelineLogo(wf?.projectDir, workflowName)
+                }
+                Nextflow.sendMail { Mail mail ->
+                    mail.to(email_address)
+                    mail.subject(subject)
+                    mail.text(email_txt)
+                    if (!plaintext_email) {
+                        mail.body(email_html)
+                        mail.type('text/html')
+                        if (logo != null) {
+                            mail.attach([contentId: LOGO_CONTENT_ID, disposition: 'inline'], logo)
+                        }
+                        if (mqc_file != null) {
+                            mail.attach(mqc_file)
+                        }
                     }
                 }
+            } finally {
+                // A timed-out transport may ignore interruption and still be reading its attachments.
+                if (mqc_file != null && mqc_file != mqc_report) {
+                    deleteTemporaryFile(mqc_file)
+                    deleteTemporaryFile(mqc_file.parent)
+                }
             }
+            return null
+        } as Callable<Void>)
+        // Socket reads and sendmail stdin writes may not respond to interruption. Never hold up JVM shutdown.
+        def sender = new Thread(delivery, 'nfcore-completion-email')
+        sender.daemon = true
+        try {
+            sender.start()
+            delivery.get(30, TimeUnit.SECONDS)
             log.info("-${colors.purple}[${workflowName}]${colors.green} Sent summary e-mail to ${email_address}-")
+        } catch (TimeoutException e) {
+            log.warn("[${workflowName}] Timed out sending the summary e-mail to ${email_address} after 30 seconds; delivery status is unknown")
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt()
+            log.warn("[${workflowName}] Interrupted while sending the summary e-mail to ${email_address}; delivery status is unknown")
+        } catch (ExecutionException e) {
+            log.warn("[${workflowName}] Could not send the summary e-mail to ${email_address}: ${e.cause?.message}")
         } catch (Exception e) {
             log.warn("[${workflowName}] Could not send the summary e-mail to ${email_address}: ${e.message}")
         } finally {
-            if (mqc_file != null && mqc_file != mqc_report) {
-                deleteTemporaryFile(mqc_file)
-                deleteTemporaryFile(mqc_file.parent)
-            }
+            delivery.cancel(true)
         }
     }
 
