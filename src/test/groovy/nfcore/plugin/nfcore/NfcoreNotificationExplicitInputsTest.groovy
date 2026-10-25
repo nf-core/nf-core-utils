@@ -11,6 +11,7 @@ import nextflow.SysEnv
 import nextflow.config.Manifest
 import nextflow.mail.Mail
 import nextflow.mail.Mailer
+import nextflow.script.ScriptBinding
 import nextflow.script.WorkflowMetadata
 import org.slf4j.LoggerFactory
 import spock.util.mop.ConfineMetaClassChanges
@@ -288,7 +289,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         'plaintext failure only'  | false   | null                   | 'fail@example.invalid' | true
     }
 
-    @Issue("https://github.com/nf-core/nf-core-utils/pull/80")
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/81")
     @See("https://docs.seqera.io/platform-cloud/launch/advanced#environment-variables")
     @ConfineMetaClassChanges(Nextflow)
     def 'completionEmail preserves reports and applies Platform delivery policy for #scenario'() {
@@ -298,7 +299,9 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         assets.resolve('email_template.txt').text = 'Plain summary'
         assets.resolve('email_template.html').text = '<p>HTML summary</p>'
         def session = stubSession(success, '1 MB')
-        session.config.params.putAll(options)
+        // Parser v2 keeps CLI strings in config but resolves typed values in the script binding.
+        session.config.params.putAll(options.collectEntries { key, value -> [key, value.toString()] })
+        session.params.putAll(options)
         session.config.tower = [enabled: monitored]
         def fs = FileSystems.newFileSystem(zipWithReport('<html>report</html>'))
         def report = fs.getPath('/multiqc_report.html')
@@ -521,6 +524,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         def session = Stub(Session) {
             getManifest() >> Stub(Manifest) { getName() >> 'nf-core/review'; getVersion() >> '1.0' }
             getConfig() >> [params: [max_multiqc_email_size: maxMultiqcEmailSize]]
+            getParams() >> new ScriptBinding.ParamsMap()
             getWorkflowMetadata() >> metadata
         }
         Nextflow.metaClass.static.getSession = { -> session }

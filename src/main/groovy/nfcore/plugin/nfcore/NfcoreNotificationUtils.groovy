@@ -350,7 +350,7 @@ class NfcoreNotificationUtils {
         }
 
         // Platform-launched runs have a workflow ID; CLI monitoring alone must not suppress email.
-        def forceEmail = config.params?.containsKey('force_completion_email') && config.params.force_completion_email == true
+        def forceEmail = session.params.containsKey('force_completion_email') && session.params.force_completion_email == true
         if (SysEnv.get('TOWER_WORKFLOW_ID') && !forceEmail) {
             log.info("[${workflowName}] Skipping summary e-mail for a Seqera Platform launch; set params.force_completion_email = true to send it. Platform notifications must be enabled separately.")
             return
