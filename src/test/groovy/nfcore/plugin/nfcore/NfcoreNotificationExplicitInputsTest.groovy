@@ -7,6 +7,7 @@ import ch.qos.logback.core.read.ListAppender
 import com.sun.net.httpserver.HttpServer
 import nextflow.Nextflow
 import nextflow.Session
+import nextflow.SysEnv
 import nextflow.config.Manifest
 import nextflow.mail.Mail
 import nextflow.mail.Mailer
@@ -287,6 +288,61 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         'plaintext failure only'  | false   | null                   | 'fail@example.invalid' | true
     }
 
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/80")
+    @See("https://docs.seqera.io/platform-cloud/launch/advanced#environment-variables")
+    @ConfineMetaClassChanges(Nextflow)
+    def 'completionEmail preserves reports and applies Platform delivery policy for #scenario'() {
+        given:
+        SysEnv.push(environment)
+        def assets = Files.createDirectories(tempDir.resolve('assets'))
+        assets.resolve('email_template.txt').text = 'Plain summary'
+        assets.resolve('email_template.html').text = '<p>HTML summary</p>'
+        def session = stubSession(success, '1 MB')
+        session.config.params.putAll(options)
+        session.config.tower = [enabled: monitored]
+        def fs = FileSystems.newFileSystem(zipWithReport('<html>report</html>'))
+        def report = fs.getPath('/multiqc_report.html')
+        if (!shouldSend) {
+            fs.close() // Muted runs must not inspect or stage the attachment.
+        }
+        def sent = []
+        Nextflow.metaClass.static.sendMail = { Closure params ->
+            def mail = mailOf(params)
+            sent << [to: mail.to, report: mail.attachments.first().file.text]
+        }
+        def appender = captureLogsFor(NfcoreNotificationUtils)
+
+        when:
+        NfcoreNotificationUtils.completionEmail([:], email, emailOnFail, false,
+            tempDir.resolve('results').toString(), true, [report])
+
+        then:
+        sent == (shouldSend ? [[to: email ?: emailOnFail, report: '<html>report</html>']] : [])
+        tempDir.resolve('results/pipeline_info/pipeline_report.html').text == '<p>HTML summary</p>'
+        tempDir.resolve('results/pipeline_info/pipeline_report.txt').text == 'Plain summary'
+        !appender.list.any { it.level == Level.WARN || it.level == Level.ERROR }
+        logMessages(appender).any { it.contains('Skipping summary e-mail') && it.contains('force_completion_email') } == muted
+
+        cleanup:
+        detachAppender(appender)
+        fs?.close()
+        SysEnv.pop()
+
+        where:
+        scenario                    | environment                          | options                         | monitored | success | email                  | emailOnFail            || shouldSend | muted
+        'Platform success'          | [TOWER_WORKFLOW_ID: 'wf-123']         | [:]                             | true      | true    | 'test@example.invalid' | null                   || false      | true
+        'Platform failure only'     | [TOWER_WORKFLOW_ID: 'wf-123']         | [:]                             | true      | false   | null                   | 'fail@example.invalid' || false      | true
+        'explicit false'            | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: false] | true      | true    | 'test@example.invalid' | null                   || false      | true
+        'string false'              | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: 'false'] | true    | true    | 'test@example.invalid' | null                   || false      | true
+        'forced Platform success'   | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: true]  | true      | true    | 'test@example.invalid' | null                   || true       | false
+        'forced Platform failure'   | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: true]  | true      | false   | null                   | 'fail@example.invalid' || true       | false
+        'forced without recipient'  | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: true]  | true      | true    | null                   | 'fail@example.invalid' || false      | false
+        'CLI monitoring'            | [TOWER_ACCESS_TOKEN: 'test-token']    | [:]                             | true      | true    | 'test@example.invalid' | null                   || true       | false
+        'CLI failure monitoring'    | [TOWER_ACCESS_TOKEN: 'test-token']    | [:]                             | true      | false   | null                   | 'fail@example.invalid' || true       | false
+        'empty Platform identifier' | [TOWER_WORKFLOW_ID: '']               | [:]                             | true      | true    | 'test@example.invalid' | null                   || true       | false
+        'ordinary CLI'              | [:]                                  | [:]                             | false     | true    | 'test@example.invalid' | null                   || true       | false
+    }
+
     @Issue("https://github.com/nf-core/nf-core-utils/pull/71")
     @ConfineMetaClassChanges(Nextflow)
     def 'IM notification logs never include webhook credentials for response #status'() {
@@ -455,7 +511,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
 
     // --- helpers ---
 
-    private void stubSession(boolean success, String maxMultiqcEmailSize) {
+    private Session stubSession(boolean success, String maxMultiqcEmailSize) {
         def metadata = Mock(WorkflowMetadata) {
             getLaunchDir() >> tempDir
             getProjectDir() >> tempDir
@@ -468,6 +524,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
             getWorkflowMetadata() >> metadata
         }
         Nextflow.metaClass.static.getSession = { -> session }
+        return session
     }
 
     /** Evaluate a sendMail closure the way {@link Mailer#send(Closure)} does, without sending it. */
