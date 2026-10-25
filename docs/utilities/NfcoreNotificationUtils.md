@@ -271,6 +271,8 @@ HTML emails contain the rendered `assets/email_template.html` with `assets/email
 
 HTML and text reports are saved under `outdir/pipeline_info` before delivery is attempted. If delivery fails, the function logs a warning and the run is not failed. Success means the mail transport accepted the message, not that the recipient received it.
 
+Attachment preparation and delivery run on a daemon thread with a 30-second wait limit. On timeout, the function logs a warning and returns so `onComplete` can finish and Nextflow can stop running tasks. Cancellation is best-effort: a transport that ignores interruption may continue sending, so delivery status is unknown and the function does not retry. The sender removes temporary attachments when it exits, not while it might still be reading them; if it remains blocked until the JVM exits, temporary copies may remain on disk.
+
 MultiQC attachments retain the original report basename, including reports on remote filesystems such as object storage. Remote reports are copied into a temporary directory only when an HTML email has a recipient; both the copy and directory are removed after sending, including when sending fails, and cleanup failures are warnings. Reports at or above `params.max_multiqc_email_size` are not attached or downloaded. Some transports, such as AWS SES, limit the message size further. Plaintext emails and successful runs with only `email_on_fail` do not read or download attachments. The HTML and text summary reports are still saved even when no email is sent.
 
 **Understanding Email Structure**
