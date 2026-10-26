@@ -17,7 +17,7 @@ The References Extension solves this by providing a unified interface that autom
 The extension provides:
 
 - `getGenomeAttribute()`: reads one attribute of the selected genome from `params.genomes` (see [1.2](#12-migration-from-legacy-systems)).
-- `getReferencePath()`, `getReferenceMetadata()` and `getReferenceAttribute()`: resolve references from a references datasheet (see [2](#2-reference-datasheet-resolution)).
+- `getReferencePath()`, `getReferenceMetadata()` and `getReferenceAttribute()`: resolve references from a references datasheet (see [2.1](#21-reference-datasheet-resolution)).
 
 ### 1.2. Migration from Legacy Systems
 
@@ -91,7 +91,9 @@ workflow {
 }
 ```
 
-## 2. Reference Datasheet Resolution
+## 2. Core Functions Reference
+
+### 2.1. Reference Datasheet Resolution
 
 A [references datasheet](https://github.com/nf-core/references-datasheets) describes one genome. Its keys are pipeline reference parameter names.
 
@@ -144,7 +146,30 @@ workflow {
 
 Resolve references once, during pipeline initialisation, and pass the values to workflows as inputs. A `params.x = ...` assignment inside a workflow does not reach included files or config closures.
 
-## 3. What's Next?
+## 3. Best Practices
+
+### 3.1. Reference Organization
+
+:::tip{title="Parameter Naming"}
+Use consistent parameter names across your pipeline:
+
+- `params.fasta` for genome sequences
+- `params.gtf` for gene annotations
+- `params.bed12` for BED format annotations
+- `params.{tool}_index` for tool-specific indices
+
+:::
+
+## 4. Takeaway
+
+The References Extension provides a powerful, flexible system for managing genome references in Nextflow pipelines:
+
+1. **Unified Interface**: Single functions handle both custom files and reference collections
+2. **Smart Resolution**: Automatic parameter precedence with user override support
+3. **iGenomes Integration**: Seamless integration with standardized reference collections
+4. **Pipeline Flexibility**: Users can mix custom and standard references as needed
+
+## 5. What's Next?
 
 - Explore **[NfCore Utilities](NfCoreUtilities.md)** for comprehensive pipeline utilities
 - Learn about **[NextflowPipelineExtension](NextflowPipelineExtension.md)** for core pipeline functions
