@@ -16,9 +16,8 @@ The References Extension solves this by providing a unified interface that autom
 
 The extension provides two families of functions:
 
-- **Datasheet resolution**: `getReferencePath()`, `loadDatasheetFile()`, and `getReferenceAttribute()` resolve references from a single-genome references datasheet, falling back to the `params.genomes` configuration (see [3.3](#33-reference-datasheet-resolution)).
-- **File Resolution**: `getReferencesFile()` - Resolves file paths from parameters or reference metadata
-- **Value Resolution**: `getReferencesValue()` - Retrieves metadata values with parameter override support
+- **Datasheet resolution** (for new pipelines, see [3.3](#33-reference-datasheet-resolution)): `getReferencePath()`, `getReferenceMetadata()`, and `getReferenceAttribute()` resolve references from a single-genome references datasheet, falling back to the `params.genomes` configuration.
+- **Channel-based resolution** (kept for existing pipelines, see [3.1](#31-getreferencesfile---file-path-resolution) and [3.2](#32-getreferencesvalue---metadata-value-resolution)): `getReferencesFile()` resolves file paths and `getReferencesValue()` retrieves metadata values from parameters or reference metadata.
 
 ### 1.2. Migration from Legacy Systems
 
@@ -167,6 +166,8 @@ workflow {
 ```
 
 ## 3. Core Functions Reference
+
+For new pipelines, use the datasheet functions in [3.3](#33-reference-datasheet-resolution). Sections 3.1 and 3.2 document the channel-based API kept for existing pipelines.
 
 ### 3.1. getReferencesFile - File Path Resolution
 
@@ -323,7 +324,7 @@ Resolution goes from the datasheet to the `params.genomes` configuration: a valu
 | Function                  | Purpose                                                                 |
 | ------------------------- | ----------------------------------------------------------------------- |
 | `getReferencePath()`      | Choose the datasheet to load, from `--references` or from `--genome`    |
-| `loadDatasheetFile()`     | Parse the rows returned by `samplesheetToList()` into a metadata map    |
+| `getReferenceMetadata()`  | Turn the rows returned by `samplesheetToList()` into a metadata map     |
 | `getReferenceAttribute()` | Read one attribute from the datasheet, falling back to `params.genomes` |
 
 All three take named arguments.
@@ -332,8 +333,8 @@ All three take named arguments.
 String getReferencePath(Map args)
 // args: references, genome, igenomesIgnore, datasheetPath
 
-Map loadDatasheetFile(Map args)
-// args: datasheet
+Map getReferenceMetadata(Map args)
+// args: rows
 
 Object getReferenceAttribute(Map args)
 // args: param, datasheet, genomeMap, genomeKey
@@ -341,13 +342,13 @@ Object getReferenceAttribute(Map args)
 
 `getReferencePath()` throws when `--references` and `--genome` are both set. It returns the `--references` path as-is, or builds `<datasheetPath>/<genome>.yml` when `--genome` is set together with `--igenomes_ignore`. It returns `null` when there is nothing to load.
 
-`loadDatasheetFile()` throws when the datasheet has no records or more than one genome.
+`getReferenceMetadata()` throws when the rows contain no records or more than one genome.
 
 ```nextflow title="reference_datasheet.nf"
-include { getReferencePath     } from 'plugin/nf-core-utils'
-include { loadDatasheetFile    } from 'plugin/nf-core-utils'
-include { getReferenceAttribute } from 'plugin/nf-core-utils'
-include { samplesheetToList    } from 'plugin/nf-schema'
+include { getReferencePath       } from 'plugin/nf-core-utils'
+include { getReferenceMetadata   } from 'plugin/nf-core-utils'
+include { getReferenceAttribute  } from 'plugin/nf-core-utils'
+include { samplesheetToList      } from 'plugin/nf-schema'
 
 workflow {
     reference_path = getReferencePath(
@@ -357,7 +358,7 @@ workflow {
         datasheetPath: params.references_datasheets_path,
     )
     datasheet = reference_path
-        ? loadDatasheetFile(datasheet: samplesheetToList(reference_path, "${projectDir}/assets/schema_references.json"))
+        ? getReferenceMetadata(rows: samplesheetToList(reference_path, "${projectDir}/assets/schema_references.json"))
         : null
 
     params.fasta = getReferenceAttribute(

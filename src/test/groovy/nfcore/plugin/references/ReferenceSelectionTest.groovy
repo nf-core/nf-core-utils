@@ -182,7 +182,7 @@ class ReferenceSelectionTest extends Specification {
         result[0][1] == 'Homo sapiens'
     }
 
-    // --- getReferencePath / loadDatasheetFile / getReferenceAttribute ---
+    // --- getReferencePath / getReferenceMetadata / getReferenceAttribute ---
 
     def 'getReferencePath prefers an explicit references path'() {
         expect:
@@ -217,27 +217,27 @@ class ReferenceSelectionTest extends Specification {
         thrown(IllegalArgumentException)
     }
 
-    def 'loadDatasheetFile unwraps a samplesheet row'() {
+    def 'getReferenceMetadata unwraps a samplesheet row'() {
         expect:
-        ReferenceSelection.loadDatasheetFile(datasheet: [[[genome: 'GRCh38', fasta: 'a.fa'], null]]) == [genome: 'GRCh38', fasta: 'a.fa']
+        ReferenceSelection.getReferenceMetadata(rows: [[[genome: 'GRCh38', fasta: 'a.fa'], null]]) == [genome: 'GRCh38', fasta: 'a.fa']
     }
 
-    def 'loadDatasheetFile drops empty values'() {
+    def 'getReferenceMetadata drops empty values'() {
         expect:
-        ReferenceSelection.loadDatasheetFile(datasheet: [[[genome: 'GRCh38', fasta: null], null]]) == [genome: 'GRCh38']
+        ReferenceSelection.getReferenceMetadata(rows: [[[genome: 'GRCh38', fasta: null], null]]) == [genome: 'GRCh38']
     }
 
-    def 'loadDatasheetFile rejects an empty datasheet'() {
+    def 'getReferenceMetadata rejects an empty datasheet'() {
         when:
-        ReferenceSelection.loadDatasheetFile(datasheet: [])
+        ReferenceSelection.getReferenceMetadata(rows: [])
 
         then:
         thrown(IllegalArgumentException)
     }
 
-    def 'loadDatasheetFile rejects multiple genomes'() {
+    def 'getReferenceMetadata rejects multiple genomes'() {
         when:
-        ReferenceSelection.loadDatasheetFile(datasheet: [[[genome: 'GRCh38'], null], [[genome: 'GRCh37'], null]])
+        ReferenceSelection.getReferenceMetadata(rows: [[[genome: 'GRCh38'], null], [[genome: 'GRCh37'], null]])
 
         then:
         thrown(IllegalArgumentException)

@@ -95,14 +95,14 @@ class NfUtilsExtension extends PluginExtensionPoint {
     }
 
     /**
-     * Load and extract reference metadata from parsed datasheet rows.
+     * Extract reference metadata from parsed datasheet rows.
      * Accepts named arguments (Groovy style).
-     * @param args Named argument: datasheet
+     * @param args Named argument: rows (output of samplesheetToList)
      * @return Map of reference metadata attributes
      */
     @Function
-    Map loadDatasheetFile(Map args) {
-        return ReferenceSelection.loadDatasheetFile(args)
+    Map getReferenceMetadata(Map args) {
+        return ReferenceSelection.getReferenceMetadata(args)
     }
 
     /**

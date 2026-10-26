@@ -149,13 +149,13 @@ class ReferenceSelection {
     /**
      * Extract reference metadata from parsed datasheet rows.
      *
-     * @param args Named argument: datasheet (output of samplesheetToList)
+     * @param args Named argument: rows (output of samplesheetToList)
      * @return Map of reference metadata attributes
-     * @throws IllegalArgumentException if the datasheet is empty or has multiple records
+     * @throws IllegalArgumentException if the rows are empty or span multiple genomes
      */
-    static Map loadDatasheetFile(Map args) {
-        requireArgs(args, 'loadDatasheetFile', ['datasheet'])
-        return referenceMeta(selectReferenceRow(args.datasheet))
+    static Map getReferenceMetadata(Map args) {
+        requireArgs(args, 'getReferenceMetadata', ['rows'])
+        return referenceMeta(selectReferenceRow(args.rows))
     }
 
     private static String referenceDatasheet(String genomeKey, String basePath) {
