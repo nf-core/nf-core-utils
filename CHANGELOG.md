@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Removed `getReferencesFile()` and `getReferencesValue()`. They had no users and failed at runtime in every release.
+- Removed `getReferencesFile()` and `getReferencesValue()`.
 
 ### Fixed
 
