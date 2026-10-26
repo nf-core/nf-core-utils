@@ -79,7 +79,7 @@ The plugin provides three main extension categories accessible via @Function ann
 
 ### References Extension
 
-- **ReferencesUtils**: `params.genomes` lookup; **ReferenceSelection**: references datasheet resolution
+- **ReferencesUtils**: Handles igenomes and custom reference file resolution
 - Functions: `getGenomeAttribute()`, `getReferencePath()`, `getReferenceMetadata()`, `getReferenceAttribute()`
 
 ### Nextflow Pipeline Extension
