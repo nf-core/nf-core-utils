@@ -165,32 +165,6 @@ class NfUtilsExtension extends PluginExtensionPoint {
         return validationAdapter.checkConfigProvided()
     }
 
-    // --- Methods from ReferencesExtension ---
-    /**
-     * Get references file from a references list or parameters
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The file parameter
-     * @param attribute The attribute to look for in metadata
-     * @param basepath The base path for igenomes
-     * @return A list of reference files
-     */
-    @Function
-    List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
-        return ReferencesUtils.getReferencesFile(referencesList, param, attribute, basepath)
-    }
-
-    /**
-     * Get references value from a references list or parameters
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The value parameter
-     * @param attribute The attribute to look for in metadata
-     * @return A list of reference values
-     */
-    @Function
-    List getReferencesValue(List<List> referencesList, String param, String attribute) {
-        return ReferencesUtils.getReferencesValue(referencesList, param, attribute)
-    }
-
     // --- Methods from NextflowPipelineExtension ---
     /**
      * Generate version string for a workflow

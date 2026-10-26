@@ -71,42 +71,6 @@ class ReferenceSelection {
     }
 
     /**
-     * Get reference files from a references list, using param override or
-     * meta attribute with basepath substitution.
-     *
-     * Delegates to the same logic as {@link nfcore.plugin.ReferencesUtils#getReferencesFile}
-     * but owned by this module.
-     */
-    List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
-        return referencesList.collect { pair ->
-            Map meta = (Map) pair[0]
-            if (param || (meta != null && meta[attribute])) {
-                [meta.subMap(['id']), param ?: (meta[attribute]?.toString()?.replace('${params.igenomes_base}', basepath))]
-            } else {
-                null
-            }
-        }
-    }
-
-    /**
-     * Get reference values from a references list, using param override or
-     * meta attribute.
-     *
-     * Delegates to the same logic as {@link nfcore.plugin.ReferencesUtils#getReferencesValue}
-     * but owned by this module.
-     */
-    List getReferencesValue(List<List> referencesList, String param, String attribute) {
-        return referencesList.collect { pair ->
-            Map meta = (Map) pair[0]
-            if (param || (meta != null && meta[attribute])) {
-                [meta.subMap(['id']), param ?: meta[attribute]]
-            } else {
-                null
-            }
-        }
-    }
-
-    /**
      * Get a reference attribute from a loaded reference datasheet, falling back
      * to the genome configuration.
      *

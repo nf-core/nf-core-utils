@@ -124,64 +124,6 @@ class ReferenceSelectionTest extends Specification {
         sel.resolveFile('bowtie2', '/base') == null
     }
 
-    // --- getReferencesFile / getReferencesValue delegation ---
-
-    def 'getReferencesFile uses param when provided'() {
-        given:
-        def sel = new ReferenceSelection('GRCh38', GENOMES)
-        def refList = [
-            [[id: 'sample1', fasta: '/igenomes/genome.fa'], null]
-        ]
-
-        when:
-        def result = sel.getReferencesFile(refList, '/override.fa', 'fasta', '/base')
-
-        then:
-        result[0][1] == '/override.fa'
-    }
-
-    def 'getReferencesFile falls back to meta attribute with basepath substitution'() {
-        given:
-        def sel = new ReferenceSelection('GRCh38', GENOMES)
-        def refList = [
-            [[id: 'sample1', fasta: '${params.igenomes_base}/genome.fa'], null]
-        ]
-
-        when:
-        def result = sel.getReferencesFile(refList, null, 'fasta', '/data/igenomes')
-
-        then:
-        result[0][1] == '/data/igenomes/genome.fa'
-    }
-
-    def 'getReferencesValue uses param when provided'() {
-        given:
-        def sel = new ReferenceSelection('GRCh38', GENOMES)
-        def refList = [
-            [[id: 'sample1', species: 'Homo sapiens'], null]
-        ]
-
-        when:
-        def result = sel.getReferencesValue(refList, 'override', 'species')
-
-        then:
-        result[0][1] == 'override'
-    }
-
-    def 'getReferencesValue falls back to meta attribute'() {
-        given:
-        def sel = new ReferenceSelection('GRCh38', GENOMES)
-        def refList = [
-            [[id: 'sample1', species: 'Homo sapiens'], null]
-        ]
-
-        when:
-        def result = sel.getReferencesValue(refList, null, 'species')
-
-        then:
-        result[0][1] == 'Homo sapiens'
-    }
-
     // --- getReferencePath / getReferenceMetadata / getReferenceAttribute ---
 
     def 'getReferencePath prefers an explicit references path'() {
