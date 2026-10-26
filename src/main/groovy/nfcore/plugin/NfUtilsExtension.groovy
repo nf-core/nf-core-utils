@@ -176,7 +176,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
-        return nfcore.plugin.references.ReferencesUtils.getReferencesFile(referencesList, param, attribute, basepath)
+        return ReferencesUtils.getReferencesFile(referencesList, param, attribute, basepath)
     }
 
     /**
@@ -188,7 +188,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     List getReferencesValue(List<List> referencesList, String param, String attribute) {
-        return nfcore.plugin.references.ReferencesUtils.getReferencesValue(referencesList, param, attribute)
+        return ReferencesUtils.getReferencesValue(referencesList, param, attribute)
     }
 
     // --- Methods from NextflowPipelineExtension ---
