@@ -14,8 +14,9 @@ The References Extension solves this by providing a unified interface that autom
 
 ### 1.1. Core Capabilities
 
-The extension provides two essential functions:
+The extension provides two families of functions:
 
+- **Datasheet resolution**: `getReferencePath()`, `loadDatasheetFile()`, and `getReferenceAttribute()` resolve references from a single-genome references datasheet, falling back to the `params.genomes` configuration (see [3.3](#33-reference-datasheet-resolution)).
 - **File Resolution**: `getReferencesFile()` - Resolves file paths from parameters or reference metadata
 - **Value Resolution**: `getReferencesValue()` - Retrieves metadata values with parameter override support
 
@@ -312,6 +313,63 @@ workflow {
     }
 }
 ```
+
+### 3.3. Reference Datasheet Resolution
+
+These functions resolve reference parameters from a references datasheet. A datasheet describes exactly one genome, so its keys map directly to pipeline reference parameters.
+
+Resolution goes from the datasheet to the `params.genomes` configuration: a value found in the datasheet wins, otherwise the genome configuration is used.
+
+| Function                  | Purpose                                                                 |
+| ------------------------- | ----------------------------------------------------------------------- |
+| `getReferencePath()`      | Choose the datasheet to load, from `--references` or from `--genome`    |
+| `loadDatasheetFile()`     | Parse the rows returned by `samplesheetToList()` into a metadata map    |
+| `getReferenceAttribute()` | Read one attribute from the datasheet, falling back to `params.genomes` |
+
+All three take named arguments.
+
+```groovy
+String getReferencePath(Map args)
+// args: references, genome, igenomesIgnore, datasheetPath
+
+Map loadDatasheetFile(Map args)
+// args: datasheet
+
+Object getReferenceAttribute(Map args)
+// args: param, datasheet, genomeMap, genomeKey
+```
+
+`getReferencePath()` throws when `--references` and `--genome` are both set. It returns the `--references` path as-is, or builds `<datasheetPath>/<genome>.yml` when `--genome` is set together with `--igenomes_ignore`. It returns `null` when there is nothing to load.
+
+`loadDatasheetFile()` throws when the datasheet has no records or more than one genome.
+
+```nextflow title="reference_datasheet.nf"
+include { getReferencePath     } from 'plugin/nf-core-utils'
+include { loadDatasheetFile    } from 'plugin/nf-core-utils'
+include { getReferenceAttribute } from 'plugin/nf-core-utils'
+include { samplesheetToList    } from 'plugin/nf-schema'
+
+workflow {
+    reference_path = getReferencePath(
+        references: params.references,
+        genome: params.genome,
+        igenomesIgnore: params.igenomes_ignore,
+        datasheetPath: params.references_datasheets_path,
+    )
+    datasheet = reference_path
+        ? loadDatasheetFile(datasheet: samplesheetToList(reference_path, "${projectDir}/assets/schema_references.json"))
+        : null
+
+    params.fasta = getReferenceAttribute(
+        param: 'fasta',
+        datasheet: datasheet,
+        genomeMap: params.genomes,
+        genomeKey: params.genome,
+    )
+}
+```
+
+Load the datasheet once, during pipeline initialisation, then pass the metadata map to the workflow that needs it. Passing a Nextflow value channel requires `.getVal()` at the call site.
 
 ## 4. Integration Patterns
 

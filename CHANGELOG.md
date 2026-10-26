@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `getReferencePath()`, `loadDatasheetFile()`, and `getReferenceAttribute()` to resolve pipeline reference parameters from a references datasheet, falling back to the iGenomes-style genome configuration. They take named arguments and replace the duplicated helpers in nf-core/bamtofastq and nf-core/sarek.
 - Enabled the mise workspace project graph for this single-root Gradle plugin (`monorepo_root`, `config_roots`, and an explicit `gradle::` project) so `mise tasks graph` and `mise run --affected` work without literal `include` directives in `settings.gradle`.
 - Configured Gradle toolchain detection to use mise's `JAVA_HOME` via `org.gradle.java.installations.fromEnv` in `gradle.properties`.
 - Added a manually triggered release workflow that validates the plugin, publishes to the Nextflow Plugin Registry, verifies a fresh download, creates the GitHub release, and dispatches the documentation update.

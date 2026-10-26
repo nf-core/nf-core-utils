@@ -32,6 +32,7 @@ import nfcore.plugin.nfcore.ValidationAdapter
 import nfcore.plugin.nfcore.VersionAdapter
 import nfcore.plugin.nfcore.ReportingAdapter
 import nfcore.plugin.ReferencesUtils
+import nfcore.plugin.references.ReferenceHelpers
 
 /**
  * Thin extension point — delegates to focused adapter modules initialized
@@ -69,6 +70,39 @@ class NfUtilsExtension extends PluginExtensionPoint {
         Map params = session?.getConfig()?.get('params') as Map
         if (!params) params = session?.params as Map
         return ReferencesUtils.getGenomeAttribute(params, attribute)
+    }
+
+    /**
+     * Get a reference attribute from a loaded reference sheet, falling back to genome config.
+     * Accepts named arguments (Groovy style).
+     * @param args Named arguments: param, datasheet, genomeMap, genomeKey
+     * @return The attribute value from sheet or genome config, or null if not found
+     */
+    @Function
+    Object getReferenceAttribute(Map args) {
+        return ReferenceHelpers.getReferenceAttribute(param: args.param, datasheet: args.datasheet, genomeMap: args.genomeMap, genomeKey: args.genomeKey)
+    }
+
+    /**
+     * Determine which reference path to use: explicit --references or built from genome.
+     * Accepts named arguments (Groovy style).
+     * @param args Named arguments: references, genome, igenomesIgnore, datasheetPath
+     * @return The datasheet path to load, or null if neither references nor genome is provided
+     */
+    @Function
+    String getReferencePath(Map args) {
+        return ReferenceHelpers.getReferencePath(references: args.references, genome: args.genome, igenomesIgnore: args.igenomesIgnore, datasheetPath: args.datasheetPath)
+    }
+
+    /**
+     * Load and extract reference metadata from parsed datasheet rows.
+     * Accepts named arguments (Groovy style).
+     * @param args Named argument: datasheet
+     * @return Map of reference metadata attributes
+     */
+    @Function
+    Map loadDatasheetFile(Map args) {
+        return ReferenceHelpers.loadDatasheetFile(datasheet: args.datasheet)
     }
 
     /**
