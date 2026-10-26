@@ -1,124 +1,115 @@
 # References Extension Guide
 
-The References Extension simplifies genome reference and annotation file management in Nextflow pipelines. It provides intelligent parameter resolution that seamlessly handles both user-provided files and standardized reference collections like iGenomes, making your pipelines more flexible and user-friendly.
+The References Extension resolves a pipeline's reference parameters (`fasta`, `gtf`, indices, known sites, ...) from one of two sources:
+
+- The iGenomes-style `params.genomes` configuration, selected with `--genome`.
+- A [references datasheet](https://github.com/nf-core/references-datasheets): a YAML file describing one genome, selected with `--references`, or with `--genome` plus `--igenomes_ignore`.
 
 ## 1. Overview
 
-Managing reference files is a common challenge in bioinformatics pipelines. Users might provide:
+| Function                  | Source           | Purpose                                                                 |
+| ------------------------- | ---------------- | ----------------------------------------------------------------------- |
+| `getGenomeAttribute()`    | `params.genomes` | Read one attribute of the selected genome                               |
+| `getReferencePath()`      | datasheet        | Choose the datasheet to load, from `--references` or from `--genome`    |
+| `getReferenceMetadata()`  | datasheet        | Turn the rows returned by `samplesheetToList()` into a metadata map     |
+| `getReferenceAttribute()` | both             | Read one attribute from the datasheet, falling back to `params.genomes` |
 
-- Custom reference files via parameters
-- References from standardized collections (iGenomes)
-- Mixed approaches depending on the analysis
+Pipelines that only support iGenomes need `getGenomeAttribute()`, as in the nf-core template. Pipelines that accept datasheets use the other three.
 
-The References Extension solves this by providing a unified interface that automatically resolves the appropriate reference source based on user input and pipeline configuration.
+## 2. Genome Configuration Lookup
 
-### 1.1. Core Capabilities
+### 2.1. getGenomeAttribute
 
-The extension provides two families of functions:
-
-- **Datasheet resolution** (for new pipelines, see [3.3](#2-reference-datasheet-resolution)): `getReferencePath()`, `getReferenceMetadata()`, and `getReferenceAttribute()` resolve references from a single-genome references datasheet, falling back to the `params.genomes` configuration.
-- **Genome configuration lookup** (see [1.2](#12-migration-from-legacy-systems)): `getGenomeAttribute()` reads one attribute of the selected genome from `params.genomes`, as used in the nf-core template.
-
-### 1.2. Migration from Legacy Systems
-
-This function is used to retrieve genome attributes in the nf-core TEMPLATE.
-
-It retrieves a specific attribute (such as `fasta`, `gtf`, or index paths) for the selected genome from the `params.genomes` map. It is useful for pipelines that support multiple genomes and need to access reference files or metadata for the currently selected genome.
-
-**Function Signature**
+Returns one attribute (such as `fasta`, `gtf` or an index path) of the genome selected by `params.genome`, read from the `params.genomes` map.
 
 ```groovy
 Object getGenomeAttribute(String attribute)
 ```
 
-or (static utility):
+| Parameter   | Type   | Required | Description                                                  |
+| ----------- | ------ | -------- | ------------------------------------------------------------ |
+| `attribute` | String | Yes      | The attribute name to retrieve (e.g. 'fasta', 'gtf', 'star') |
 
-```groovy
-Object ReferencesUtils.getGenomeAttribute(Map params, String attribute)
-```
+It returns `null` when `params.genome` is unset, the genome is not in `params.genomes`, or the genome has no such attribute.
 
-**Parameters**
-
-| Parameter   | Type   | Required | Description                                                        |
-| ----------- | ------ | -------- | ------------------------------------------------------------------ |
-| `attribute` | String | Yes      | The attribute name to retrieve (e.g. 'fasta', 'gtf', 'star')       |
-| `params`    | Map    | Yes      | (static) The Nextflow params map containing `genome` and `genomes` |
-
-**Return Value**
-
-Returns the value of the requested attribute for the selected genome, or `null` if not found.
-
-**Practical Example**
-
-```groovy
-// Example params structure
-def params = [
-    genome: 'GRCh38',
-    genomes: [
-        GRCh38: [
-            fasta: 's3://bucket/genome.fa',
-            gtf: 's3://bucket/genes.gtf',
-        ],
-        GRCh37: [
-            fasta: 's3://bucket/genome37.fa'
-            star: 's3://bucket/star_index/'
-        ]
-    ]
-]
-
-// Retrieve the FASTA file for the selected genome
-def fasta = ReferencesUtils.getGenomeAttribute(params, 'fasta')
-// Returns: 's3://bucket/genome.fa'
-
-// Retrieve the GTF file
-def gtf = ReferencesUtils.getGenomeAttribute(params, 'gtf')
-// Returns: 's3://bucket/genes.gtf'
-
-// If the attribute or genome is missing, returns null
-def missing = ReferencesUtils.getGenomeAttribute(params, 'star')
-// Returns: null
-```
-
-**Usage in Nextflow**
-
-```nextflow
+```nextflow title="genome_attribute.nf"
 include { getGenomeAttribute } from 'plugin/nf-core-utils'
 
+params.genome = 'GRCh38'
+params.genomes = [
+    GRCh38: [
+        fasta: 's3://bucket/genome.fa',
+        gtf: 's3://bucket/genes.gtf',
+    ],
+]
+
+params.fasta = getGenomeAttribute('fasta') // 's3://bucket/genome.fa'
+params.star = getGenomeAttribute('star')   // null
+
 workflow {
-    // Example: get the FASTA file for the selected genome
-    genome_fasta = getGenomeAttribute('fasta')
-    log.info "Selected genome FASTA: ${genome_fasta}"
+    log.info "Selected genome FASTA: ${params.fasta}"
 }
 ```
 
-## 2. Reference Datasheet Resolution
+## 3. Reference Datasheet Resolution
 
-These functions resolve reference parameters from a references datasheet. A datasheet describes exactly one genome, so its keys map directly to pipeline reference parameters.
+A references datasheet describes exactly one genome, so its keys map directly to pipeline reference parameters. Datasheets for the iGenomes catalogue are published in [nf-core/references-datasheets](https://github.com/nf-core/references-datasheets).
 
-Resolution goes from the datasheet to the `params.genomes` configuration: a value found in the datasheet wins, otherwise the genome configuration is used.
+All three functions take named arguments. A missing argument throws an `IllegalArgumentException`, so pass every argument, even when its value is `null`.
 
-| Function                  | Purpose                                                                 |
-| ------------------------- | ----------------------------------------------------------------------- |
-| `getReferencePath()`      | Choose the datasheet to load, from `--references` or from `--genome`    |
-| `getReferenceMetadata()`  | Turn the rows returned by `samplesheetToList()` into a metadata map     |
-| `getReferenceAttribute()` | Read one attribute from the datasheet, falling back to `params.genomes` |
-
-All three take named arguments.
+### 3.1. getReferencePath
 
 ```groovy
 String getReferencePath(Map args)
 // args: references, genome, igenomesIgnore, datasheetPath
+```
 
+Chooses the datasheet to load:
+
+| Input                                                   | Result                                                     |
+| ------------------------------------------------------- | ---------------------------------------------------------- |
+| `references` set, `genome` unset                        | `references`, unchanged                                    |
+| `genome` set, `igenomesIgnore` true                     | `<datasheetPath>/<genome>.yml`                             |
+| `genome` set, `igenomesIgnore` false                    | `null`: use `getGenomeAttribute()` and the iGenomes config |
+| neither set                                             | `null`                                                     |
+| `references` and `genome` both set                      | throws                                                     |
+| `genome` set, `igenomesIgnore` true, no `datasheetPath` | throws                                                     |
+
+`genome` is a path under `datasheetPath`, so `--genome GATK/GRCh38` loads `<datasheetPath>/GATK/GRCh38.yml`. Trailing slashes on `datasheetPath` are dropped.
+
+A `genome` of `null`, `''` or the string `'null'` counts as unset. A pipeline whose `genome` has a default value can then accept `--references` with `--genome null`.
+
+### 3.2. getReferenceMetadata
+
+```groovy
 Map getReferenceMetadata(Map args)
 // args: rows
+```
 
+Takes the rows returned by `samplesheetToList()` and returns the genome's metadata as a map, without null or empty values. It throws when the datasheet has no records or more than one genome.
+
+`getReferenceMetadata()` reads the meta map of the single row. Map every property in the pipeline's datasheet schema (`assets/schema_references.json`) to `meta`, or that property is dropped:
+
+```json
+"fasta": {
+    "type": "string",
+    "format": "file-path",
+    "meta": ["fasta"]
+}
+```
+
+Datasheet paths may use a `${params.references_base_path}` placeholder instead of a hardcoded root. nf-schema 3.0.0 or later substitutes it when `samplesheetToList()` reads the datasheet.
+
+### 3.3. getReferenceAttribute
+
+```groovy
 Object getReferenceAttribute(Map args)
 // args: param, datasheet, genomeMap, genomeKey
 ```
 
-`getReferencePath()` throws when `--references` and `--genome` are both set. It returns the `--references` path as-is, or builds `<datasheetPath>/<genome>.yml` when `--genome` is set together with `--igenomes_ignore`. It returns `null` when there is nothing to load.
+Returns `datasheet[param]` when the datasheet has a value. Otherwise, it returns `param` from `genomeMap[genomeKey]`, or `null`.
 
-`getReferenceMetadata()` throws when the rows contain no records or more than one genome.
+### 3.4. Example
 
 ```nextflow title="reference_datasheet.nf"
 include { getReferencePath       } from 'plugin/nf-core-utils'
@@ -148,7 +139,7 @@ workflow {
 
 Load the datasheet once, during pipeline initialisation, then pass the metadata map to the workflow that needs it. Passing a Nextflow value channel requires `.getVal()` at the call site.
 
-## 3. What's Next?
+## 4. What's Next?
 
 - Explore **[NfCore Utilities](NfCoreUtilities.md)** for comprehensive pipeline utilities
 - Learn about **[NextflowPipelineExtension](NextflowPipelineExtension.md)** for core pipeline functions

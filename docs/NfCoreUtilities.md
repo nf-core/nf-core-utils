@@ -669,4 +669,4 @@ Explore specialized utilities for specific use cases:
 - **[NfcoreNotificationUtils](utilities/NfcoreNotificationUtils.md)**: Master email and messaging integrations
 - **[NfcoreReportingUtils](utilities/NfcoreReportingUtils.md)**: Advanced MultiQC integration patterns
 - **[NextflowPipelineExtension](NextflowPipelineExtension.md)**: Core pipeline utilities for version and parameter management
-- **[ReferencesExtension](ReferencesExtension.md)**: Handle genome references and igenomes integration
+- **[ReferencesExtension](ReferencesExtension.md)**: Resolve genome references from the iGenomes config or a references datasheet
