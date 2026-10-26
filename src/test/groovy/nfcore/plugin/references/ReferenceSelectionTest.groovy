@@ -200,11 +200,34 @@ class ReferenceSelectionTest extends Specification {
         ReferenceSelection.getReferenceAttribute(param: 'fasta', datasheet: null, genomeMap: null, genomeKey: null) == null
     }
 
-    def 'reference functions reject missing named arguments'() {
+    def 'optional named arguments default to null'() {
+        expect:
+        ReferenceSelection.getReferencePath(references: 'my.yml') == 'my.yml'
+        ReferenceSelection.getReferencePath([:]) == null
+        ReferenceSelection.getReferenceAttribute(param: 'fasta') == null
+        ReferenceSelection.getReferenceAttribute(param: 'gtf', genomeMap: GENOMES, genomeKey: 'GRCh38') == 's3://bucket/genes.gtf'
+    }
+
+    def 'reference functions reject unknown named arguments'() {
         when:
-        ReferenceSelection.getReferencePath(references: null, genome: null)
+        ReferenceSelection.getReferencePath(references: null, igenomeIgnore: true)
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains('igenomeIgnore')
+    }
+
+    def 'reference functions require param and rows'() {
+        when:
+        call()
 
         then:
         thrown(IllegalArgumentException)
+
+        where:
+        call << [
+            { ReferenceSelection.getReferenceAttribute(datasheet: [fasta: 'a.fa']) },
+            { ReferenceSelection.getReferenceMetadata([:]) },
+        ]
     }
 }

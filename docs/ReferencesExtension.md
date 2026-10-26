@@ -55,13 +55,13 @@ workflow {
 
 A references datasheet describes exactly one genome, so its keys map directly to pipeline reference parameters. Datasheets for the iGenomes catalogue are published in [nf-core/references-datasheets](https://github.com/nf-core/references-datasheets).
 
-All three functions take named arguments. A missing argument throws an `IllegalArgumentException`, so pass every argument, even when its value is `null`.
+All three functions take named arguments. Arguments you leave out default to `null`, except `param` for `getReferenceAttribute()` and `rows` for `getReferenceMetadata()`, which are required. An unknown argument name, such as a typo, throws an `IllegalArgumentException`.
 
 ### 3.1. getReferencePath
 
 ```groovy
 String getReferencePath(Map args)
-// args: references, genome, igenomesIgnore, datasheetPath
+// args (all optional, default null): references, genome, igenomesIgnore, datasheetPath
 ```
 
 Chooses the datasheet to load:
@@ -83,7 +83,7 @@ A `genome` of `null`, `''` or the string `'null'` counts as unset. A pipeline wh
 
 ```groovy
 Map getReferenceMetadata(Map args)
-// args: rows
+// args: rows (required)
 ```
 
 Takes the rows returned by `samplesheetToList()` and returns the genome's metadata as a map, without null or empty values. It throws when the datasheet has no records or more than one genome.
@@ -104,7 +104,7 @@ Datasheet paths may use a `${params.references_base_path}` placeholder instead o
 
 ```groovy
 Object getReferenceAttribute(Map args)
-// args: param, datasheet, genomeMap, genomeKey
+// args: param (required); datasheet, genomeMap, genomeKey (optional, default null)
 ```
 
 Returns `datasheet[param]` when the datasheet has a value. Otherwise, it returns `param` from `genomeMap[genomeKey]`, or `null`.

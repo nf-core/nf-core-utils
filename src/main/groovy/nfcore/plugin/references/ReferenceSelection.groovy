@@ -74,11 +74,11 @@ class ReferenceSelection {
      * Get a reference attribute from a loaded reference datasheet, falling back
      * to the genome configuration.
      *
-     * @param args Named arguments: param, datasheet, genomeMap, genomeKey
+     * @param args Named arguments: param (required), datasheet, genomeMap, genomeKey (default null)
      * @return The attribute value from the datasheet or genome config, or null
      */
     static Object getReferenceAttribute(Map args) {
-        requireArgs(args, 'getReferenceAttribute', ['param', 'datasheet', 'genomeMap', 'genomeKey'])
+        args = checkArgs(args, 'getReferenceAttribute', ['param', 'datasheet', 'genomeMap', 'genomeKey'], ['param'])
         def value = args.datasheet ? args.datasheet[args.param] : null
         return value ?: new ReferenceSelection(args.genomeKey, args.genomeMap as Map).getAttribute(args.param)
     }
@@ -86,12 +86,12 @@ class ReferenceSelection {
     /**
      * Determine which reference path to use: explicit --references or built from genome.
      *
-     * @param args Named arguments: references, genome, igenomesIgnore, datasheetPath
+     * @param args Named arguments: references, genome, igenomesIgnore, datasheetPath (all default null)
      * @return The datasheet path to load, or null if neither references nor genome is provided
      * @throws IllegalArgumentException if both references and genome are provided
      */
     static String getReferencePath(Map args) {
-        requireArgs(args, 'getReferencePath', ['references', 'genome', 'igenomesIgnore', 'datasheetPath'])
+        args = checkArgs(args, 'getReferencePath', ['references', 'genome', 'igenomesIgnore', 'datasheetPath'])
         String references = args.references
         String genome = args.genome
         Boolean igenomesIgnore = args.igenomesIgnore
@@ -118,7 +118,7 @@ class ReferenceSelection {
      * @throws IllegalArgumentException if the rows are empty or span multiple genomes
      */
     static Map getReferenceMetadata(Map args) {
-        requireArgs(args, 'getReferenceMetadata', ['rows'])
+        args = checkArgs(args, 'getReferenceMetadata', ['rows'], ['rows'])
         return referenceMeta(selectReferenceRow(args.rows))
     }
 
@@ -153,12 +153,19 @@ class ReferenceSelection {
     }
 
     /**
-     * Reject missing named arguments instead of silently reading them as null.
+     * Check named arguments: an unknown name throws, since a typo would otherwise read as null.
+     * Required names must be passed; any other missing argument defaults to null.
      */
-    private static void requireArgs(Map args, String method, List<String> keys) {
-        def missing = args == null ? keys : keys.findAll { !args.containsKey(it) }
+    private static Map checkArgs(Map args, String method, List<String> known, List<String> required = []) {
+        Map checked = args ?: [:]
+        def unknown = checked.keySet().findAll { !(it in known) }
+        if (unknown) {
+            throw new IllegalArgumentException("${method} got unknown named argument(s): ${unknown.join(', ')}. Expected: ${known.join(', ')}")
+        }
+        def missing = required.findAll { !checked.containsKey(it) }
         if (missing) {
             throw new IllegalArgumentException("${method} is missing named argument(s): ${missing.join(', ')}")
         }
+        return checked
     }
 }
