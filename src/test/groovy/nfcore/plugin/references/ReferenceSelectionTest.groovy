@@ -181,4 +181,88 @@ class ReferenceSelectionTest extends Specification {
         then:
         result[0][1] == 'Homo sapiens'
     }
+
+    // --- getReferencePath / loadDatasheetFile / getReferenceAttribute ---
+
+    def 'getReferencePath prefers an explicit references path'() {
+        expect:
+        ReferenceSelection.getReferencePath(references: 'my.yml', genome: null, igenomesIgnore: false, datasheetPath: null) == 'my.yml'
+    }
+
+    def 'getReferencePath builds the catalogue path'() {
+        expect:
+        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: 'https://host/') == 'https://host/Ensembl/GRCh38.yml'
+        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: 's3://bucket/refs//') == 's3://bucket/refs/Ensembl/GRCh38.yml'
+    }
+
+    def 'getReferencePath requires a datasheet base path'() {
+        when:
+        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: '')
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def 'getReferencePath returns null without a source'() {
+        expect:
+        ReferenceSelection.getReferencePath(references: null, genome: 'GRCh38', igenomesIgnore: false, datasheetPath: null) == null
+        ReferenceSelection.getReferencePath(references: null, genome: 'null', igenomesIgnore: true, datasheetPath: 'x') == null
+    }
+
+    def 'getReferencePath rejects references and genome together'() {
+        when:
+        ReferenceSelection.getReferencePath(references: 'my.yml', genome: 'GRCh38', igenomesIgnore: false, datasheetPath: null)
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def 'loadDatasheetFile unwraps a samplesheet row'() {
+        expect:
+        ReferenceSelection.loadDatasheetFile(datasheet: [[[genome: 'GRCh38', fasta: 'a.fa'], null]]) == [genome: 'GRCh38', fasta: 'a.fa']
+    }
+
+    def 'loadDatasheetFile drops empty values'() {
+        expect:
+        ReferenceSelection.loadDatasheetFile(datasheet: [[[genome: 'GRCh38', fasta: null], null]]) == [genome: 'GRCh38']
+    }
+
+    def 'loadDatasheetFile rejects an empty datasheet'() {
+        when:
+        ReferenceSelection.loadDatasheetFile(datasheet: [])
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def 'loadDatasheetFile rejects multiple genomes'() {
+        when:
+        ReferenceSelection.loadDatasheetFile(datasheet: [[[genome: 'GRCh38'], null], [[genome: 'GRCh37'], null]])
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def 'getReferenceAttribute prefers the datasheet value'() {
+        expect:
+        ReferenceSelection.getReferenceAttribute(param: 'fasta', datasheet: [fasta: 'sheet.fa'], genomeMap: GENOMES, genomeKey: 'GRCh38') == 'sheet.fa'
+    }
+
+    def 'getReferenceAttribute falls back to the genome map'() {
+        expect:
+        ReferenceSelection.getReferenceAttribute(param: 'gtf', datasheet: [fasta: 'sheet.fa'], genomeMap: GENOMES, genomeKey: 'GRCh38') == 's3://bucket/genes.gtf'
+    }
+
+    def 'getReferenceAttribute returns null without a datasheet or genome'() {
+        expect:
+        ReferenceSelection.getReferenceAttribute(param: 'fasta', datasheet: null, genomeMap: null, genomeKey: null) == null
+    }
+
+    def 'reference functions reject missing named arguments'() {
+        when:
+        ReferenceSelection.getReferencePath(references: null, genome: null)
+
+        then:
+        thrown(IllegalArgumentException)
+    }
 }

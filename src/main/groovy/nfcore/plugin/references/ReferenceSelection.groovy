@@ -105,4 +105,96 @@ class ReferenceSelection {
             }
         }
     }
+
+    /**
+     * Get a reference attribute from a loaded reference datasheet, falling back
+     * to the genome configuration.
+     *
+     * @param args Named arguments: param, datasheet, genomeMap, genomeKey
+     * @return The attribute value from the datasheet or genome config, or null
+     */
+    static Object getReferenceAttribute(Map args) {
+        requireArgs(args, 'getReferenceAttribute', ['param', 'datasheet', 'genomeMap', 'genomeKey'])
+        def value = args.datasheet ? args.datasheet[args.param] : null
+        return value ?: new ReferenceSelection(args.genomeKey, args.genomeMap as Map).getAttribute(args.param)
+    }
+
+    /**
+     * Determine which reference path to use: explicit --references or built from genome.
+     *
+     * @param args Named arguments: references, genome, igenomesIgnore, datasheetPath
+     * @return The datasheet path to load, or null if neither references nor genome is provided
+     * @throws IllegalArgumentException if both references and genome are provided
+     */
+    static String getReferencePath(Map args) {
+        requireArgs(args, 'getReferencePath', ['references', 'genome', 'igenomesIgnore', 'datasheetPath'])
+        String references = args.references
+        String genome = args.genome
+        Boolean igenomesIgnore = args.igenomesIgnore
+        String datasheetPath = args.datasheetPath
+        genome = genome in [null, 'null'] ? null : genome
+
+        if (references && genome) {
+            throw new IllegalArgumentException("Use either --references or --genome, not both.")
+        }
+        if (references) {
+            return references
+        }
+        if (genome && igenomesIgnore) {
+            return referenceDatasheet(genome, datasheetPath)
+        }
+        return null
+    }
+
+    /**
+     * Extract reference metadata from parsed datasheet rows.
+     *
+     * @param args Named argument: datasheet (output of samplesheetToList)
+     * @return Map of reference metadata attributes
+     * @throws IllegalArgumentException if the datasheet is empty or has multiple records
+     */
+    static Map loadDatasheetFile(Map args) {
+        requireArgs(args, 'loadDatasheetFile', ['datasheet'])
+        return referenceMeta(selectReferenceRow(args.datasheet))
+    }
+
+    private static String referenceDatasheet(String genomeKey, String basePath) {
+        if (!basePath) {
+            throw new IllegalArgumentException("references_datasheets_path is empty; cannot build datasheet URL for genome '${genomeKey}'")
+        }
+        basePath = basePath.replaceAll(/\/+$/, '')
+        return "${basePath}/${genomeKey}.yml"
+    }
+
+    private static Object selectReferenceRow(List rows) {
+        if (!(rows instanceof List) || rows.isEmpty()) {
+            throw new IllegalArgumentException("Reference datasheet did not contain any genome records")
+        }
+        if (rows.size() > 1) {
+            def names = rows.collect { row -> referenceMeta(row).genome }.findAll { name -> name }
+            throw new IllegalArgumentException("Reference datasheet has multiple genomes (${names.join(', ')}). Use a datasheet with one genome record.")
+        }
+        return rows[0]
+    }
+
+    private static Map referenceMeta(row) {
+        if (row instanceof Map) {
+            return row.findAll { _key, value -> value != null && value != '' }
+        }
+        if (row instanceof List && row && row[0] instanceof Map) {
+            Map meta = row[0] as Map
+            return meta.findAll { _key, value -> value != null && value != '' }
+        }
+        throw new IllegalArgumentException("Reference datasheet record is not a genome mapping: ${row}")
+    }
+
+    /**
+     * Reject missing named arguments instead of silently reading them as null.
+     */
+    private static void requireArgs(Map args, String method, List<String> keys) {
+        def missing = args == null ? keys : keys.findAll { !args.containsKey(it) }
+        if (missing) {
+            throw new IllegalArgumentException("${method} is missing named argument(s): ${missing.join(', ')}")
+        }
+    }
 }

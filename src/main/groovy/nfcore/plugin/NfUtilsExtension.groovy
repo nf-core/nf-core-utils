@@ -32,7 +32,7 @@ import nfcore.plugin.nfcore.ValidationAdapter
 import nfcore.plugin.nfcore.VersionAdapter
 import nfcore.plugin.nfcore.ReportingAdapter
 import nfcore.plugin.ReferencesUtils
-import nfcore.plugin.references.ReferenceHelpers
+import nfcore.plugin.references.ReferenceSelection
 
 /**
  * Thin extension point — delegates to focused adapter modules initialized
@@ -80,7 +80,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     Object getReferenceAttribute(Map args) {
-        return ReferenceHelpers.getReferenceAttribute(param: args.param, datasheet: args.datasheet, genomeMap: args.genomeMap, genomeKey: args.genomeKey)
+        return ReferenceSelection.getReferenceAttribute(args)
     }
 
     /**
@@ -91,7 +91,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     String getReferencePath(Map args) {
-        return ReferenceHelpers.getReferencePath(references: args.references, genome: args.genome, igenomesIgnore: args.igenomesIgnore, datasheetPath: args.datasheetPath)
+        return ReferenceSelection.getReferencePath(args)
     }
 
     /**
@@ -102,7 +102,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     Map loadDatasheetFile(Map args) {
-        return ReferenceHelpers.loadDatasheetFile(datasheet: args.datasheet)
+        return ReferenceSelection.loadDatasheetFile(args)
     }
 
     /**
