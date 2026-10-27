@@ -13,7 +13,9 @@
                 "Pipeline execution complete - notification functions will be tested in completion handlers",
                 "Testing notification functions in completion handler",
                 "=== Testing completionSummary() function ===",
+                "-\u001b[0;35m[unknown]\u001b[0;32m Pipeline completed successfully\u001b[0m-",
                 "\u2705 completionSummary(colored) completed successfully",
+                "-[unknown] Pipeline completed successfully-",
                 "\u2705 completionSummary(monochrome) completed successfully",
                 "=== Testing completionEmail() function ===",
                 "\u2705 completionEmail exercised",
@@ -23,13 +25,16 @@
                 "\u2705 completionSummary() - Pipeline completion logging tested",
                 "\u2705 completionEmail() - Email notification functionality tested",
                 "\u2705 imNotification() - Instant messenger integration tested",
-                "Notification system functions tested successfully! \ud83d\ude80"
+                "Notification system functions tested successfully! \ud83d\ude80",
+                "WARN: Cannot send IM notification - hook URL is null or empty",
+                "WARN: Email template not found: [PATH]/notification-system/assets/email_template.txt",
+                "WARN: HTML email template not found: [PATH]/notification-system/assets/email_template.html"
             ]
         ],
-        "timestamp": "2026-05-22T12:33:54.880159",
         "meta": {
-            "nf-test": "0.9.5",
-            "nextflow": "25.10.3"
-        }
+            "nf-test": "0.9.3",
+            "nextflow": "25.10.4"
+        },
+        "timestamp": "2026-10-17T07:29:07.250466311"
     }
 }

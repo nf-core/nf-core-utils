@@ -31,7 +31,7 @@ import java.nio.file.Path
  * Implements utility functions for Nextflow pipelines that were previously
  * available in the utils_nextflow_pipeline subworkflow.
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NextflowPipelineUtils')
 @CompileStatic
 class NextflowPipelineUtils {
 

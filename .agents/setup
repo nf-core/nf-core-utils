@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+java_home=/usr/lib/jvm/temurin-21
+if [[ ! -x "$java_home/bin/java" ]]; then
+    case "$(uname -m)" in
+        x86_64) arch=x64 ;;
+        aarch64) arch=aarch64 ;;
+        *) echo "Unsupported JDK architecture: $(uname -m)" >&2; exit 1 ;;
+    esac
+    download_dir=$(mktemp -d)
+    trap 'rm -rf "$download_dir"' EXIT
+    curl -fsSL --retry 3 "https://api.adoptium.net/v3/binary/latest/21/ga/linux/$arch/jdk/hotspot/normal/eclipse" -o "$download_dir/jdk.tar.gz"
+    sudo mkdir -p "$java_home"
+    sudo tar -xzf "$download_dir/jdk.tar.gz" -C "$java_home" --strip-components=1
+fi
+
+for tool in java javac jar; do
+    sudo update-alternatives --install "/usr/bin/$tool" "$tool" "$java_home/bin/$tool" 2100
+done
+
+# Warm dependencies and build outputs for the orb snapshot.
+./gradlew --no-daemon assemble test

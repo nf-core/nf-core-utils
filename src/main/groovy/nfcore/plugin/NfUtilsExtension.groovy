@@ -32,6 +32,7 @@ import nfcore.plugin.nfcore.ValidationAdapter
 import nfcore.plugin.nfcore.VersionAdapter
 import nfcore.plugin.nfcore.ReportingAdapter
 import nfcore.plugin.ReferencesUtils
+import nfcore.plugin.references.ReferenceSelection
 
 /**
  * Thin extension point — delegates to focused adapter modules initialized
@@ -39,7 +40,7 @@ import nfcore.plugin.ReferencesUtils
  *
  * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §5
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfUtilsExtension')
 class NfUtilsExtension extends PluginExtensionPoint {
 
     private Session session
@@ -69,6 +70,39 @@ class NfUtilsExtension extends PluginExtensionPoint {
         Map params = session?.getConfig()?.get('params') as Map
         if (!params) params = session?.params as Map
         return ReferencesUtils.getGenomeAttribute(params, attribute)
+    }
+
+    /**
+     * Get a reference attribute from a loaded reference sheet, falling back to genome config.
+     * Accepts named arguments (Groovy style).
+     * @param args Named arguments: param, datasheet, genomeMap, genomeKey
+     * @return The attribute value from sheet or genome config, or null if not found
+     */
+    @Function
+    Object getReferenceAttribute(Map args) {
+        return ReferenceSelection.getReferenceAttribute(args)
+    }
+
+    /**
+     * Determine which reference path to use: explicit --references or built from genome.
+     * Accepts named arguments (Groovy style).
+     * @param args Named arguments: references, genome, igenomesIgnore, datasheetPath
+     * @return The datasheet path to load, or null if neither references nor genome is provided
+     */
+    @Function
+    String getReferencePath(Map args) {
+        return ReferenceSelection.getReferencePath(args)
+    }
+
+    /**
+     * Extract reference metadata from parsed datasheet rows.
+     * Accepts named arguments (Groovy style).
+     * @param args Named argument: rows (output of samplesheetToList)
+     * @return Map of reference metadata attributes
+     */
+    @Function
+    Map getReferenceMetadata(Map args) {
+        return ReferenceSelection.getReferenceMetadata(args)
     }
 
     /**
@@ -131,80 +165,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
         return validationAdapter.checkConfigProvided()
     }
 
-    // --- Methods from ReferencesExtension ---
-    /**
-     * Get references file from a references list or parameters
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The file parameter
-     * @param attribute The attribute to look for in metadata
-     * @param basepath The base path for igenomes
-     * @return A list of reference files
-     */
-    @Function
-    List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
-        return nfcore.plugin.references.ReferencesUtils.getReferencesFile(referencesList, param, attribute, basepath)
-    }
-
-    /**
-     * Get references value from a references list or parameters
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The value parameter
-     * @param attribute The attribute to look for in metadata
-     * @return A list of reference values
-     */
-    @Function
-    List getReferencesValue(List<List> referencesList, String param, String attribute) {
-        return nfcore.plugin.references.ReferencesUtils.getReferencesValue(referencesList, param, attribute)
-    }
-
-    /**
-     * Select the first valid reference row from a list of datasheet rows.
-     * Validates that the list is non-empty and has exactly one record.
-     * @param rows List of reference rows from the datasheet
-     * @return The first row as a Map
-     * @throws IllegalArgumentException if list is empty or has multiple records
-     */
-    @Function
-    Map selectReferenceRow(List rows) {
-        if (!(rows instanceof List) || rows.isEmpty()) {
-            throw new IllegalArgumentException("Reference datasheet did not contain any genome records")
-        }
-        if (rows.size() > 1) {
-            def names = rows.collect { row -> referenceMeta(row).genome }.findAll { name -> name }
-            throw new IllegalArgumentException("Reference datasheet has multiple genomes (${names.join(', ')}). Use a datasheet with one genome record.")
-        }
-        return rows[0] instanceof Map ? rows[0] : (rows[0] instanceof List && rows[0][0] instanceof Map ? rows[0][0] : [:])
-    }
-
-    /**
-     * Extract reference metadata from a datasheet row, filtering nulls and empty values.
-     * Handles both Map and List [Map, ...] formats.
-     * @param row A reference row from the datasheet
-     * @return Map of metadata attributes
-     */
-    @Function
-    Map referenceMeta(Map row) {
-        if (row instanceof Map) {
-            return row.findAll { _key, value -> value != null && value != '' }
-        }
-        if (row instanceof List && row && row[0] instanceof Map) {
-            Map meta = row[0] as Map
-            return meta.findAll { _key, value -> value != null && value != '' }
-        }
-        throw new IllegalArgumentException("Reference datasheet record is not a genome mapping: ${row}")
-    }
-
-    /**
-     * Build the datasheet URL for a genome key from the references datasheets path.
-     * The catalogue tree is source/assembly.yml; keys are used verbatim (no dot transformation).
-     * @param genomeKey The genome key (e.g., 'Ensembl/GRCh38')
-     * @param basePath The base URL for references datasheets (defaults to params.references_datasheets_path)
-     * @return The datasheet URL
-     */
-    @Function
-    String referencesDatasheetUrl(String genomeKey, String basePath = null) {
-        return nfcore.plugin.references.ReferencesUtils.referencesDatasheetUrl(genomeKey, basePath)
-    }
+    // --- Methods from NextflowPipelineExtension ---
     /**
      * Generate version string for a workflow
      * @param version The workflow version (optional)

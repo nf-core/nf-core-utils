@@ -23,6 +23,7 @@ import nextflow.Session
  * Implements utility functions for handling reference files and values
  * that were previously available in the utils_references subworkflow.
  */
+@CompileStatic
 class ReferencesUtils {
 
     private Session session
@@ -77,105 +78,5 @@ class ReferencesUtils {
         if (!genome.containsKey(attribute)) return null
 
         return genome.get(attribute)
-    }
-
-    /**
-     * Get references file from a references list or parameters
-     *
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The file parameter
-     * @param attribute The attribute to look for in metadata
-     * @param basepath The base path for igenomes
-     * @return A list of reference files
-     */
-    static List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
-        return referencesList.collect { pair ->
-            Map meta = (Map) pair[0]
-            if (param || (meta != null && meta[attribute])) {
-                [meta.subMap(['id']), param ?: (meta[attribute]?.toString()?.replace('${params.igenomes_base}', basepath))]
-            } else {
-                null
-            }
-        }
-    }
-
-    /**
-     * Get references value from a references list or parameters
-     *
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The value parameter
-     * @param attribute The attribute to look for in metadata
-     * @return A list of reference values
-     */
-    static List getReferencesValue(List<List> referencesList, String param, String attribute) {
-        return referencesList.collect { pair ->
-            Map meta = (Map) pair[0]
-            if (param || (meta != null && meta[attribute])) {
-                [meta.subMap(['id']), param ?: meta[attribute]]
-            } else {
-                null
-            }
-        }
-    }
-
-    /**
-     * Load a reference datasheet from a file path (datasheet URL or local path).
-     * The datasheet is expected to be in YAML format with a schema.
-     *
-     * @param datasheet Path to the datasheet YAML file
-     * @param schemaPath Path to the schema JSON file (optional)
-     * @return Map of reference attributes [attribute: value]
-     */
-    static Map loadReferenceDatasheet(String datasheet, String schemaPath = null) {
-        if (!datasheet) return [:]
-
-        // Use samplesheetToList if available (expects it to be in the calling context)
-        // For now, return empty map as placeholder
-        return [:]
-    }
-
-    /**
-     * Select the first valid reference row from a list of datasheet rows.
-     *
-     * @param rows List of reference rows from the datasheet
-     * @return The first non-null row, or an empty map
-     */
-    static Map selectReferenceRow(List rows) {
-        for (row in rows) {
-            if (row instanceof Map && !row.isEmpty()) {
-                return row as Map
-            }
-        }
-        return [:]
-    }
-
-    /**
-     * Extract reference metadata from a datasheet row, filtering nulls and empty values.
-     *
-     * @param row A reference row from the datasheet
-     * @return Map of metadata attributes
-     */
-    static Map referenceMeta(Map row) {
-        if (!row) return [:]
-        return row.findAll { _key, value -> value != null && value != '' }
-    }
-
-    /**
-     * Build the datasheet URL for a genome key from the references datasheets path.
-     * The catalogue tree is source/assembly.yml; keys are used verbatim (no dot transformation).
-     *
-     * @param genomeKey The genome key (e.g., 'Ensembl/GRCh38')
-     * @param basePath The base URL for references datasheets (defaults to params.references_datasheets_path)
-     * @return The datasheet URL
-     */
-    static String referencesDatasheetUrl(String genomeKey, String basePath = null) {
-        if (!basePath) {
-            basePath = System.getProperty('nextflow.params.references_datasheets_path') ?: ''
-        }
-        if (!basePath) {
-            throw new IllegalArgumentException("references_datasheets_path is empty; cannot build datasheet URL for genome '${genomeKey}'")
-        }
-        basePath = basePath.toString().replaceAll(/\/+$/, '')
-        return "${basePath}/${genomeKey}.yml"
     }
 }

@@ -95,6 +95,22 @@ class NfcoreReportingOrchestratorDeepTest extends Specification {
         noExceptionThrown()
     }
 
+    def 'generateVersionReport reports the commit of the run from context'() {
+        given:
+        def ctx = new PipelineExecutionContext(
+            workflowName: 'nf-core/sarek',
+            workflowVersion: '3.4.0dev',
+            workflowCommitId: '957a0a3ea1f25acaf47420ed1976e34f1cd57cdc',
+            nextflowVersion: '25.04.0'
+        )
+
+        when:
+        def result = NfcoreReportingOrchestrator.generateVersionReport(ctx, [['PROCESS_A', 'bwa', '0.7.17']], [])
+
+        then:
+        result.versions_yaml.contains('nf-core/sarek: v3.4.0dev-g957a0a3')
+    }
+
     def 'generateVersionReport with legacy versions merges correctly'() {
         given:
         def ctx = new PipelineExecutionContext(

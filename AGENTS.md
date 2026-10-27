@@ -12,8 +12,10 @@ Guide for autonomous contributors (LLMs and humans).
 1. Read `README.md`, `CLAUDE.md`, and `ARCHITECTURE.md`.
 2. Check active plans in `docs/exec-plans/active/`.
 3. Run:
-   - `make assemble`
-   - `make test`
+   - `mise install --locked`
+   - `mise run assemble`
+   - `mise run test`
+4. Optional: `mise tasks graph` / `mise run --affected <task>` (Gradle project is `gradle::`).
 
 ## Guardrails
 
