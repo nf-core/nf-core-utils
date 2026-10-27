@@ -12,7 +12,7 @@ export NXF_HOME="$scratch/home"
 mkdir -p "$NXF_HOME"
 
 cat > "$scratch/nextflow.config" <<'EOF'
-plugins { id 'nf-core-utils@0.6.0' }
+plugins { id 'nf-core-utils@0.7.0-dev' }
 params.color = false
 profiles {
     docker { docker.enabled = false }

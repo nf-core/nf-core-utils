@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `getReferencePath()`, `getReferenceMetadata()` and `getReferenceAttribute()` to resolve reference parameters from a references datasheet, with `params.genomes` as fallback.
 - Enabled the mise workspace project graph for this single-root Gradle plugin (`monorepo_root`, `config_roots`, and an explicit `gradle::` project) so `mise tasks graph` and `mise run --affected` work without literal `include` directives in `settings.gradle`.
 - Configured Gradle toolchain detection to use mise's `JAVA_HOME` via `org.gradle.java.installations.fromEnv` in `gradle.properties`.
 - Added a manually triggered release workflow that validates the plugin, publishes to the Nextflow Plugin Registry, verifies a fresh download, creates the GitHub release, and dispatches the documentation update.
@@ -19,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `completionEmail()` now sends through Nextflow's built-in `sendMail()` instead of running `sendmail`/`mail` itself, so `--email` and `--email_on_fail` honour the `mail` config scope (SMTP), `NXF_ENABLE_AWS_SES` and the other transports used by `nextflow run -N`; without any of them Nextflow still falls back to the local `sendmail` or `mail` command. The HTML email has the text template as plain-text alternative, the pipeline logo inline as `cid:nfcorepipelinelogo`, and the MultiQC report attached below `max_multiqc_email_size`. A delivery failure is logged as a warning and does not fail the run. Pipelines no longer need `assets/sendmail_template.txt`, and the unused `emailCommands()` and `runEmailCommand()` helpers were removed ([nf-core/tools#112](https://github.com/nf-core/tools/issues/112)).
 - Where `AWS_REGION` or `AWS_DEFAULT_REGION` is set and `nf-amazon` is loaded, completion email now uses AWS SES unless `mail.smtp` is configured. The launch machine's IAM principal needs `ses:SendRawEmail`, and `mail.from` must be an SES-verified identity. Explicit `NXF_ENABLE_AWS_SES=true` takes precedence over SMTP.
 - Raised the minimum required Nextflow version to 25.10.4 so the declared compatibility floor matches the version tested in CI. Runs on older Nextflow versions must upgrade before loading the plugin.
+
+### Removed
+
+- Removed `getReferencesFile()` and `getReferencesValue()`.
 
 ### Fixed
 

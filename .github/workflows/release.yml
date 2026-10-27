@@ -38,7 +38,7 @@ jobs:
           [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo '::error::Expected a stable version such as 0.7.0'; exit 1; }
           [[ -n "$NPR_API_KEY" ]] || { echo '::error::Configure the NPR_API_KEY Actions secret'; exit 1; }
           grep -Fxq "version = '$VERSION'" build.gradle || { echo '::error::Version does not match build.gradle'; exit 1; }
-          for config in validation/nextflow.config validation/nf-test.config validation/citations-on-the-fly/nextflow.config validation/topic-channel-citations/nextflow.config; do
+          for config in validation/nextflow.config validation/nf-test.config validation/citations-on-the-fly/nextflow.config validation/topic-channel-citations/nextflow.config validation/config-validation/startup-checks.sh; do
             grep -Fq "id 'nf-core-utils@$VERSION'" "$config" ||
               grep -Fq "options \"-plugins nf-core-utils@$VERSION " "$config" ||
               { echo "::error::Update the plugin pin in $config"; exit 1; }
