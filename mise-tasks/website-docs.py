@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+#MISE description="Write the user docs as nf-core website pages"
+#USAGE flag "-r --release <release>" required=#true help="The release of the docs, e.g. 0.6.0"
+#USAGE flag "-o --output <output>" default="../sites/docs/src/content/docs/nf-core-tools/nf-core-utils" help="The nf-core-utils folder of the website docs"
 # /// script
 # requires-python = ">=3.12"
 # dependencies = ["pyyaml"]
@@ -8,10 +11,10 @@
 On each release, .github/workflows/website-docs.yml asks the website to run this script from the root of this
 repository, checked out inside the website repository, as nf-core/tools does for its API docs:
 
-    uv run scripts/website-docs.py --release 0.6.0 [--output <dir>]
+    mise run website-docs --release 0.6.0 [--output <dir>]
 """
 
-import argparse
+import os
 from pathlib import Path
 
 import yaml
@@ -22,20 +25,12 @@ USER_DOCS = ["NfCoreUtilities.md", "NextflowPipelineExtension.md", "ReferencesEx
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("-r", "--release", required=True, help="the release of the docs, e.g. 0.6.0")
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=Path,
-        default=Path("../sites/docs/src/content/docs/nf-core-tools/nf-core-utils"),
-        help="the nf-core-utils folder of the website docs (default: %(default)s)",
-    )
-    args = parser.parse_args()
+    release = os.environ["usage_release"]
+    output = Path(os.environ["usage_output"])
 
     # docs removed here are removed from the website too
-    args.output.mkdir(parents=True, exist_ok=True)
-    for page in args.output.rglob("*.md"):
+    output.mkdir(parents=True, exist_ok=True)
+    for page in output.rglob("*.md"):
         page.unlink()
 
     docs = [path for pattern in USER_DOCS for path in sorted(DOCS.glob(pattern))]
@@ -52,11 +47,11 @@ def main():
         # "Edit this page" opens the doc here, as changes to the website copy are overwritten
         frontmatter["md_github_url"] = f"https://github.com/nf-core/nf-core-utils/blob/main/docs/{doc}"
 
-        page = args.output / doc
+        page = output / doc
         page.parent.mkdir(parents=True, exist_ok=True)
         page.write_text(
             "---\n"
-            f"# Copied from docs/{doc} of nf-core/nf-core-utils {args.release}"
+            f"# Copied from docs/{doc} of nf-core/nf-core-utils {release}"
             " by .github/workflows/add-nf-core-utils-docs.yml: edit it there\n"
             + yaml.safe_dump(frontmatter, sort_keys=False, allow_unicode=True, width=float("inf"))
             + "---\n\n"

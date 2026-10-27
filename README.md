@@ -24,7 +24,13 @@ configuration via `jdx/mise-action`.
 
 Make is no longer used: replace `make <target>` with `mise run <target>`.
 Available tasks are `assemble`, `test`, `clean`, `install`, `validate`,
-`update-snapshots`, and `release`. The Gradle wrapper still manages Gradle itself.
+`update-snapshots`, `website-docs`, and `release`. The Gradle wrapper still manages Gradle itself.
+
+`mise run website-docs --release <tag> [--output <dir>]` writes the user docs
+as nf-core website pages. This file task requires [uv](https://docs.astral.sh/uv/),
+which supplies Python and the script's inline dependencies. By default it writes
+to `../sites/docs/src/content/docs/nf-core-tools/nf-core-utils`, for use when this
+repository is checked out inside the website repository.
 
 Use `mise exec -- <command>` for tools outside a task (for example,
 `mise exec -- nextflow -version`), or optionally
