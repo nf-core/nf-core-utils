@@ -248,7 +248,7 @@ class NfcoreCitationUtils {
      * @return Formatted bibliography HTML
      */
     private static String formatBibliographyFromData(String toolName, Map citationData) {
-        def pub = citationData.publication instanceof Map ? citationData.publication : [:]
+        def pub = publicationOf(citationData)
         def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
 
         // Publication present: academic-style reference "Author. (year). title. source. doi: link".
@@ -609,7 +609,7 @@ class NfcoreCitationUtils {
      * else "doi: ...", else the homepage url, else description.
      */
     private static String shortReference(Map info) {
-        def pub = info.publication instanceof Map ? info.publication : [:]
+        def pub = publicationOf(info)
         def author = pub.author?.toString()?.trim()
         if (author) {
             def year = pub.year ? pub.year.toString().trim() : ''
@@ -619,6 +619,16 @@ class NfcoreCitationUtils {
         if (info.doi) return "doi: ${info.doi}"
         if (info.homepage) return info.homepage.toString()
         return info.description ? info.description.toString() : ''
+    }
+
+    /**
+     * Publication fields for a tool: the nested publication object, else the
+     * pre-0.7 flat fields (author/year/title/journal) so older meta.yml still cite.
+     * Null fields are dropped so a tool without any yields an empty (falsy) map.
+     */
+    private static Map publicationOf(Map info) {
+        if (info.publication instanceof Map) return info.publication as Map
+        return [author: info.author, year: info.year, title: info.title, source: info.journal].findAll { it.value }
     }
 
     /**

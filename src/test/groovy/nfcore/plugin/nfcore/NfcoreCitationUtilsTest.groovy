@@ -151,6 +151,30 @@ class NfcoreCitationUtilsTest extends Specification {
         result.bwa.bibliography == "<li>Li H. (2009). doi: <a href='https://doi.org/10.1093/bioinformatics/btp324'>10.1093/bioinformatics/btp324</a>.</li>"
     }
 
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    def "flat author/year/title/journal fields from pre-publication meta.yml still produce full citations"() {
+        given:
+        def metaFile = new File(tempDir.toFile(), "meta_flat.yml")
+        metaFile << """
+        name: test_module
+        tools:
+          - multiqc:
+              doi: "10.1093/bioinformatics/btw354"
+              author: "Ewels P, Magnusson M, Lundin S, et al."
+              year: 2016
+              title: "MultiQC"
+              journal: "Bioinformatics"
+        """
+
+        when:
+        def result = NfcoreCitationUtils.generateModuleToolCitation(metaFile)
+        def info = [doi: '10.1093/bioinformatics/btw354', author: 'Ewels P, Magnusson M', year: 2016]
+
+        then:
+        result.multiqc.bibliography == "<li>Ewels P, Magnusson M, Lundin S, et al. (2016). MultiQC. Bioinformatics. doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li>"
+        NfcoreCitationUtils.formatShortCitation('multiqc', info, '1.21') == "multiqc (1.21, <a href='https://doi.org/10.1093/bioinformatics/btw354'>Ewels <em>et al.</em> (2016)</a>)"
+    }
+
     def "toolCitationText should format citations from collected module citations"() {
         given:
         def collectedCitations = [
