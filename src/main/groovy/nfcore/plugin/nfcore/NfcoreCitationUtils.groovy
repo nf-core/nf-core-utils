@@ -75,7 +75,7 @@ class NfcoreCitationUtils {
     /**
      * Generate methods description for MultiQC using collected citations
      * @param collectedCitations Map containing all tool citations from modules
-     * @return Formatted citation string for tools used in the workflow
+     * @return Formatted citation string for tools used in the workflow; HTML when built from short citations
      */
     static String toolCitationText(Map collectedCitations) {
         if (collectedCitations.isEmpty()) {
@@ -533,7 +533,7 @@ class NfcoreCitationUtils {
      * @param tool Tool name (display)
      * @param info Raw meta.yml tool info (doi, homepage, description, publication.author, publication.year)
      * @param version Tool version (optional)
-     * @return Short citation string suitable for a methods paragraph
+     * @return Short citation as HTML (DOI/homepage link, {@code <em>et al.</em>}) for a methods paragraph, not plain text
      */
     static String formatShortCitation(String tool, Map info, String version = null) {
         def parts = []
