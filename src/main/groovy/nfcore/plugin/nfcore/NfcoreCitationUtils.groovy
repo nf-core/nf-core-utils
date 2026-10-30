@@ -633,13 +633,17 @@ class NfcoreCitationUtils {
 
     /**
      * Reduce an author string to "Surname" (single author) or "Surname <em>et al.</em>"
-     * (multiple). Heuristic: first author is the text before the first comma;
-     * its surname is the first whitespace-delimited token.
+     * (multiple). Recognize Harvard "Surname, Initials" pairs as well as legacy
+     * "Surname Initials" lists. In Harvard names, preserve compound surnames and
+     * do not mistake the comma before initials for an author separator.
      */
     private static String shortAuthor(String author) {
-        def first = author.split(',')[0].trim()
-        def surname = first.split(/\s+/)[0]
-        def multiple = author.contains(',') || author.toLowerCase().contains('et al')
+        def authors = author.split(/\s+(?:&|and)\s+/)
+        def first = authors[0].split(',')*.trim()
+        def harvard = first.size() > 1 && first[1] ==~ /(?:\p{Lu}\.?\s*)+/
+        def surname = harvard ? first[0] : first[0].split(/\s+/)[0]
+        def multiple = authors.size() > 1 || author.toLowerCase().contains('et al') ||
+            first.size() > (harvard ? 2 : 1)
         return multiple ? "${surname} <em>et al.</em>" : surname
     }
 }

@@ -45,6 +45,7 @@ Short citations are HTML, meant for the MultiQC methods section: the reference l
 
 !!! info "Harvard style"
 Short citations follow the Harvard style recommended by [nf-core/modules](https://github.com/nf-core/modules/blob/master/modules/meta-schema.json) for `meta.yml` author fields: `Last, F. M.` for author names, with `Author (year)` for single authors and `Author et al. (year)` for multiple.
+For example, `Andrews, S.` renders as `Andrews (2010)`, while `van der Walt, S.` preserves the full surname. Legacy `Last Initials` author lists remain supported, including flat `author`/`year` metadata when no `publication` object is present.
 
 | `meta.yml` fields present                           | Short citation                                       |
 | --------------------------------------------------- | ---------------------------------------------------- |
