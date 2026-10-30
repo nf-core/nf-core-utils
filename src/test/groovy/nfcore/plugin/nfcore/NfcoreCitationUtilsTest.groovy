@@ -11,6 +11,7 @@ import spock.lang.Issue
 import spock.lang.PendingFeature
 import spock.lang.Specification
 import spock.lang.TempDir
+import spock.lang.Unroll
 
 import java.nio.file.Path
 
@@ -1007,14 +1008,26 @@ ${tool_bibliography}
         NfcoreCitationUtils.toolVersionsFromTopic(topicVersions) == ['fastqc': '0.12.1', 'multiqc': '1.21']
     }
 
-    def "formatShortCitation includes version and a single short author with year"() {
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    @Unroll
+    def "formatShortCitation distinguishes single and multiple authors: #author"() {
         expect:
-        NfcoreCitationUtils.formatShortCitation('fastqc', [publication: [author: 'Andrews S', year: 2010]], '0.12.1') == 'fastqc (0.12.1, Andrews (2010))'
-    }
+        NfcoreCitationUtils.formatShortCitation('tool', [publication: [author: author, year: 2021]], '1.21') == "tool (1.21, ${reference} (2021))"
+        NfcoreCitationUtils.formatShortCitation('tool', [author: author, year: 2021], '1.21') == "tool (1.21, ${reference} (2021))"
 
-    def "formatShortCitation uses 'et al.' for multiple authors"() {
-        expect:
-        NfcoreCitationUtils.formatShortCitation('samtools', [publication: [author: 'Danecek P, Bonfield JK, et al.', year: 2021]], '1.21') == 'samtools (1.21, Danecek <em>et al.</em> (2021))'
+        where:
+        author                                          | reference
+        'Andrews S'                                     | 'Andrews'
+        'Andrews, S.'                                   | 'Andrews'
+        'van der Walt, S.'                              | 'van der Walt'
+        'Smith-Jones, A. B.'                            | 'Smith-Jones'
+        'Einstein, A., Feynman, R. P. & Hawking, S.'     | 'Einstein <em>et al.</em>'
+        'Smith, J. & Jones, B.'                         | 'Smith <em>et al.</em>'
+        'Smith, J., Jones, B.'                          | 'Smith <em>et al.</em>'
+        'Danecek P, Bonfield JK, et al.'                | 'Danecek <em>et al.</em>'
+        'Smith J & Jones B'                            | 'Smith <em>et al.</em>'
+        'Smith J and Jones B'                          | 'Smith <em>et al.</em>'
+        'Li H et al.'                                  | 'Li <em>et al.</em>'
     }
 
     def "formatShortCitation falls back to doi then url when no author"() {
