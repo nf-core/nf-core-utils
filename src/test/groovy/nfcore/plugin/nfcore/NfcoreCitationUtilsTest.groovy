@@ -153,6 +153,30 @@ class NfcoreCitationUtilsTest extends Specification {
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    @Unroll
+    def "publication bibliography links to homepage without DOI: nested=#nested, doi=#doi"() {
+        given:
+        def info = nested
+            ? [publication: [author: 'Andrews, S.', year: 2010, title: 'FastQC', source: 'Project']]
+            : [author: 'Andrews, S.', year: 2010, title: 'FastQC', journal: 'Project']
+        info.homepage = 'https://example.org/fastqc'
+        if (doi) info.doi = doi
+
+        when:
+        def result = NfcoreCitationUtils.processCitationsFromTopic([['FASTQC', 'fastqc', info]])
+
+        then:
+        result.fastqc.bibliography == "<li>Andrews, S. (2010). FastQC. Project. ${link}.</li>"
+
+        where:
+        nested | doi                            | link
+        true   | null                           | "<a href='https://example.org/fastqc'>https://example.org/fastqc</a>"
+        false  | null                           | "<a href='https://example.org/fastqc'>https://example.org/fastqc</a>"
+        true   | '10.5555/example-doi-12345'      | "doi: <a href='https://doi.org/10.5555/example-doi-12345'>10.5555/example-doi-12345</a>"
+        false  | '10.5555/example-doi-12345'      | "doi: <a href='https://doi.org/10.5555/example-doi-12345'>10.5555/example-doi-12345</a>"
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
     def "flat author/year/title/journal fields from pre-publication meta.yml still produce full citations"() {
         given:
         def metaFile = new File(tempDir.toFile(), "meta_flat.yml")
