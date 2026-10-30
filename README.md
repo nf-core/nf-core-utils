@@ -32,8 +32,14 @@ projects touched by a change with `mise run --affected <task>` (for example
 
 Make is no longer used: replace `make <target>` with `mise run <target>`.
 Available tasks are `assemble`, `test`, `clean`, `install`, `validate`,
-`update-snapshots`, and `release` (also as `//:assemble`, and so on). The Gradle
+`update-snapshots`, `website-docs`, and `release` (also as `//:assemble`, and so on). The Gradle
 wrapper still manages Gradle itself.
+
+`mise run website-docs --release <tag> [--output <dir>]` writes the user docs
+as nf-core website pages. This file task requires [uv](https://docs.astral.sh/uv/),
+which supplies Python and the script's inline dependencies. By default it writes
+to `../sites/docs/src/content/docs/nf-core-tools/nf-core-utils`, for use when this
+repository is checked out inside the website repository.
 
 Use `mise exec -- <command>` for tools outside a task (for example,
 `mise exec -- nextflow -version`), or optionally
@@ -92,8 +98,12 @@ Gradle distributions, dependencies, and build outputs between GitHub Actions run
 Only runs on the default branch write caches; pull requests restore them read-only.
 The action's job summary reports cache usage. Configuration caching is not enabled.
 
-For Amp orbs, `.agents/setup` installs JDK 21 and warms the Gradle cache by building
-and testing the plugin, so future orb snapshots can reuse those dependencies and outputs.
+For Amp orbs, `.agents/setup` installs mise and runs `mise install --locked` for
+Java 21, Nextflow, and nf-test. It also installs checksum-verified Miniforge
+26.9.4-1 with the `conda-forge` and `bioconda` channels required by validation.
+The tools remain on `PATH` in subsequent login shells without interactive shell
+activation. Setup builds and unit-tests the plugin through mise to warm the
+Gradle cache; run `mise run validate` for end-to-end validation.
 
 ## Testing with Nextflow
 
