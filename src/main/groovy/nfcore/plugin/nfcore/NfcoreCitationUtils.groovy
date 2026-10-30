@@ -262,6 +262,7 @@ class NfcoreCitationUtils {
             if (pub.title) parts << pub.title
             if (pub.source) parts << pub.source
             if (doi) parts << doi
+            else if (citationData.homepage) parts << "<a href='${citationData.homepage}'>${citationData.homepage}</a>"
             return "<li>${parts.join('. ')}.</li>"
         }
 
