@@ -98,8 +98,12 @@ Gradle distributions, dependencies, and build outputs between GitHub Actions run
 Only runs on the default branch write caches; pull requests restore them read-only.
 The action's job summary reports cache usage. Configuration caching is not enabled.
 
-For Amp orbs, `.agents/setup` installs JDK 21 and warms the Gradle cache by building
-and testing the plugin, so future orb snapshots can reuse those dependencies and outputs.
+For Amp orbs, `.agents/setup` installs mise and runs `mise install --locked` for
+Java 21, Nextflow, and nf-test. It also installs checksum-verified Miniforge
+26.9.4-1 with the `conda-forge` and `bioconda` channels required by validation.
+The tools remain on `PATH` in subsequent login shells without interactive shell
+activation. Setup builds and unit-tests the plugin through mise to warm the
+Gradle cache; run `mise run validate` for end-to-end validation.
 
 ## Testing with Nextflow
 
