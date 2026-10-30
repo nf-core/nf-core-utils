@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed fresh Amp orbs missing validation tools: setup now installs mise, the locked Java/Nextflow/nf-test toolchain, and checksum-verified Miniforge with validation's Conda channels, and exposes them in subsequent login shells.
 - Restored a 30-second wait limit for `completionEmail()` attachment preparation and delivery through Nextflow's mailer. A blocked SMTP connection or local mail command no longer holds up pipeline shutdown; timeouts warn without retrying, and temporary attachments remain owned by the sender until it exits ([#80](https://github.com/nf-core/nf-core-utils/pull/80)).
 - Corrected completion-email examples to resolve the collected MultiQC reports only when bound, preventing an aborted run from blocking before the plugin's delivery deadline starts ([nf-core/tools#4486](https://github.com/nf-core/tools/pull/4486)).
 - Removed observer-owned startup validation to avoid duplicate warnings when pipelines call exported or template-local checks. Pipelines relying only on the observer must explicitly call `checkConfigProvided()` and `checkProfileProvided(args)` during initialization. Profile validation now aborts with one `ERROR` label instead of two; loading the plugin alone no longer attempts validation whose errors Nextflow swallows ([#73](https://github.com/nf-core/nf-core-utils/issues/73)).
