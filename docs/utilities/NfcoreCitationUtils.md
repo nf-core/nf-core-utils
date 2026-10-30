@@ -41,7 +41,7 @@ Builds a citations map for **only the tools that ran**, by intersecting the `ver
 Each **short citation** is formatted for a methods paragraph — `tool (version, Author (year))` — with the version taken from the `versions` topic and the author/year from `meta.yml`. The reference segment degrades gracefully: short author + year → `doi: …` → homepage url → description. So richer `meta.yml` files produce richer citations:
 
 !!! note "HTML output"
-Short citations are HTML, meant for the MultiQC methods section: the reference links to the DOI (else the homepage) and `et al.` is wrapped in `<em>`. The table below shows the rendered text. To reuse a citation elsewhere, copy it from the rendered report or paste without formatting.
+Short citations are HTML, meant for the MultiQC methods section: the reference links to the DOI (else the homepage) and `et al.` is wrapped in `<em>`. The table below shows the rendered text. Save `toolCitationText(citations)` to an `.html` file, such as `auto_citations.html`, not a `.txt` file. To reuse a citation in a manuscript, open that file or the MultiQC report in a browser and copy the rendered text. Pasting the HTML source without formatting does not remove literal tags.
 
 !!! info "Harvard style"
 Short citations follow the Harvard style recommended by [nf-core/modules](https://github.com/nf-core/modules/blob/master/modules/meta-schema.json) for `meta.yml` author fields: `Last, F. M.` for author names, with `Author (year)` for single authors and `Author et al. (year)` for multiple.

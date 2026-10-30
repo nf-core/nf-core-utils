@@ -16,8 +16,13 @@ nextflow_pipeline {
         then {
             assert workflow.success
 
-            def citations = path("${params.outdir}/auto_citations.txt").text
+            def citations = path("${params.outdir}/auto_citations.html").text
             def bibliography = path("${params.outdir}/auto_bibliography.html").text
+
+            // Linked/italic citations are an HTML artifact, not a plain-text file.
+            assert !path("${params.outdir}/auto_citations.txt").exists()
+            assert citations.contains("<a href='https://doi.org/")
+            assert citations.contains('<em>et al.</em>')
 
             // Tools that ran (have a versions emission + a meta.yml) are cited
             assert citations.contains('fastqc')
@@ -32,7 +37,7 @@ nextflow_pipeline {
             assert !bibliography.contains('bts635') // STAR DOI absent
 
             assert snapshot(
-                path("${params.outdir}/auto_citations.txt").text,
+                path("${params.outdir}/auto_citations.html").text,
                 path("${params.outdir}/auto_bibliography.html").text,
             ).match()
         }

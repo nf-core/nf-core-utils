@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Where `AWS_REGION` or `AWS_DEFAULT_REGION` is set and `nf-amazon` is loaded, completion email now uses AWS SES unless `mail.smtp` is configured. The launch machine's IAM principal needs `ses:SendRawEmail`, and `mail.from` must be an SES-verified identity. Explicit `NXF_ENABLE_AWS_SES=true` takes precedence over SMTP.
 - Raised the minimum required Nextflow version to 25.10.4 so the declared compatibility floor matches the version tested in CI. Runs on older Nextflow versions must upgrade before loading the plugin.
 - Improved citation formatting to follow [nf-core/modules Harvard style recommendation](https://github.com/nf-core/modules/blob/master/modules/meta-schema.json): short citations use `Author (year)` format (e.g. `Andrews (2010)`), italic `<em>et al.</em>`, DOI/homepage linking, and cleaner bibliography format ([#51](https://github.com/nf-core/nf-core-utils/pull/51)).
+- The citations-on-the-fly example now writes `auto_citations.html` instead of `auto_citations.txt`, matching the HTML returned by `toolCitationText()`. Open the file in a browser and copy the rendered text for use in a manuscript; the example logs output paths rather than raw markup ([#51](https://github.com/nf-core/nf-core-utils/pull/51)).
 
 ### Removed
 
