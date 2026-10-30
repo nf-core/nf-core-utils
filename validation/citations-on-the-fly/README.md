@@ -19,6 +19,14 @@ versions reporting modules already do.
   `params.run_optional = false`) is **not** cited — proving citations track
   execution, not the module inventory.
 
+## Outputs
+
+The workflow writes `auto_citations.html` and `auto_bibliography.html`. Short
+citations contain DOI/homepage links and italic `et al.`, so the citation file
+is HTML rather than plain text. Open it in a browser and copy the rendered
+text for a manuscript; pasting HTML source without formatting does not remove
+the tags. The workflow logs the output paths rather than raw HTML.
+
 ## Run
 
 ```bash
