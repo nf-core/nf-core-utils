@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configured Gradle toolchain detection to use mise's `JAVA_HOME` via `org.gradle.java.installations.fromEnv` in `gradle.properties`.
 - Added the `website-docs` mise file task, which writes the user docs as pages of the nf-core website with their frontmatter, including an "Edit this page" link to the docs here. The website runs it on each release, as for the nf-core/tools API docs.
 - Added a manually triggered release workflow that validates the plugin, publishes to the Nextflow Plugin Registry, verifies a fresh download, creates the GitHub release, and dispatches the documentation update.
+- Added the `releasing-nf-core-utils` agent skill for guarded release preparation, partial-release recovery, and read-only GitHub/registry comparison ([#42](https://github.com/nf-core/nf-core-utils/pull/42)).
 - Added full end-to-end CI validation for every supported stable Nextflow line (25.10, 26.04, and 26.10), retaining 25.10.4 as an additional startup-validation regression target.
 
 ### Changed
