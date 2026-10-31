@@ -279,6 +279,16 @@ Attachment preparation and delivery run on a daemon thread with a 30-second wait
 
 MultiQC attachments retain the original report basename, including reports on remote filesystems such as object storage. Remote reports are copied into a temporary directory only when an HTML email has a recipient; both the copy and directory are removed after sending, including when sending fails, and cleanup failures are warnings. Reports at or above `params.max_multiqc_email_size` are not attached or downloaded. Some transports, such as AWS SES, limit the message size further. Plaintext emails and successful runs with only `email_on_fail` do not read or download attachments. The HTML and text summary reports are still saved even when no email is sent.
 
+**Seqera Platform launches**
+
+When [`TOWER_WORKFLOW_ID`](https://docs.seqera.io/platform-cloud/launch/advanced#environment-variables) is non-empty, `completionEmail()` skips delivery for both `email` and `email_on_fail`, logs the reason, and does not read or download attachments. It still saves the HTML and text summary reports. CLI runs using `-with-tower`, `tower.enabled`, or `TOWER_ACCESS_TOKEN` alone are not muted.
+
+This default applies even when Platform's own completion notification is disabled: the head job cannot inspect that account setting. Enable Platform notifications separately if you want Platform to send the completion email. The Launch form's Email parameter and Platform's notification toggle are independent settings.
+
+To retain nf-core email, including MultiQC attachments, for a Platform launch, set the boolean `params.force_completion_email = true` in Nextflow configuration (or pass `--force_completion_email true` where the pipeline's parameter schema permits it). You must still supply `email` or `email_on_fail`; the override does not change recipient selection or failure-only behavior. Pipeline authors exposing this option through schema validation should declare it as a boolean with default `false`. Enabling both this override and Platform notifications can produce two emails.
+
+The override still needs a working mail transport on the compute-environment head job. For AWS SES, configure head environment variable `NXF_ENABLE_AWS_SES=true`, load `nf-amazon`, and grant the head IAM role `ses:SendRawEmail` for the verified sender, subject to SES region and sandbox restrictions. Alternatively, configure `mail.smtp` on the head. Platform server settings such as `TOWER_ENABLE_AWS_SES` and `TOWER_SMTP_*` only configure Platform's own mail; they do not configure Nextflow's mailer.
+
 **Understanding Email Structure**
 
 Before implementing email notifications, let's understand what information needs to be organized:
