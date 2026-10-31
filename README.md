@@ -119,7 +119,8 @@ It publishes the commit selected when the workflow starts, not a later main-bran
 
 The [release access-control proposal](docs/release-access-control.md) documents
 the proposed team, environment, credential, and tag boundaries and their limits.
-It is not enabled: team IDs need verification; credentials and live settings require approval.
+Team IDs are verified and independent second-person approval is required, but
+activation, credentials and live settings still need separate authorization.
 The local proposal's `expected_sha` input optionally binds a manual dispatch to a
 full commit SHA; automation must supply the main commit it checked. It is not an
 authorization override. Existing publication and partial-release checks still apply.

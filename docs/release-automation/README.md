@@ -13,11 +13,13 @@ and must not be republished to test automation.
 [nf-core/ops#239](https://github.com/nf-core/ops/issues/239) tracks the policy.
 The intended teams are [nf-core/core](https://github.com/orgs/nf-core/teams/core)
 and [nf-core/infrastructure](https://github.com/orgs/nf-core/teams/infrastructure).
-Membership inheritance and mandatory second-person approval remain open choices;
-the protected-approval flow below is a candidate design, not a settled requirement.
+Their verified numeric IDs are 2649377 and 8796434. Publication requires approval
+by a different eligible member of either team, with self-approval prevented.
+Existing initiation permissions stay unchanged. The guard uses verified active
+direct membership; inherited-member expansion requires a separate policy decision.
 
-Actual numeric team IDs, hierarchy, membership evidence, dispatch principal and
-machine-identity policy still need verification and approval. No live permission
+The dispatch principal and machine-identity policy remain unapproved, and runtime
+credential/native approval enforcement still need verification. No live permission
 or credential configuration is established by this draft. Do not substitute
 admin, write, org membership, tag push or bot status for release authorization.
 
@@ -75,7 +77,7 @@ It does not poll, schedule retries, or bypass the protected approval on purpose.
 
 Choose one before activation:
 
-- **Team-member initiation (recommended until identities are verified):** retain
+- **Team-member initiation (current authorization design):** retain
   direct manual dispatch by a verified actual-team human under the receiver's
   fail-closed membership check. Keep this automation dormant. If an unattended
   dispatch credential is proposed for a human identity, explicitly approve that

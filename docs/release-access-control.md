@@ -12,18 +12,22 @@ does not authorize changing GitHub settings, credentials, memberships, or publis
 implementation decisions. The intended teams are settled:
 [nf-core/core](https://github.com/orgs/nf-core/teams/core) and
 [nf-core/infrastructure](https://github.com/orgs/nf-core/teams/infrastructure).
-Their numeric IDs, hierarchy, membership evidence and effective permissions
-still need authoritative verification.
+Authenticated read-only inspection verified their numeric IDs as **2649377** and
+**8796434**, respectively. Both currently have no parent or child teams, and
+active direct membership evidence includes `inherited: false`.
 
-**Membership inheritance and mandatory second-person approval are open design
-choices.** This draft demonstrates one option: direct-team human initiation plus
-independent environment approval. Its checks describe that candidate, not an
-agreed requirement. No bot exception, machine identity or global release-access
+**A second approval is mandatory:** a different eligible member of either team
+must approve publication, with self-approval prevented. Existing workflow
+initiation permissions remain unchanged; this proposal does not give additional
+users dispatch rights. The guard accepts active direct members and rejects
+hierarchy expansion; future inherited-member eligibility remains a separate
+policy choice. No bot exception, machine identity or global release-access
 change is approved by this code.
 
-**Do not merge as-is.** The policy intentionally remains `approved: false` with
-an empty team list. Merging the workflow in that state would block manual
-release dispatch, not activate a usable authorization policy. The automation
+**Do not merge as-is.** The policy intentionally remains `approved: false`,
+despite verified team IDs and the settled approval design. This flag gates
+activation, not agreement with the design. Merging the workflow in that state
+would block manual release dispatch, not activate a usable policy. The automation
 template is outside `.github/workflows` and unconditionally disabled.
 The already published [0.7.0 release](https://github.com/nf-core/nf-core-utils/releases/tag/0.7.0)
 must not be republished to test these proposals.
@@ -43,8 +47,10 @@ GitHub's [2026-03-10 REST member documentation][team-members] explicitly defines
 at `components.schemas.team-member.properties.inherited`, additionally says this
 field is **only present when the feature is enabled for the organization**. It is
 not a required schema property. Therefore the guard's missing-field denial is
-deliberate, but support for actual nf-core direct members is still unverified.
-Do not activate based on fixtures or assume the API version enables the feature.
+deliberate. Authenticated inspection confirmed the field for both selected teams
+with API versions 2022-11-28 and 2026-03-10. Its availability with the intended
+runtime membership credential must still be checked; selecting an API version
+alone does not enable the feature.
 The membership-state endpoint alone includes child members and is insufficient.
 If an authorized reader cannot obtain this field, an explicitly tested direct-only
 API design is required before activation, not treating absence as `false`.
@@ -103,9 +109,9 @@ and always-uploaded evidence steps remain unchanged.
 
 GitHub allows up to six environment reviewers, but **one** approval among them is
 sufficient: two team reviewers mean core **OR** infrastructure, not one of each.
-This candidate requires a different approved team member to approve; whether to
-require that second person is an open policy decision. Requiring one approver
-from each team would need a different design.
+The required second person may belong to either selected team; approval from
+both teams is not required. Self-review prevention is mandatory. Native approval
+and rerun behavior still need validation in a non-publishing test repository.
 
 No GitHub App/bot exception is included. GitHub `Bot` identities are denied;
 machine accounts represented as ordinary `User` accounts cannot be distinguished
@@ -161,18 +167,19 @@ public repository, contributors without write can still contribute through forks
 
 ## Approval and staged activation (no actions taken)
 
-This candidate uses a human **direct-team OR** initiator plus independent team
-approval and environment-scoped registry credentials, with no bot exception.
-Resolve membership inheritance and second-person approval in ops#239 before
-treating these checks as policy. Reviewing or publishing this draft does not
-authorize activation or the following steps. A separate permission audit/change
-is required for a global Releases UI/API restriction.
+The design requires human team initiation plus a different eligible team
+approver and environment-scoped registry credentials, with no bot exception.
+The implementation checks direct membership and denies hierarchy expansion;
+inherited-member eligibility must not be broadened without a policy decision.
+Reviewing or publishing this draft does not authorize activation or the following
+steps. A separate permission audit/change is required for a global Releases UI/API
+restriction.
 
 Before a separately authorized activation:
 
-1. An organization-authorized reader must verify the two selected teams' IDs,
-   hierarchy, direct membership (including API `inherited` support), reviewer
-   repository access, plan features, and current effective permission grants.
+1. Recheck the verified team IDs, hierarchy and direct membership using the
+   intended runtime credential. Confirm native reviewer selection and repository
+   eligibility for both teams; existing initiation permissions stay unchanged.
 2. Approve the read-only membership credential and how it is issued/rotated.
    Verify required API fields (`can_admins_bypass`, direct-member evidence) with
    that credential; absent fields deliberately block activation.
