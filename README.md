@@ -117,12 +117,47 @@ The plugin can be tested without a local Nextflow installation:
 Use the manually triggered [Publish plugin release workflow](.github/workflows/release.yml).
 It publishes the commit selected when the workflow starts, not a later main-branch commit.
 
+The [release access controls](docs/release-access-control.md) document
+the team, environment, credential, and tag boundaries and their limits.
+Team IDs are verified and independent second-person approval is required.
+The checked-in activation flag remains off until credential setup and native
+approval validation are complete; release attempts fail closed in that state.
+The `expected_sha` input optionally binds a manual dispatch to a
+full commit SHA; automation must supply the main commit it checked. It is not an
+authorization override. Existing publication and partial-release checks still apply.
+
 ### One-time setup
 
-Add an Actions secret named `NPR_API_KEY` to this repository, or grant it access to an organization secret with that name.
+Configure the protected `plugin-release` environment as documented in the
+access controls: core/infrastructure reviewers, self-review prevention, no admin
+bypass, and the main branch only. Verify both reviewers persist on read-back.
+Provide a separate organization Members-read credential as
+`RELEASE_MEMBERS_READ_TOKEN` for the read-only authorization preflight.
+Store `NPR_API_KEY` only in the protected environment; audit and remove broader
+repository/shared-organization copies only after secure migration and recovery
+are verified. Never delete the working copy before the protected replacement is ready.
 The token must authorize publishing `nf-core-utils` for the `nf-core` provider in the Nextflow Plugin Registry.
 Enter the token through GitHub's secret input, not in source code, command arguments, or chat.
 The existing `nf_core_bot_auth_token` must also be available to the documentation workflow for its dispatch to `nf-core/website`.
+
+### Test controls without publishing
+
+Select `dry_run` when dispatching `release.yml`. The version input is ignored
+in this mode; authorization and independent environment approval still apply.
+The publisher job is unconditionally excluded by the dry-run input, and the
+replacement job uses a read-only token and never references publisher secrets.
+It cannot upload a package, create a tag/release or dispatch documentation.
+For example, this does **not** republish the already released 0.7.0:
+
+```bash
+gh workflow run release.yml --repo nf-core/nf-core-utils --ref main \
+  -f version=0.7.0 -F dry_run=true
+```
+
+With activation disabled or credentials incomplete, a dry run must fail in
+authorization before either environment approval or publisher execution.
+Successful allowed-actor, denied-actor, self-approval and rerun tests are required
+before considering the controls operational; offline tests alone are insufficient.
 
 ### Release a prepared version
 

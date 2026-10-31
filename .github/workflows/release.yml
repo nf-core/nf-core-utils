@@ -7,17 +7,74 @@ on:
         description: "Version already committed on main, without a v prefix"
         required: true
         type: string
+      expected_sha:
+        description: "Optional full commit SHA; automation must supply the main commit it validated"
+        required: false
+        default: ""
+        type: string
+      dry_run:
+        description: "Test authorization and independent approval without publishing (version is ignored)"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: plugin-release
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 jobs:
+  authorize:
+    if: github.repository == 'nf-core/nf-core-utils' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      attempt: ${{ steps.access.outputs.attempt }}
+    steps:
+      - name: Checkout authorization policy
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Authorize release actors and protected environment
+        id: access
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_MEMBERS_READ_TOKEN: ${{ secrets.RELEASE_MEMBERS_READ_TOKEN }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          python3 scripts/release/check_release_access.py .github/release-access.json
+          echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+
+  dry_run:
+    needs: authorize
+    if: needs.authorize.outputs.attempt == github.run_attempt && inputs.dry_run
+    environment: plugin-release
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Record approved non-publishing dry run
+        run: |
+          echo 'Authorization and independent environment approval passed.'
+          echo 'No publisher credential, package upload, tag, release or docs dispatch is used by this job.'
+
   release:
+    needs: authorize
+    # A failed-job-only rerun must not reuse another attempt's authorization.
+    if: needs.authorize.outputs.attempt == github.run_attempt && !inputs.dry_run
+    environment: plugin-release
+    permissions:
+      contents: write
+      actions: write
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

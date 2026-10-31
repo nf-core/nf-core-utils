@@ -1,0 +1,7 @@
+{
+  "approved": false,
+  "teams": [
+    { "role": "core", "slug": "core", "id": 2649377 },
+    { "role": "infrastructure", "slug": "infrastructure", "id": 8796434 }
+  ]
+}
