@@ -5,7 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.0] - 2026-10-27
+## [0.7.0] - 2026-10-30
+
+### Compatibility and migration
+
+- **Nextflow:** requires 25.10.4 or newer; upgrade older runtimes before loading the plugin.
+- **References:** replace removed `getReferencesFile()` / `getReferencesValue()` calls with `getReferencePath()`, `getReferenceMetadata()` or `getReferenceAttribute()` as appropriate.
+- **Startup checks:** loading the plugin no longer validates pipeline startup. Call `checkConfigProvided()` and `checkProfileProvided(args)` explicitly during initialization, or retain equivalent pipeline-local checks.
+- **Mail:** `completionEmail()` uses Nextflow's `sendMail()` transports; the removed `emailCommands()` / `runEmailCommand()` helpers and `assets/sendmail_template.txt` are no longer needed. Platform launches skip nf-core mail unless the Boolean `params.force_completion_email = true` is set; enable Platform notifications separately when relying on them ([#81](https://github.com/nf-core/nf-core-utils/pull/81)).
+- **Citation metadata:** reads nested `publication.author`, `publication.year`, `publication.title` and `publication.source`. When no `publication` map is present, legacy flat `author`, `year`, `title` and `journal` fields remain supported; modules do not need to migrate in lockstep. DOI-only entries retain the tool name, and DOI/homepage links remain available ([#51](https://github.com/nf-core/nf-core-utils/pull/51)).
+- **Citation artifacts:** `toolCitationText()` returns HTML for MultiQC, not plain text. The citations-on-the-fly example now writes `auto_citations.html` rather than `auto_citations.txt`; open the file in a browser and copy rendered text for manuscripts. This release retains the existing citation APIs; it does not introduce CSL-JSON output.
 
 ### Added
 
@@ -13,10 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enabled the mise workspace project graph for this single-root Gradle plugin (`monorepo_root`, `config_roots`, and an explicit `gradle::` project) so `mise tasks graph` and `mise run --affected` work without literal `include` directives in `settings.gradle`.
 - Configured Gradle toolchain detection to use mise's `JAVA_HOME` via `org.gradle.java.installations.fromEnv` in `gradle.properties`.
 - Added a manually triggered release workflow that validates the plugin, publishes to the Nextflow Plugin Registry, verifies a fresh download, creates the GitHub release, and dispatches the documentation update.
+- Added the `releasing-nf-core-utils` agent skill for guarded release preparation, partial-release recovery, and read-only GitHub/registry comparison ([#42](https://github.com/nf-core/nf-core-utils/pull/42)).
 - Added full end-to-end CI validation for every supported stable Nextflow line (25.10, 26.04, and 26.10), retaining 25.10.4 as an additional startup-validation regression target.
 
 ### Changed
 
+- `completionEmail()` now skips `email` and `email_on_fail` delivery on Seqera Platform launches (non-empty `TOWER_WORKFLOW_ID`), while preserving HTML/text summary reports and avoiding attachment access. CLI monitoring alone is unchanged. To retain nf-core email on Platform, set the boolean `params.force_completion_email = true` and configure a head-job mail transport; otherwise enable Platform's own notifications separately. This default does not detect Platform's notification toggle.
 - `completionEmail()` now sends through Nextflow's built-in `sendMail()` instead of running `sendmail`/`mail` itself, so `--email` and `--email_on_fail` honour the `mail` config scope (SMTP), `NXF_ENABLE_AWS_SES` and the other transports used by `nextflow run -N`; without any of them Nextflow still falls back to the local `sendmail` or `mail` command. The HTML email has the text template as plain-text alternative, the pipeline logo inline as `cid:nfcorepipelinelogo`, and the MultiQC report attached below `max_multiqc_email_size`. A delivery failure is logged as a warning and does not fail the run. Pipelines no longer need `assets/sendmail_template.txt`, and the unused `emailCommands()` and `runEmailCommand()` helpers were removed ([nf-core/tools#112](https://github.com/nf-core/tools/issues/112)).
 - Where `AWS_REGION` or `AWS_DEFAULT_REGION` is set and `nf-amazon` is loaded, completion email now uses AWS SES unless `mail.smtp` is configured. The launch machine's IAM principal needs `ses:SendRawEmail`, and `mail.from` must be an SES-verified identity. Explicit `NXF_ENABLE_AWS_SES=true` takes precedence over SMTP.
 - Raised the minimum required Nextflow version to 25.10.4 so the declared compatibility floor matches the version tested in CI. Runs on older Nextflow versions must upgrade before loading the plugin.
@@ -32,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed observer-owned startup validation to avoid duplicate warnings when pipelines call exported or template-local checks. Pipelines relying only on the observer must explicitly call `checkConfigProvided()` and `checkProfileProvided(args)` during initialization. Profile validation now aborts with one `ERROR` label instead of two; loading the plugin alone no longer attempts validation whose errors Nextflow swallows ([#73](https://github.com/nf-core/nf-core-utils/issues/73)).
 - Fixed `completionEmail()` renaming remote MultiQC attachments to generated temporary filenames. Attachments keep their original basename, and plaintext emails or runs without an email recipient no longer read/download reports or render the sendmail template. Temporary copies and their directories are cleaned up without changing summary report persistence ([#74](https://github.com/nf-core/nf-core-utils/issues/74)).
 - Fixed parameter types such as `List<String>` showing as `List` in the docs, on GitHub and nf-co.re, where `<String>` was taken for an HTML tag.
+
+### Known limitations
+
+- Versions-topic-driven citations cannot discover tools that do not emit to that topic, including the registry MultiQC module. Its citation and bibliography coverage remain tracked in [#89](https://github.com/nf-core/nf-core-utils/issues/89); the existing `extraTools` argument can select such tools manually, without a version segment. Do not add MultiQC to the same versions topic: its upstream module warns that this can deadlock the workflow.
 
 ## [0.6.0] - 2026-10-17
 
