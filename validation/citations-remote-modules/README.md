@@ -5,7 +5,8 @@ Tested on 2026-10-30 against PR #51's remote head
 [`bc5e40b`](https://github.com/nf-core/nf-core-utils/commit/bc5e40bfd9ffc85220ac4f082c729ee3fa1db72f),
 not main. Fetching before testing and checking the remote again afterwards found
 no newer head. The checkout was detached; no PR branch, plugin implementation,
-or installed module was modified. Nothing was committed or pushed.
+or installed module was modified during testing. This follow-up contains only
+the reproduction fixture and findings, not changes to PR #51's implementation.
 
 This is an opt-in manual integration case, not part of the default nf-test
 suite. It downloads registry modules and creates real Conda environments.
