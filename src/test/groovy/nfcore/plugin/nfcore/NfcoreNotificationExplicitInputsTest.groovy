@@ -9,8 +9,10 @@ import nextflow.Nextflow
 import nextflow.Session
 import nextflow.SysEnv
 import nextflow.config.Manifest
+import nextflow.mail.JavaMailProvider
 import nextflow.mail.Mail
 import nextflow.mail.Mailer
+import nextflow.mail.MailProvider
 import nextflow.script.ScriptBinding
 import nextflow.script.WorkflowMetadata
 import org.slf4j.LoggerFactory
@@ -25,6 +27,10 @@ import spock.lang.Title
 import java.nio.file.Path
 import java.nio.file.Files
 import java.nio.file.FileSystems
+import java.util.concurrent.Callable
+import java.util.concurrent.FutureTask
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @Title("Notification helpers accept explicit inputs instead of global Session")
 @Narrative("""
@@ -251,6 +257,76 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         true      | true    | '1 MB'  | false     | false        || false        | false
         false     | true    | '1 MB'  | true      | false        || true         | true
         false     | true    | '1 MB'  | false     | true         || true         | true
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/80")
+    @ConfineMetaClassChanges(Nextflow)
+    def 'completionEmail returns after 30 seconds when SMTP never sends a greeting'() {
+        given: 'a real SMTP connection that ignores thread interruption'
+        def assets = Files.createDirectories(tempDir.resolve('assets'))
+        assets.resolve('email_template.txt').text = 'Plain summary'
+        assets.resolve('email_template.html').text = '<p>HTML summary</p>'
+        stubSession(false, '1 MB')
+        def fs = FileSystems.newFileSystem(zipWithReport('<html>report</html>'))
+        def server = new ServerSocket(0, 1, InetAddress.getByName('127.0.0.1'))
+        def connection = new FutureTask<Socket>({ server.accept() } as Callable<Socket>)
+        Thread.startDaemon { connection.run() }
+        def sender = new AtomicReference<Thread>()
+        def staged = new AtomicReference<File>()
+        Nextflow.metaClass.static.sendMail = { Closure params ->
+            sender.set(Thread.currentThread())
+            def mail = mailOf(params)
+            staged.set(mail.attachments.first().file)
+            new Mailer([smtp: [host: '127.0.0.1', port: server.localPort, timeout: 45000]]) {
+                protected MailProvider provider() { new JavaMailProvider() }
+            }.send(mail)
+        }
+        def appender = captureLogsFor(NfcoreNotificationUtils)
+        def started = System.nanoTime()
+        def completion = new FutureTask<Void>({
+            NfcoreNotificationUtils.completionEmail([:], null, 'fail@example.invalid', false,
+                tempDir.resolve('results').toString(), true, fs.getPath('/multiqc_report.html'))
+            return null
+        } as Callable<Void>)
+        // Do not let the sender inherit daemon status and mask a missing production guarantee.
+        def caller = new Thread(completion, 'completion-email-test-caller')
+        caller.daemon = false
+        Socket socket
+
+        when:
+        caller.start()
+        socket = connection.get(5, TimeUnit.SECONDS)
+        completion.get(35, TimeUnit.SECONDS)
+
+        then: 'shutdown can continue without deleting an attachment still in use'
+        (System.nanoTime() - started) / 1e9 >= 29
+        (System.nanoTime() - started) / 1e9 < 35
+        sender.get().daemon
+        sender.get().alive
+        staged.get().text == '<html>report</html>'
+        logMessages(appender).count { it.contains('Timed out sending the summary e-mail') } == 1
+        !logMessages(appender).any { it.contains('Sent summary e-mail') }
+        tempDir.resolve('results/pipeline_info/pipeline_report.txt').text == 'Plain summary'
+
+        when: 'the blocked transport eventually exits'
+        socket.close()
+        sender.get().join(5000)
+
+        then: 'the sender cleans up its copy, but not the original'
+        !sender.get().alive
+        !staged.get().exists()
+        !staged.get().parentFile.exists()
+        fs.getPath('/multiqc_report.html').text == '<html>report</html>'
+        !logMessages(appender).any { it.contains('Sent summary e-mail') }
+
+        cleanup:
+        socket?.close()
+        server?.close()
+        completion?.cancel(true)
+        caller?.join(5000)
+        sender.get()?.join(5000)
+        fs?.close()
+        detachAppender(appender)
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/issues/74")

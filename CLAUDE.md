@@ -80,7 +80,7 @@ The plugin provides three main extension categories accessible via @Function ann
 ### References Extension
 
 - **ReferencesUtils**: Handles igenomes and custom reference file resolution
-- Functions: `getReferencesFile()`, `getReferencesValue()`
+- Functions: `getGenomeAttribute()`, `getReferencePath()`, `getReferenceMetadata()`, `getReferenceAttribute()`
 
 ### Nextflow Pipeline Extension
 

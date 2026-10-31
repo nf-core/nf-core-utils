@@ -79,43 +79,4 @@ class ReferencesUtils {
 
         return genome.get(attribute)
     }
-
-    /**
-     * Get references file from a references list or parameters
-     *
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The file parameter
-     * @param attribute The attribute to look for in metadata
-     * @param basepath The base path for igenomes
-     * @return A list of reference files
-     */
-    static List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
-        return referencesList.collect { pair ->
-            Map meta = (Map) pair[0]
-            if (param || (meta != null && meta[attribute])) {
-                [meta.subMap(['id']), param ?: (meta[attribute]?.toString()?.replace('${params.igenomes_base}', basepath))]
-            } else {
-                null
-            }
-        }
-    }
-
-    /**
-     * Get references value from a references list or parameters
-     *
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The value parameter
-     * @param attribute The attribute to look for in metadata
-     * @return A list of reference values
-     */
-    static List getReferencesValue(List<List> referencesList, String param, String attribute) {
-        return referencesList.collect { pair ->
-            Map meta = (Map) pair[0]
-            if (param || (meta != null && meta[attribute])) {
-                [meta.subMap(['id']), param ?: meta[attribute]]
-            } else {
-                null
-            }
-        }
-    }
 }

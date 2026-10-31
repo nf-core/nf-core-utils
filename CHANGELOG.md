@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `getReferencePath()`, `getReferenceMetadata()` and `getReferenceAttribute()` to resolve reference parameters from a references datasheet, with `params.genomes` as fallback.
 - Enabled the mise workspace project graph for this single-root Gradle plugin (`monorepo_root`, `config_roots`, and an explicit `gradle::` project) so `mise tasks graph` and `mise run --affected` work without literal `include` directives in `settings.gradle`.
 - Configured Gradle toolchain detection to use mise's `JAVA_HOME` via `org.gradle.java.installations.fromEnv` in `gradle.properties`.
+- Added the `website-docs` mise file task, which writes the user docs as pages of the nf-core website with their frontmatter, including an "Edit this page" link to the docs here. The website runs it on each release, as for the nf-core/tools API docs.
 - Added a manually triggered release workflow that validates the plugin, publishes to the Nextflow Plugin Registry, verifies a fresh download, creates the GitHub release, and dispatches the documentation update.
 - Added full end-to-end CI validation for every supported stable Nextflow line (25.10, 26.04, and 26.10), retaining 25.10.4 as an additional startup-validation regression target.
 
@@ -18,12 +20,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `completionEmail()` now skips `email` and `email_on_fail` delivery on Seqera Platform launches (non-empty `TOWER_WORKFLOW_ID`), while preserving HTML/text summary reports and avoiding attachment access. CLI monitoring alone is unchanged. To retain nf-core email on Platform, set the boolean `params.force_completion_email = true` and configure a head-job mail transport; otherwise enable Platform's own notifications separately. This default does not detect Platform's notification toggle.
 - `completionEmail()` now sends through Nextflow's built-in `sendMail()` instead of running `sendmail`/`mail` itself, so `--email` and `--email_on_fail` honour the `mail` config scope (SMTP), `NXF_ENABLE_AWS_SES` and the other transports used by `nextflow run -N`; without any of them Nextflow still falls back to the local `sendmail` or `mail` command. The HTML email has the text template as plain-text alternative, the pipeline logo inline as `cid:nfcorepipelinelogo`, and the MultiQC report attached below `max_multiqc_email_size`. A delivery failure is logged as a warning and does not fail the run. Pipelines no longer need `assets/sendmail_template.txt`, and the unused `emailCommands()` and `runEmailCommand()` helpers were removed ([nf-core/tools#112](https://github.com/nf-core/tools/issues/112)).
+- Where `AWS_REGION` or `AWS_DEFAULT_REGION` is set and `nf-amazon` is loaded, completion email now uses AWS SES unless `mail.smtp` is configured. The launch machine's IAM principal needs `ses:SendRawEmail`, and `mail.from` must be an SES-verified identity. Explicit `NXF_ENABLE_AWS_SES=true` takes precedence over SMTP.
 - Raised the minimum required Nextflow version to 25.10.4 so the declared compatibility floor matches the version tested in CI. Runs on older Nextflow versions must upgrade before loading the plugin.
+- Improved citation formatting to follow [nf-core/modules Harvard style recommendation](https://github.com/nf-core/modules/blob/master/modules/meta-schema.json): short citations use `Author (year)` format (e.g. `Andrews (2010)`), italic `<em>et al.</em>`, DOI/homepage linking, and cleaner bibliography format ([#51](https://github.com/nf-core/nf-core-utils/pull/51)).
+- The citations-on-the-fly example now writes `auto_citations.html` instead of `auto_citations.txt`, matching the HTML returned by `toolCitationText()`. Open the file in a browser and copy the rendered text for use in a manuscript; the example logs output paths rather than raw markup ([#51](https://github.com/nf-core/nf-core-utils/pull/51)).
+
+### Removed
+
+- Removed `getReferencesFile()` and `getReferencesValue()`.
 
 ### Fixed
 
+- Corrected short citations for Harvard-style single authors (`Andrews, S.`) and compound surnames (`van der Walt, S.`), while retaining support for legacy author lists and flat citation metadata ([#51](https://github.com/nf-core/nf-core-utils/pull/51)).
+- Restored the bibliography homepage link for tools with publication metadata but no DOI, including older flat-field metadata. DOI links still take precedence when available ([#51](https://github.com/nf-core/nf-core-utils/pull/51)).
+- Fixed fresh Amp orbs missing validation tools: setup now installs mise, the locked Java/Nextflow/nf-test toolchain, and checksum-verified Miniforge with validation's Conda channels, and exposes them in subsequent login shells.
+- Restored a 30-second wait limit for `completionEmail()` attachment preparation and delivery through Nextflow's mailer. A blocked SMTP connection or local mail command no longer holds up pipeline shutdown; timeouts warn without retrying, and temporary attachments remain owned by the sender until it exits ([#80](https://github.com/nf-core/nf-core-utils/pull/80)).
+- Corrected completion-email examples to resolve the collected MultiQC reports only when bound, preventing an aborted run from blocking before the plugin's delivery deadline starts ([nf-core/tools#4486](https://github.com/nf-core/tools/pull/4486)).
 - Removed observer-owned startup validation to avoid duplicate warnings when pipelines call exported or template-local checks. Pipelines relying only on the observer must explicitly call `checkConfigProvided()` and `checkProfileProvided(args)` during initialization. Profile validation now aborts with one `ERROR` label instead of two; loading the plugin alone no longer attempts validation whose errors Nextflow swallows ([#73](https://github.com/nf-core/nf-core-utils/issues/73)).
 - Fixed `completionEmail()` renaming remote MultiQC attachments to generated temporary filenames. Attachments keep their original basename, and plaintext emails or runs without an email recipient no longer read/download reports or render the sendmail template. Temporary copies and their directories are cleaned up without changing summary report persistence ([#74](https://github.com/nf-core/nf-core-utils/issues/74)).
+- Fixed parameter types such as `List<String>` showing as `List` in the docs, on GitHub and nf-co.re, where `<String>` was taken for an HTML tag.
 
 ## [0.6.0] - 2026-10-17
 

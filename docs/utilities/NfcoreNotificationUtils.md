@@ -259,10 +259,14 @@ Emails are delivered with Nextflow's built-in [`sendMail()`](https://docs.seqera
        smtp.auth = true
        smtp.starttls.enable = true
        smtp.starttls.required = true
+       // Transport timeouts are in milliseconds
+       smtp.connectiontimeout = 5000
+       smtp.timeout = 5000
+       smtp.writetimeout = 5000
    }
    ```
 
-3. AWS SES when `AWS_REGION` or `AWS_DEFAULT_REGION` is set and `nf-amazon` is loaded
+3. AWS SES when `AWS_REGION` or `AWS_DEFAULT_REGION` is set and `nf-amazon` is loaded. Launch environments often export these variables for other AWS tools, so email can switch to SES without any mail configuration. The launch machine's IAM principal needs `ses:SendRawEmail`, and `mail.from` must be an SES-verified identity; otherwise sending fails with a warning. Configure `mail.smtp` to override this region-based selection. Explicit `NXF_ENABLE_AWS_SES=true` still takes precedence over SMTP.
 4. The local `sendmail` command, then `mail` (the `mail` command sends the plain text only, without attachments)
 
 The `onComplete` handler runs on the machine that launched the pipeline, so mail credentials and environment variables must be available there, not in task containers.
@@ -270,6 +274,8 @@ The `onComplete` handler runs on the machine that launched the pipeline, so mail
 HTML emails contain the rendered `assets/email_template.html` with `assets/email_template.txt` as the plain-text alternative, the pipeline logo `assets/<name>_logo_light.png` (the manifest name with `/` replaced by `-`) inline as `cid:nfcorepipelinelogo`, and the MultiQC report when it is smaller than `params.max_multiqc_email_size`. Plaintext emails (`plaintext_email`) contain only the text template. `assets/sendmail_template.txt` is no longer used.
 
 HTML and text reports are saved under `outdir/pipeline_info` before delivery is attempted. If delivery fails, the function logs a warning and the run is not failed. Success means the mail transport accepted the message, not that the recipient received it.
+
+Attachment preparation and delivery run on a daemon thread with a 30-second wait limit. On timeout, the function logs a warning and returns so `onComplete` can finish and Nextflow can stop running tasks. Cancellation is best-effort: a transport that ignores interruption may continue sending, so delivery status is unknown and the function does not retry. The sender removes temporary attachments when it exits, not while it might still be reading them; if it remains blocked until the JVM exits, temporary copies may remain on disk.
 
 MultiQC attachments retain the original report basename, including reports on remote filesystems such as object storage. Remote reports are copied into a temporary directory only when an HTML email has a recipient; both the copy and directory are removed after sending, including when sending fails, and cleanup failures are warnings. Reports at or above `params.max_multiqc_email_size` are not attached or downloaded. Some transports, such as AWS SES, limit the message size further. Plaintext emails and successful runs with only `email_on_fail` do not read or download attachments. The HTML and text summary reports are still saved even when no email is sent.
 
@@ -568,16 +574,22 @@ workflow.onError {
 
 Here's a comprehensive example showing all notification functions working together:
 
+This example uses legacy script syntax (`NXF_SYNTAX_PARSER=v1`) for top-level event handlers. Declare the collected report variable outside the workflow so those handlers can access it.
+
 ```nextflow
 #!/usr/bin/env nextflow
 
 include { completionSummary; completionEmail; imNotification } from 'plugin/nf-core-utils'
+
+def multiqc_reports
 
 workflow {
     // Main workflow logic here
     log.info "Pipeline execution starting..."
 
     // Process data...
+    MULTIQC(analysis_results)
+    multiqc_reports = MULTIQC.out.report.toList()
 
     log.info "Pipeline execution complete"
 }
@@ -620,7 +632,7 @@ workflow.onComplete {
             params.plaintext_email,
             params.outdir,
             params.monochrome_logs,
-            multiqc_report.ifEmpty([])
+            multiqc_reports.isBound() ? multiqc_reports.getVal() : []
         )
     }
 
@@ -672,6 +684,10 @@ workflow.onError {
     }
 }
 ```
+
+:::warning{title="Guard the MultiQC report"}
+Collect the output with `multiqc_reports = MULTIQC.out.report.toList()` in the workflow, then pass `multiqc_reports.isBound() ? multiqc_reports.getVal() : []` in the completion handler. `ifEmpty([])` returns a channel, not the resolved list that `completionEmail()` expects. Never use an unguarded `getVal()`: when a run aborts, `onComplete` runs before Nextflow stops running tasks, and the MultiQC output may never be produced. An unguarded read can then wait forever and prevent task cleanup. Arguments are evaluated before entering `completionEmail()`, so its delivery deadline cannot protect this read. See [nf-core/tools#4486](https://github.com/nf-core/tools/pull/4486).
+:::
 
 ---
 
@@ -786,8 +802,8 @@ if (!params.email && !params.email_on_fail) {
     log.info "No email addresses provided - skipping email notification"
 }
 
-// Verify MultiQC report exists
-def mqc_report = multiqc_report.ifEmpty([])
+// In the completion handler; collected with MULTIQC.out.report.toList() in the workflow
+def mqc_report = multiqc_reports.isBound() ? multiqc_reports.getVal() : []
 log.info "MultiQC reports to attach: ${mqc_report}"
 ```
 

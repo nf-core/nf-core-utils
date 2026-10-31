@@ -7,9 +7,11 @@ import nextflow.Session
 import nextflow.config.Manifest
 import nfcore.plugin.nfcore.NfcoreCitationUtils
 import org.slf4j.LoggerFactory
+import spock.lang.Issue
 import spock.lang.PendingFeature
 import spock.lang.Specification
 import spock.lang.TempDir
+import spock.lang.Unroll
 
 import java.nio.file.Path
 
@@ -101,10 +103,11 @@ class NfcoreCitationUtilsTest extends Specification {
           - samtools:
               doi: "10.1093/bioinformatics/btp352"
               homepage: "https://www.htslib.org/"
-              author: "Li H, Handsaker B, Wysoker A, et al."
-              year: 2009
-              title: "The Sequence Alignment/Map format and SAMtools"
-              journal: "Bioinformatics"
+              publication:
+                author: "Li H, Handsaker B, Wysoker A, et al."
+                year: 2009
+                title: "The Sequence Alignment/Map format and SAMtools"
+                source: "Bioinformatics"
           - fastqc:
               description: "Quality control tool for high throughput sequence data"
         """
@@ -118,9 +121,83 @@ class NfcoreCitationUtilsTest extends Specification {
         result.containsKey("samtools")
         result.containsKey("fastqc")
         result.samtools.citation == "samtools (DOI: 10.1093/bioinformatics/btp352)"
-        result.samtools.bibliography.contains("<li>Li H, Handsaker B, Wysoker A, et al.. 2009. The Sequence Alignment/Map format and SAMtools. Bioinformatics. doi: 10.1093/bioinformatics/btp352. <a href='https://www.htslib.org/'>https://www.htslib.org/</a></li>")
+        result.samtools.bibliography.contains("<li>Li H, Handsaker B, Wysoker A, et al. (2009). The Sequence Alignment/Map format and SAMtools. Bioinformatics. doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li>")
         result.fastqc.citation == "fastqc (Quality control tool for high throughput sequence data)"
-        result.fastqc.bibliography == "<li>fastqc</li>"
+        result.fastqc.bibliography == "<li>fastqc.</li>"
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    def "generateModuleToolCitation bibliography: DOI-only entries are named by tool, publication entries are author-led"() {
+        given:
+        def metaFile = new File(tempDir.toFile(), "meta_branches.yml")
+        metaFile << """
+        name: test_module
+        tools:
+          - bowtie2:
+              doi: "10.1038/nmeth.1923"
+          - bwa:
+              doi: "10.1093/bioinformatics/btp324"
+              publication:
+                author: "Li H"
+                year: 2009
+        """
+
+        when:
+        def result = NfcoreCitationUtils.generateModuleToolCitation(metaFile)
+
+        then: 'a DOI-only entry (no publication) is identified by the tool name rather than rendered anonymously'
+        result.bowtie2.bibliography == "<li>bowtie2. doi: <a href='https://doi.org/10.1038/nmeth.1923'>10.1038/nmeth.1923</a>.</li>"
+
+        and: 'an entry with a publication object is author-led and does not inject the tool name'
+        result.bwa.bibliography == "<li>Li H. (2009). doi: <a href='https://doi.org/10.1093/bioinformatics/btp324'>10.1093/bioinformatics/btp324</a>.</li>"
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    @Unroll
+    def "publication bibliography links to homepage without DOI: nested=#nested, doi=#doi"() {
+        given:
+        def info = nested
+            ? [publication: [author: 'Andrews, S.', year: 2010, title: 'FastQC', source: 'Project']]
+            : [author: 'Andrews, S.', year: 2010, title: 'FastQC', journal: 'Project']
+        info.homepage = 'https://example.org/fastqc'
+        if (doi) info.doi = doi
+
+        when:
+        def result = NfcoreCitationUtils.processCitationsFromTopic([['FASTQC', 'fastqc', info]])
+
+        then:
+        result.fastqc.bibliography == "<li>Andrews, S. (2010). FastQC. Project. ${link}.</li>"
+
+        where:
+        nested | doi                            | link
+        true   | null                           | "<a href='https://example.org/fastqc'>https://example.org/fastqc</a>"
+        false  | null                           | "<a href='https://example.org/fastqc'>https://example.org/fastqc</a>"
+        true   | '10.5555/example-doi-12345'      | "doi: <a href='https://doi.org/10.5555/example-doi-12345'>10.5555/example-doi-12345</a>"
+        false  | '10.5555/example-doi-12345'      | "doi: <a href='https://doi.org/10.5555/example-doi-12345'>10.5555/example-doi-12345</a>"
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    def "flat author/year/title/journal fields from pre-publication meta.yml still produce full citations"() {
+        given:
+        def metaFile = new File(tempDir.toFile(), "meta_flat.yml")
+        metaFile << """
+        name: test_module
+        tools:
+          - multiqc:
+              doi: "10.1093/bioinformatics/btw354"
+              author: "Ewels P, Magnusson M, Lundin S, et al."
+              year: 2016
+              title: "MultiQC"
+              journal: "Bioinformatics"
+        """
+
+        when:
+        def result = NfcoreCitationUtils.generateModuleToolCitation(metaFile)
+        def info = [doi: '10.1093/bioinformatics/btw354', author: 'Ewels P, Magnusson M', year: 2016]
+
+        then:
+        result.multiqc.bibliography == "<li>Ewels P, Magnusson M, Lundin S, et al. (2016). MultiQC. Bioinformatics. doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li>"
+        NfcoreCitationUtils.formatShortCitation('multiqc', info, '1.21') == "multiqc (1.21, <a href='https://doi.org/10.1093/bioinformatics/btw354'>Ewels <em>et al.</em> (2016)</a>)"
     }
 
     def "toolCitationText should format citations from collected module citations"() {
@@ -253,10 +330,11 @@ ${tool_bibliography}
           - samtools:
               doi: "10.1093/bioinformatics/btp352"
               homepage: "https://www.htslib.org/"
-              author: "Li H, et al."
-              year: 2009
-              title: "The Sequence Alignment/Map format and SAMtools"
-              journal: "Bioinformatics"
+              publication:
+                author: "Li H, et al."
+                year: 2009
+                title: "The Sequence Alignment/Map format and SAMtools"
+                source: "Bioinformatics"
         """
 
         def metaFile2 = new File(tempDir.toFile(), "module2_meta.yml")
@@ -349,9 +427,11 @@ ${tool_bibliography}
         def topicData = [
             ['NFCORE_FASTQC', 'fastqc', [
                 doi: '10.1093/bioinformatics/btv033',
-                author: 'Andrews S',
-                year: 2010,
-                title: 'FastQC: A Quality Control Tool for High Throughput Sequence Data',
+                publication: [
+                    author: 'Andrews S',
+                    year: 2010,
+                    title: 'FastQC: A Quality Control Tool for High Throughput Sequence Data'
+                ],
                 homepage: 'https://www.bioinformatics.babraham.ac.uk/projects/fastqc/'
             ]],
             ['NFCORE_SAMTOOLS', 'samtools', [
@@ -367,7 +447,7 @@ ${tool_bibliography}
         result.containsKey('fastqc')
         result.containsKey('samtools')
         result.fastqc.citation.contains('fastqc (DOI: 10.1093/bioinformatics/btv033)')
-        result.fastqc.bibliography.contains('<li>Andrews S. 2010. FastQC: A Quality Control Tool for High Throughput Sequence Data')
+        result.fastqc.bibliography.contains('<li>Andrews S. (2010). FastQC: A Quality Control Tool for High Throughput Sequence Data. doi: <a href=\'https://doi.org/10.1093/bioinformatics/btv033\'>10.1093/bioinformatics/btv033</a>.</li>')
         result.samtools.citation.contains('samtools (Tools for manipulating next-generation sequencing data)')
     }
 
@@ -380,9 +460,10 @@ ${tool_bibliography}
           - fastqc:
               doi: "10.1093/bioinformatics/btv033"
               homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
-              author: "Andrews S"
-              year: 2010
-              title: "FastQC: A Quality Control Tool for High Throughput Sequence Data"
+              publication:
+                author: "Andrews S"
+                year: 2010
+                title: "FastQC: A Quality Control Tool for High Throughput Sequence Data"
         '''.stripIndent()
         def filePaths = [tempFile.absolutePath]
 
@@ -414,7 +495,7 @@ ${tool_bibliography}
         def topicCitations = [
             ['NFCORE_FASTQC', 'fastqc', [
                 doi: '10.1093/bioinformatics/btv033',
-                author: 'Andrews S'
+                publication: [author: 'Andrews S']
             ]]
         ]
         def tempFile = File.createTempFile('meta', '.yml')
@@ -423,7 +504,8 @@ ${tool_bibliography}
         tools:
           - samtools:
               doi: "10.1093/bioinformatics/btp352"
-              author: "Li H, et al."
+              publication:
+                author: "Li H, et al."
         '''.stripIndent()
         def citationFiles = [tempFile.absolutePath]
 
@@ -449,7 +531,8 @@ ${tool_bibliography}
         tools:
           - fastqc:
               doi: "10.1093/bioinformatics/btv033"
-              author: "Andrews S"
+              publication:
+                author: "Andrews S"
           - samtools:
               description: "SAM/BAM processing utilities"
         '''.stripIndent()
@@ -460,7 +543,7 @@ ${tool_bibliography}
 
         then:
         result.size() == 2
-        result[0] == [moduleName, 'fastqc', [doi: '10.1093/bioinformatics/btv033', author: 'Andrews S']]
+        result[0] == [moduleName, 'fastqc', [doi: '10.1093/bioinformatics/btv033', publication: [author: 'Andrews S']]]
         result[1] == [moduleName, 'samtools', [description: 'SAM/BAM processing utilities']]
 
         cleanup:
@@ -595,9 +678,10 @@ ${tool_bibliography}
           - fastqc:
               doi: "10.1093/bioinformatics/btv033"
               homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
-              author: "Andrews S"
-              year: 2010
-              title: "FastQC: A Quality Control Tool for High Throughput Sequence Data"
+              publication:
+                author: "Andrews S"
+                year: 2010
+                title: "FastQC: A Quality Control Tool for High Throughput Sequence Data"
         '''.stripIndent()
 
         when:
@@ -608,7 +692,7 @@ ${tool_bibliography}
         result[0].size() == 3  // [module_name, tool_name, citation_data]
         result[0][1] == 'fastqc'  // tool name
         result[0][2].doi == '10.1093/bioinformatics/btv033'
-        result[0][2].author == 'Andrews S'
+        result[0][2].publication.author == 'Andrews S'
 
         cleanup:
         tempFile.delete()
@@ -655,10 +739,12 @@ ${tool_bibliography}
         tools:
           - samtools:
               doi: "10.1093/bioinformatics/btp352"
-              author: "Li H, et al."
+              publication:
+                author: "Li H, et al."
           - bcftools:
               doi: "10.1093/gigascience/giab008"
-              author: "Danecek P, et al."
+              publication:
+                author: "Danecek P, et al."
         '''.stripIndent()
 
         when:
@@ -696,9 +782,11 @@ ${tool_bibliography}
         def topicCitations = [
             ['FASTQC', 'fastqc', [
                 doi: '10.1093/bioinformatics/btv033',
-                author: 'Andrews S',
-                year: 2010,
-                title: 'FastQC: Quality Control Tool',
+                publication: [
+                    author: 'Andrews S',
+                    year: 2010,
+                    title: 'FastQC: Quality Control Tool'
+                ],
                 homepage: 'https://example.com'
             ]]
         ]
@@ -944,25 +1032,37 @@ ${tool_bibliography}
         NfcoreCitationUtils.toolVersionsFromTopic(topicVersions) == ['fastqc': '0.12.1', 'multiqc': '1.21']
     }
 
-    def "formatShortCitation includes version and a single short author with year"() {
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    @Unroll
+    def "formatShortCitation distinguishes single and multiple authors: #author"() {
         expect:
-        NfcoreCitationUtils.formatShortCitation('fastqc', [author: 'Andrews S', year: 2010], '0.12.1') == 'fastqc (0.12.1, Andrews 2010)'
-    }
+        NfcoreCitationUtils.formatShortCitation('tool', [publication: [author: author, year: 2021]], '1.21') == "tool (1.21, ${reference} (2021))"
+        NfcoreCitationUtils.formatShortCitation('tool', [author: author, year: 2021], '1.21') == "tool (1.21, ${reference} (2021))"
 
-    def "formatShortCitation uses 'et al.' for multiple authors"() {
-        expect:
-        NfcoreCitationUtils.formatShortCitation('samtools', [author: 'Danecek P, Bonfield JK, et al.', year: 2021], '1.21') == 'samtools (1.21, Danecek et al. 2021)'
+        where:
+        author                                          | reference
+        'Andrews S'                                     | 'Andrews'
+        'Andrews, S.'                                   | 'Andrews'
+        'van der Walt, S.'                              | 'van der Walt'
+        'Smith-Jones, A. B.'                            | 'Smith-Jones'
+        'Einstein, A., Feynman, R. P. & Hawking, S.'     | 'Einstein <em>et al.</em>'
+        'Smith, J. & Jones, B.'                         | 'Smith <em>et al.</em>'
+        'Smith, J., Jones, B.'                          | 'Smith <em>et al.</em>'
+        'Danecek P, Bonfield JK, et al.'                | 'Danecek <em>et al.</em>'
+        'Smith J & Jones B'                            | 'Smith <em>et al.</em>'
+        'Smith J and Jones B'                          | 'Smith <em>et al.</em>'
+        'Li H et al.'                                  | 'Li <em>et al.</em>'
     }
 
     def "formatShortCitation falls back to doi then url when no author"() {
         expect:
-        NfcoreCitationUtils.formatShortCitation('multiqc', [doi: '10.1093/bioinformatics/btw354'], '1.21') == 'multiqc (1.21, doi: 10.1093/bioinformatics/btw354)'
-        NfcoreCitationUtils.formatShortCitation('seqtk', [homepage: 'https://github.com/lh3/seqtk'], '1.4') == 'seqtk (1.4, https://github.com/lh3/seqtk)'
+        NfcoreCitationUtils.formatShortCitation('multiqc', [doi: '10.1093/bioinformatics/btw354'], '1.21') == 'multiqc (1.21, <a href=\'https://doi.org/10.1093/bioinformatics/btw354\'>doi: 10.1093/bioinformatics/btw354</a>)'
+        NfcoreCitationUtils.formatShortCitation('seqtk', [homepage: 'https://github.com/lh3/seqtk'], '1.4') == 'seqtk (1.4, <a href=\'https://github.com/lh3/seqtk\'>https://github.com/lh3/seqtk</a>)'
     }
 
     def "formatShortCitation omits the version segment when no version is known"() {
         expect:
-        NfcoreCitationUtils.formatShortCitation('fastqc', [author: 'Andrews S', year: 2010], null) == 'fastqc (Andrews 2010)'
+        NfcoreCitationUtils.formatShortCitation('fastqc', [publication: [author: 'Andrews S', year: 2010]], null) == 'fastqc (Andrews (2010))'
     }
 
     def "citationsOnTheFly produces publication-style short citations with version"() {
@@ -972,8 +1072,9 @@ ${tool_bibliography}
         name: fastqc
         tools:
           - fastqc:
-              author: "Andrews S"
-              year: 2010
+              publication:
+                author: "Andrews S"
+                year: 2010
               doi: "10.1093/bioinformatics/btv033"
               homepage: "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/"
         '''.stripIndent()
@@ -982,8 +1083,8 @@ ${tool_bibliography}
         when:
         def result = NfcoreCitationUtils.citationsOnTheFly(topicVersions, [fastqcMeta.absolutePath])
 
-        then: 'short citation is copy-paste ready: tool (version, Author year)'
-        result.fastqc.citation == 'fastqc (0.12.1, Andrews 2010)'
+        then: 'short citation is copy-paste ready: tool (version, Author (year)) with DOI link'
+        result.fastqc.citation == 'fastqc (0.12.1, <a href=\'https://doi.org/10.1093/bioinformatics/btv033\'>Andrews (2010)</a>)'
 
         and: 'the full bibliography is unchanged'
         result.fastqc.bibliography.contains('<li>')
@@ -1020,7 +1121,31 @@ ${tool_bibliography}
         then: 'the manually-added tool is cited (no version segment, resolved from meta.yml)'
         result.containsKey('fastqc')
         result.containsKey('multiqcsav')
-        result.multiqcsav.citation == 'multiqcsav (https://github.com/MultiQC/MultiQC_SAV/)'
+        result.multiqcsav.citation == 'multiqcsav (<a href=\'https://github.com/MultiQC/MultiQC_SAV/\'>https://github.com/MultiQC/MultiQC_SAV/</a>)'
+    }
+
+    // --- toolName fallback for DOI-only entries ---
+
+    def "formatBibliographyFromData uses toolName fallback for DOI-only entries (no publication)"() {
+        given:
+        def metaFile = File.createTempFile('doi_only', '.yml')
+        metaFile.text = '''
+        name: test_module
+        tools:
+          - samtools:
+              doi: "10.1093/bioinformatics/btp352"
+              homepage: "https://www.htslib.org/"
+        '''.stripIndent()
+
+        when:
+        def result = NfcoreCitationUtils.generateModuleToolCitation(metaFile)
+
+        then: 'bibliography entry includes tool name even without publication block'
+        result.samtools.bibliography.contains('samtools')
+        result.samtools.bibliography.contains('10.1093/bioinformatics/btp352')
+
+        cleanup:
+        metaFile.delete()
     }
 
     // --- log capture helpers ---
