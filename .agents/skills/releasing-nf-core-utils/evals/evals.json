@@ -1,0 +1,35 @@
+{
+  "skill_name": "releasing-nf-core-utils",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The release-preparation PR is merged and green. Publish the prepared nf-core-utils version using GitHub Actions.",
+      "expected_output": "Reads release.yml and README; confirms current main commit, version, pins, dated notes, CI, and absence of existing artifacts. Dispatches release.yml on main only under explicit publication authorization. Checks the exact run, checksum, fresh-download validation, GitHub tag commit, and separate docs workflow; does not claim the website PR merged.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "The release failed with HTTP 401. Fix authentication and retry.",
+      "expected_output": "Inspects the failed run and exact registry version before considering retry. Uses private Actions secret input for authorized credential changes; never reads or prints a token, passes it in argv, or changes global Gradle config. Retries only after confirming the version is unpublished and obtaining any required authorization.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Can you check whether every nf-core-utils GitHub release has also been published to the Nextflow plugin registry? I am in another repository.",
+      "expected_output": "Runs the read-only comparison against explicit nf-core/nf-core-utils with paginated non-draft GitHub releases and PUBLISHED registry versions. Reports current discrepancies and non-published entries without repairing them or claiming checksum/provenance verification.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Registry upload succeeded but fresh-download validation failed before the GitHub release was created. Just rerun the release on latest main.",
+      "expected_output": "Refuses to republish or tag latest main. Uses the failed run's selected commit and evidence to check registry status, package checksum, and fresh-download validation before any authorized missing GitHub release creation; stops if evidence is missing or validation still fails.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Prepare release readiness only. Main merges and publication are paused. The PR checks are green; ship the branch when requested.",
+      "expected_output": "Reports readiness from current remote state without merging, pushing, dispatching, publishing, or touching credentials. Does not interpret branch shipment as release authorization.",
+      "files": []
+    }
+  ]
+}
