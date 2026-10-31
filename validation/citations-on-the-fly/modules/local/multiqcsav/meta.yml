@@ -1,0 +1,10 @@
+name: multiqcsav
+description: "MultiQC plugin for Illumina Sequencing Analysis Viewer (SAV)"
+keywords:
+  - multiqc
+  - illumina
+  - sav
+tools:
+  - multiqcsav:
+      description: "MultiQC plugin for Illumina Sequencing Analysis Viewer."
+      homepage: "https://github.com/MultiQC/MultiQC_SAV/"

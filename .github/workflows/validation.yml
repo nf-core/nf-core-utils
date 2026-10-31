@@ -8,41 +8,36 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  NFT_VER: "0.9.3"
+  NFT_DIFF: pdiff
+  NFT_DIFF_ARGS: "--line-numbers --expand-tabs=2"
   NXF_ANSI_LOG: false
+  NXF_AGENT_MODE: false
   NXF_SINGULARITY_CACHEDIR: ${{ github.workspace }}/.singularity
   NXF_SINGULARITY_LIBRARYDIR: ${{ github.workspace }}/.singularity
 jobs:
   validation:
+    name: Nextflow ${{ matrix.nextflow }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Latest patch of every supported stable line, plus the minimum supported version (25.10.4).
+        nextflow: ["25.10.4", "25.10.8", "26.04.7", "26.10.2"]
+    env:
+      NXF_VER: ${{ matrix.nextflow }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
+      - name: Set up tools
+        uses: jdx/mise-action@v5
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+      - name: Set up Gradle and cache
+        uses: gradle/actions/setup-gradle@v5
 
-      - name: Install Nextflow
-        uses: nf-core/setup-nextflow@v2
-
-      - name: Install nf-test
-        uses: nf-core/setup-nf-test@v1
-        with:
-          install-pdiff: true
+      - name: Install snapshot diff formatter
+        run: python -m pip install pdiff
 
       - name: Conda setup
         uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3
@@ -53,19 +48,21 @@ jobs:
           conda-remove-defaults: true
 
       - name: Clean workspace
-        run: make clean
+        run: mise run clean
 
       - name: Set NFT_WORKDIR dynamically
         run: echo "NFT_WORKDIR=$HOME" >> $GITHUB_ENV
 
       - name: Build and validate plugin
-        run: make validate
+        run: |
+          mise exec -- nextflow -version
+          mise run validate
 
       - name: Upload validation artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: validation-results
+          name: validation-results-${{ matrix.nextflow }}
           path: |
             validation/*/work/pipeline_info/
             validation/*/work/*.log
@@ -78,7 +75,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: validation-logs
+          name: validation-logs-${{ matrix.nextflow }}
           path: |
             validation/*/.nextflow.log
             validation/*/work/**/*.log

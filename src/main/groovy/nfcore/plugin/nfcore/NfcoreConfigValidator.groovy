@@ -18,23 +18,35 @@ package nfcore.plugin.nfcore
 
 import groovy.util.logging.Slf4j
 import nextflow.Session
+import nextflow.exception.AbortOperationException
 
 /**
  * Validates pipeline configurations and provides feedback
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcoreConfigValidator')
 class NfcoreConfigValidator {
 
     /**
      * Checks if a custom config or profile has been provided, logs a warning if not.
      * @param projectName The project name
-     * @param config The config map (should have profile and configFiles)
+     * @param config A map with the profile and configFiles of the run; Nextflow keeps them in the Session,
+     *               not in the config map, see {@link #checkConfigProvided(String, String, List)}
      * @return true if config is valid, false otherwise
      */
     static boolean checkConfigProvided(String projectName, Map config) {
-        def profile = config?.get('profile') ?: 'standard'
         List configFiles = (config?.get('configFiles') instanceof List) ? (List) config.get('configFiles') : []
-        if (profile == 'standard' && configFiles.size() <= 1) {
+        return checkConfigProvided(projectName, config?.get('profile') as String, configFiles)
+    }
+
+    /**
+     * Checks if a custom config or profile has been provided, logs a warning if not.
+     * @param projectName The project name
+     * @param profile The profile of the run (session.profile), 'standard' when none is given
+     * @param configFiles The config files of the run (session.configFiles), the pipeline's own included
+     * @return true if config is valid, false otherwise
+     */
+    static boolean checkConfigProvided(String projectName, String profile, List configFiles) {
+        if ((profile ?: 'standard') == 'standard' && (configFiles ?: []).size() <= 1) {
             log.warn("[${projectName}] You are attempting to run the pipeline without any custom configuration!\n\n" +
                     "This will be dependent on your local compute environment but can be achieved via one or more of the following:\n" +
                     "   (1) Using an existing pipeline profile e.g. `-profile docker` or `-profile singularity`\n" +
@@ -50,22 +62,32 @@ class NfcoreConfigValidator {
      * Checks if the profile string is valid and warns about positional arguments.
      *
      * @param profile The profile string (e.g. from workflow.profile)
-     * @param commandLine The command line string
+     * @param commandLine The positional arguments of the script, separated by spaces; not the full command line,
+     *                    whose first word is always `nextflow`
      * @param monochromeLogs Whether to use monochrome logs (default: true)
      */
     static void checkProfileProvided(String profile, String commandLine, boolean monochromeLogs = true) {
+        checkProfileAndArgs(profile, commandLine ? commandLine.split(/\s+/).findAll() as List : [], monochromeLogs)
+    }
+
+    /**
+     * Checks if the profile string is valid and warns about positional arguments.
+     *
+     * @param profile The profile string (e.g. from workflow.profile)
+     * @param args The positional arguments of the script (`args` in the pipeline)
+     * @param monochromeLogs Whether to use monochrome logs (default: true)
+     */
+    static void checkProfileAndArgs(String profile, List args, boolean monochromeLogs = true) {
         if (profile?.endsWith(',')) {
             def colors = nfcore.plugin.nfcore.NfcoreNotificationUtils.logColours(monochromeLogs)
-            throw new IllegalArgumentException(
+            throw new AbortOperationException(
                     "${colors.red}ERROR${colors.reset} ~ The `-profile` option cannot end with a trailing comma, please remove it and re-run the pipeline!\n" +
                             "${colors.yellow}HINT${colors.reset}: A common mistake is to provide multiple values separated by spaces e.g. `-profile test, docker`.\n"
             )
         }
-        if (commandLine != null && !commandLine.isEmpty()) {
-            // Split the command line into arguments
-            def args = commandLine.split(/\s+/)
+        if (args) {
             // Find the first positional argument (not starting with '-')
-            def positional = args.find { !it.startsWith('-') }
+            def positional = args.find { !it.toString().startsWith('-') }
             if (positional) {
                 log.warn(
                         "nf-core pipelines do not accept positional arguments. The positional argument `${positional}` has been detected.\n" +
@@ -97,7 +119,8 @@ class NfcoreConfigValidator {
      * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §2
      */
     static void validateConfig(PipelineExecutionContext ctx) {
-        validateConfig(ctx.profile, null, ctx.projectName, ctx.config)
+        checkProfileAndArgs(ctx.profile, [], true)
+        checkConfigProvided(ctx.projectName, ctx.profile, ctx.configFiles)
     }
 
     /**
@@ -121,6 +144,7 @@ class NfcoreConfigValidator {
         if (meta != null && meta.metaClass?.hasProperty(meta, 'projectName')) {
             projectName = meta.projectName
         }
-        validateConfig(profile, commandLine, projectName, session.config)
+        checkProfileProvided(profile, commandLine, true)
+        checkConfigProvided(projectName, profile, session.configFiles)
     }
 }

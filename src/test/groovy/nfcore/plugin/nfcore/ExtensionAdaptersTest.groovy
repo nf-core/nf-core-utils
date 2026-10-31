@@ -1,8 +1,10 @@
 package nfcore.plugin.nfcore
 
+import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
+import nextflow.exception.AbortOperationException
 import org.slf4j.LoggerFactory
 import spock.lang.Narrative
 import spock.lang.Issue
@@ -26,7 +28,8 @@ class ExtensionAdaptersTest extends Specification {
         given:
         def ctx = new PipelineExecutionContext(
             projectName: 'nf-core/rnaseq',
-            config: [profile: 'standard', configFiles: ['a.config', 'b.config']]
+            profile: 'standard',
+            configFiles: ['a.config', 'b.config']
         )
         def adapter = new ValidationAdapter(ctx)
 
@@ -42,7 +45,8 @@ class ExtensionAdaptersTest extends Specification {
         def appender = captureLogsFor(NfcoreConfigValidator)
         def ctx = new PipelineExecutionContext(
             projectName: 'pipe',
-            config: [profile: 'standard', configFiles: ['main.config']]
+            profile: 'standard',
+            configFiles: ['main.config']
         )
         def adapter = new ValidationAdapter(ctx)
 
@@ -56,6 +60,44 @@ class ExtensionAdaptersTest extends Specification {
         detachAppender(appender, NfcoreConfigValidator)
     }
 
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/66")
+    def 'ValidationAdapter.checkProfileProvided checks the profile of the run'() {
+        given:
+        def adapter = new ValidationAdapter(new PipelineExecutionContext(profile: 'test,'))
+
+        when:
+        adapter.checkProfileProvided([], true)
+
+        then:
+        thrown(AbortOperationException)
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/66")
+    def 'ValidationAdapter.checkProfileProvided warns about positional arguments only'() {
+        given:
+        def appender = captureLogsFor(NfcoreConfigValidator)
+        def adapter = new ValidationAdapter(new PipelineExecutionContext(profile: 'test'))
+
+        when:
+        adapter.checkProfileProvided(args, true)
+        def warnings = appender.list.findAll { it.level == Level.WARN }*.formattedMessage
+
+        then:
+        warnings.size() == (positional ? 1 : 0)
+        !positional || warnings[0].contains("`${positional}`")
+
+        cleanup:
+        detachAppender(appender, NfcoreConfigValidator)
+
+        where:
+        args                        || positional
+        []                          || null
+        ['docker']                  || 'docker'
+        ['-profile', 'test,docker'] || null
+        ['-profile', 'test', 'foo'] || 'foo'
+    }
+
+    @Issue('https://github.com/nf-core/nf-core-utils/issues/73')
     def 'ValidationAdapter.checkProfileProvided detects trailing comma'() {
         given:
         def ctx = new PipelineExecutionContext(profile: 'test')
@@ -65,7 +107,7 @@ class ExtensionAdaptersTest extends Specification {
         adapter.checkProfileProvided(['-profile', 'test,'], true)
 
         then:
-        thrown(IllegalArgumentException)
+        thrown(AbortOperationException)
     }
 
     // --- VersionAdapter ---
@@ -80,6 +122,17 @@ class ExtensionAdaptersTest extends Specification {
 
         then:
         result == 'v3.14.0'
+    }
+
+    def 'VersionAdapter.getWorkflowVersion adds the commit of the run from context'() {
+        given:
+        def ctx = new PipelineExecutionContext(workflowVersion: '3.14.0', workflowCommitId: '957a0a3ea1f25acaf47420ed1976e34f1cd57cdc')
+        def adapter = new VersionAdapter(ctx)
+
+        expect:
+        adapter.getWorkflowVersion() == 'v3.14.0-g957a0a3'
+        adapter.getWorkflowVersion(null, 'abcdef1234567890') == 'v3.14.0-gabcdef1'
+        adapter.getWorkflowVersion('2.0.0', null) == 'v2.0.0'
     }
 
     def 'VersionAdapter.getWorkflowVersion uses explicit version over context'() {
@@ -137,13 +190,13 @@ class ExtensionAdaptersTest extends Specification {
 
     private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {
         def appender = new ListAppender<ILoggingEvent>()
-        def logger = (Logger) LoggerFactory.getLogger(clazz)
+        def logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.${clazz.simpleName}")
         appender.start()
         logger.addAppender(appender)
         return appender
     }
 
     private void detachAppender(ListAppender appender, Class clazz) {
-        ((Logger) LoggerFactory.getLogger(clazz)).detachAppender(appender)
+        ((Logger) LoggerFactory.getLogger("nextflow.nfcore.${clazz.simpleName}")).detachAppender(appender)
     }
 }

@@ -32,6 +32,7 @@ import nfcore.plugin.nfcore.ValidationAdapter
 import nfcore.plugin.nfcore.VersionAdapter
 import nfcore.plugin.nfcore.ReportingAdapter
 import nfcore.plugin.ReferencesUtils
+import nfcore.plugin.references.ReferenceSelection
 
 /**
  * Thin extension point — delegates to focused adapter modules initialized
@@ -39,7 +40,7 @@ import nfcore.plugin.ReferencesUtils
  *
  * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §5
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfUtilsExtension')
 class NfUtilsExtension extends PluginExtensionPoint {
 
     private Session session
@@ -69,6 +70,39 @@ class NfUtilsExtension extends PluginExtensionPoint {
         Map params = session?.getConfig()?.get('params') as Map
         if (!params) params = session?.params as Map
         return ReferencesUtils.getGenomeAttribute(params, attribute)
+    }
+
+    /**
+     * Get a reference attribute from a loaded reference sheet, falling back to genome config.
+     * Accepts named arguments (Groovy style).
+     * @param args Named arguments: param, datasheet, genomeMap, genomeKey
+     * @return The attribute value from sheet or genome config, or null if not found
+     */
+    @Function
+    Object getReferenceAttribute(Map args) {
+        return ReferenceSelection.getReferenceAttribute(args)
+    }
+
+    /**
+     * Determine which reference path to use: explicit --references or built from genome.
+     * Accepts named arguments (Groovy style).
+     * @param args Named arguments: references, genome, igenomesIgnore, datasheetPath
+     * @return The datasheet path to load, or null if neither references nor genome is provided
+     */
+    @Function
+    String getReferencePath(Map args) {
+        return ReferenceSelection.getReferencePath(args)
+    }
+
+    /**
+     * Extract reference metadata from parsed datasheet rows.
+     * Accepts named arguments (Groovy style).
+     * @param args Named argument: rows (output of samplesheetToList)
+     * @return Map of reference metadata attributes
+     */
+    @Function
+    Map getReferenceMetadata(Map args) {
+        return ReferenceSelection.getReferenceMetadata(args)
     }
 
     /**
@@ -129,32 +163,6 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     boolean checkConfigProvided() {
         return validationAdapter.checkConfigProvided()
-    }
-
-    // --- Methods from ReferencesExtension ---
-    /**
-     * Get references file from a references list or parameters
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The file parameter
-     * @param attribute The attribute to look for in metadata
-     * @param basepath The base path for igenomes
-     * @return A list of reference files
-     */
-    @Function
-    List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
-        return nfcore.plugin.references.ReferencesUtils.getReferencesFile(referencesList, param, attribute, basepath)
-    }
-
-    /**
-     * Get references value from a references list or parameters
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The value parameter
-     * @param attribute The attribute to look for in metadata
-     * @return A list of reference values
-     */
-    @Function
-    List getReferencesValue(List<List> referencesList, String param, String attribute) {
-        return nfcore.plugin.references.ReferencesUtils.getReferencesValue(referencesList, param, attribute)
     }
 
     // --- Methods from NextflowPipelineExtension ---
@@ -550,6 +558,37 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     String autoToolBibliographyText(List topicCitations = []) {
         return NfcoreCitationUtils.autoToolBibliographyText(topicCitations)
+    }
+
+    /**
+     * Extract the unique set of tool names that actually ran, from collected
+     * 'versions' topic data ([process, tool, version] tuples).
+     *
+     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect()
+     * @return Sorted, de-duplicated list of tool names
+     */
+    @Function
+    List<String> toolsFromVersionsTopic(List topicVersions) {
+        return NfcoreCitationUtils.toolsFromVersionsTopic(topicVersions)
+    }
+
+    /**
+     * Citations on the fly: build citations for only the tools that ran,
+     * resolved from module meta.yml.
+     *
+     * Intersects the 'versions' topic (what executed) with citations parsed from
+     * the supplied meta.yml files. The returned map feeds directly into
+     * {@link #toolCitationText}, {@link #toolBibliographyText} and
+     * {@link #methodsDescriptionText}.
+     *
+     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect(flat: false)
+     * @param metaFilePaths Paths to module meta.yml files
+     * @param extraTools Extra tool names to cite even though they did not emit a version (e.g. multiqcsav)
+     * @return Citations map (tool -> [citation, bibliography]) for tools that ran
+     */
+    @Function
+    Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<String> extraTools = []) {
+        return NfcoreCitationUtils.citationsOnTheFly(topicVersions, metaFilePaths, extraTools)
     }
 
     /**

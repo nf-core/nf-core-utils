@@ -124,61 +124,110 @@ class ReferenceSelectionTest extends Specification {
         sel.resolveFile('bowtie2', '/base') == null
     }
 
-    // --- getReferencesFile / getReferencesValue delegation ---
+    // --- getReferencePath / getReferenceMetadata / getReferenceAttribute ---
 
-    def 'getReferencesFile uses param when provided'() {
-        given:
-        def sel = new ReferenceSelection('GRCh38', GENOMES)
-        def refList = [
-            [[id: 'sample1', fasta: '/igenomes/genome.fa'], null]
-        ]
-
-        when:
-        def result = sel.getReferencesFile(refList, '/override.fa', 'fasta', '/base')
-
-        then:
-        result[0][1] == '/override.fa'
+    def 'getReferencePath prefers an explicit references path'() {
+        expect:
+        ReferenceSelection.getReferencePath(references: 'my.yml', genome: null, igenomesIgnore: false, datasheetPath: null) == 'my.yml'
     }
 
-    def 'getReferencesFile falls back to meta attribute with basepath substitution'() {
-        given:
-        def sel = new ReferenceSelection('GRCh38', GENOMES)
-        def refList = [
-            [[id: 'sample1', fasta: '${params.igenomes_base}/genome.fa'], null]
-        ]
-
-        when:
-        def result = sel.getReferencesFile(refList, null, 'fasta', '/data/igenomes')
-
-        then:
-        result[0][1] == '/data/igenomes/genome.fa'
+    def 'getReferencePath builds the catalogue path'() {
+        expect:
+        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: 'https://host/') == 'https://host/Ensembl/GRCh38.yml'
+        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: 's3://bucket/refs//') == 's3://bucket/refs/Ensembl/GRCh38.yml'
     }
 
-    def 'getReferencesValue uses param when provided'() {
-        given:
-        def sel = new ReferenceSelection('GRCh38', GENOMES)
-        def refList = [
-            [[id: 'sample1', species: 'Homo sapiens'], null]
-        ]
-
+    def 'getReferencePath requires a datasheet base path'() {
         when:
-        def result = sel.getReferencesValue(refList, 'override', 'species')
+        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: '')
 
         then:
-        result[0][1] == 'override'
+        thrown(IllegalArgumentException)
     }
 
-    def 'getReferencesValue falls back to meta attribute'() {
-        given:
-        def sel = new ReferenceSelection('GRCh38', GENOMES)
-        def refList = [
-            [[id: 'sample1', species: 'Homo sapiens'], null]
-        ]
+    def 'getReferencePath returns null without a source'() {
+        expect:
+        ReferenceSelection.getReferencePath(references: null, genome: 'GRCh38', igenomesIgnore: false, datasheetPath: null) == null
+        ReferenceSelection.getReferencePath(references: null, genome: 'null', igenomesIgnore: true, datasheetPath: 'x') == null
+    }
 
+    def 'getReferencePath rejects references and genome together'() {
         when:
-        def result = sel.getReferencesValue(refList, null, 'species')
+        ReferenceSelection.getReferencePath(references: 'my.yml', genome: 'GRCh38', igenomesIgnore: false, datasheetPath: null)
 
         then:
-        result[0][1] == 'Homo sapiens'
+        thrown(IllegalArgumentException)
+    }
+
+    def 'getReferenceMetadata unwraps a samplesheet row'() {
+        expect:
+        ReferenceSelection.getReferenceMetadata(rows: [[[genome: 'GRCh38', fasta: 'a.fa'], null]]) == [genome: 'GRCh38', fasta: 'a.fa']
+    }
+
+    def 'getReferenceMetadata drops empty values'() {
+        expect:
+        ReferenceSelection.getReferenceMetadata(rows: [[[genome: 'GRCh38', fasta: null], null]]) == [genome: 'GRCh38']
+    }
+
+    def 'getReferenceMetadata rejects an empty datasheet'() {
+        when:
+        ReferenceSelection.getReferenceMetadata(rows: [])
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def 'getReferenceMetadata rejects multiple genomes'() {
+        when:
+        ReferenceSelection.getReferenceMetadata(rows: [[[genome: 'GRCh38'], null], [[genome: 'GRCh37'], null]])
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def 'getReferenceAttribute prefers the datasheet value'() {
+        expect:
+        ReferenceSelection.getReferenceAttribute(param: 'fasta', datasheet: [fasta: 'sheet.fa'], genomeMap: GENOMES, genomeKey: 'GRCh38') == 'sheet.fa'
+    }
+
+    def 'getReferenceAttribute falls back to the genome map'() {
+        expect:
+        ReferenceSelection.getReferenceAttribute(param: 'gtf', datasheet: [fasta: 'sheet.fa'], genomeMap: GENOMES, genomeKey: 'GRCh38') == 's3://bucket/genes.gtf'
+    }
+
+    def 'getReferenceAttribute returns null without a datasheet or genome'() {
+        expect:
+        ReferenceSelection.getReferenceAttribute(param: 'fasta', datasheet: null, genomeMap: null, genomeKey: null) == null
+    }
+
+    def 'optional named arguments default to null'() {
+        expect:
+        ReferenceSelection.getReferencePath(references: 'my.yml') == 'my.yml'
+        ReferenceSelection.getReferencePath([:]) == null
+        ReferenceSelection.getReferenceAttribute(param: 'fasta') == null
+        ReferenceSelection.getReferenceAttribute(param: 'gtf', genomeMap: GENOMES, genomeKey: 'GRCh38') == 's3://bucket/genes.gtf'
+    }
+
+    def 'reference functions reject unknown named arguments'() {
+        when:
+        ReferenceSelection.getReferencePath(references: null, igenomeIgnore: true)
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains('igenomeIgnore')
+    }
+
+    def 'reference functions require param and rows'() {
+        when:
+        call()
+
+        then:
+        thrown(IllegalArgumentException)
+
+        where:
+        call << [
+            { ReferenceSelection.getReferenceAttribute(datasheet: [fasta: 'a.fa']) },
+            { ReferenceSelection.getReferenceMetadata([:]) },
+        ]
     }
 }

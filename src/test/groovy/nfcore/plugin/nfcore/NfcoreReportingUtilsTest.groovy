@@ -128,7 +128,7 @@ class NfcoreReportingUtilsTest extends Specification {
         result.contains("<dt>param1</dt><dd><samp>value1</samp></dd>")
 
         // Null parameter shows N/A
-        result.contains("<dt>param2</dt><dd><samp><span style=\"color:#999999;\">N/A</a></samp></dd>")
+        result.contains("<dt>param2</dt><dd><samp><span style=\"color:#999999;\">N/A</span></samp></dd>")
 
         cleanup:
         // Restore original method

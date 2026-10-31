@@ -1,7 +1,9 @@
 package nfcore.plugin.nfcore
 
+import java.nio.file.Paths
 import nextflow.Session
 import nextflow.config.Manifest
+import nextflow.script.WorkflowMetadata
 import spock.lang.Narrative
 import spock.lang.Issue
 import spock.lang.See
@@ -50,6 +52,22 @@ class PipelineExecutionContextTest extends Specification {
         ctx.workflowVersion == '3.14.0'
     }
 
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/68")
+    def 'fromSession extracts the commit of the run from workflow metadata'() {
+        given:
+        def session = Mock(Session) {
+            getManifest() >> Mock(Manifest)
+            getConfig() >> [:]
+            getWorkflowMetadata() >> Mock(WorkflowMetadata) { getCommitId() >> '957a0a3ea1f25acaf47420ed1976e34f1cd57cdc' }
+        }
+
+        when:
+        def ctx = PipelineExecutionContext.fromSession(session)
+
+        then:
+        ctx.workflowCommitId == '957a0a3ea1f25acaf47420ed1976e34f1cd57cdc'
+    }
+
     def 'fromSession extracts nextflow version from config'() {
         given:
         def session = Mock(Session) {
@@ -77,6 +95,22 @@ class PipelineExecutionContextTest extends Specification {
 
         then:
         ctx.profile == 'docker,test'
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/66")
+    def 'fromSession extracts configFiles from the session'() {
+        given:
+        def session = Mock(Session) {
+            getManifest() >> Mock(Manifest)
+            getConfig() >> [:]
+            getConfigFiles() >> [Paths.get('/pipeline/nextflow.config'), Paths.get('/home/custom.config')]
+        }
+
+        when:
+        def ctx = PipelineExecutionContext.fromSession(session)
+
+        then:
+        ctx.configFiles == ['/pipeline/nextflow.config', '/home/custom.config']
     }
 
     def 'fromSession extracts configFiles from config map'() {
@@ -129,7 +163,8 @@ class PipelineExecutionContextTest extends Specification {
         ctx.profile == null
         ctx.configFiles == []
         ctx.config == [:]
-        ctx.nextflowVersion == null
+        // without config nor NXF_VER, the version of the running Nextflow
+        ctx.nextflowVersion == (System.getenv('NXF_VER') ?: NfcoreVersionUtils.runningNextflowVersion())
     }
 
     def 'fromSession handles null session'() {
