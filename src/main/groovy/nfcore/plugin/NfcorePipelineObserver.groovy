@@ -19,31 +19,18 @@ package nfcore.plugin
 import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.trace.TraceObserver
-import nfcore.plugin.nfcore.NfcoreConfigValidator
 
 /**
  * Implements an observer that allows implementing custom
  * logic on nextflow execution events.
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcorePipelineObserver')
 class NfcorePipelineObserver implements TraceObserver {
-
-    private final NfcoreConfigValidator configValidator
-
-    NfcorePipelineObserver(NfcoreConfigValidator configValidator = new NfcoreConfigValidator()) {
-        this.configValidator = configValidator
-    }
 
     @Override
     void onFlowCreate(Session session) {
-        def meta = session.getWorkflowMetadata()
-        def config = session.config
-        String projectName = null
-        if (meta != null && meta.metaClass?.hasProperty(meta, 'projectName')) {
-            projectName = meta.projectName
-        }
-        configValidator.checkConfigProvided(projectName, config)
-        configValidator.checkProfileProvided(session.profile, session.commandLine, true)
+        // Pipelines own startup validation, using exported functions or template-local checks.
+        // Observer checks duplicate their warnings, and Nextflow swallows callback exceptions.
         log.trace "Pipeline is starting! 🚀"
     }
 

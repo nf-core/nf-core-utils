@@ -33,8 +33,8 @@ Normalize nondeterministic values in `.nf.test` files, not `.snap` files:
 ## Checks
 
 ```bash
-make validate
-make update-snapshots   # only after expected behavior changes
-make validate           # confirm regenerated snapshots are stable
-prek -c prek.toml run validation-nf-test-snapshot-guard
+mise run validate
+mise run update-snapshots   # only after expected behavior changes
+mise run validate           # confirm regenerated snapshots are stable
+prek run validation-nf-test-snapshot-guard
 ```

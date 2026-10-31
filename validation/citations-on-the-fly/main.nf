@@ -68,28 +68,13 @@ workflow {
 
     // Write outputs and demonstrate usage
     ch_citations.subscribe { citations ->
-        log.info(
-            """
-            ==========================================
-            CITATIONS ON THE FLY RESULTS
-            ==========================================
-
-            Citation Text:
-            ${citations.citation_text}
-
-            Bibliography:
-            ${citations.bibliography}
-
-            ==========================================
-            """.stripIndent().trim()
-        )
-
         def output_dir = params.outdir
         new File(output_dir).mkdirs()
-        new File("${output_dir}/auto_citations.txt").text = citations.citation_text
+        new File("${output_dir}/auto_citations.html").text = citations.citation_text
         new File("${output_dir}/auto_bibliography.html").text = citations.bibliography
 
-        log.info("✅ Citations written to: ${output_dir}/")
+        log.info("HTML citations: ${output_dir}/auto_citations.html")
+        log.info("HTML bibliography: ${output_dir}/auto_bibliography.html")
     }
 
     workflow.onComplete {

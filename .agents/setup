@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$HOME/.local/share/miniforge3/condabin:$PATH"
+if ! command -v mise >/dev/null 2>&1; then
+    curl -fsSL --retry 3 https://mise.run | sh
+fi
+
+# Shims also work in non-interactive login shells used by Amp and orb services.
+profile_path='export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$HOME/.local/share/miniforge3/condabin:$PATH"'
+if ! grep -Fqx "$profile_path" "$HOME/.bash_profile" 2>/dev/null; then
+    printf '\n%s\n' "$profile_path" >> "$HOME/.bash_profile"
+fi
+
+echo 'Installing locked development tools'
+mise trust mise.toml
+mise install --locked
+mise reshim
+
+# Validation checks the real Conda channel configuration, as in CI.
+conda_home="$HOME/.local/share/miniforge3"
+if [[ ! -x "$conda_home/bin/conda" ]]; then
+    case "$(uname -m)" in
+        x86_64) checksum=571b410272cc434f28bc6c5c49ca8ffd4a4d1bcba9f57f1b6baccdb46446cfcc ;;
+        aarch64) checksum=1f4e2f1898c054dd35133f778b92794116c28af330e5d5936d56d5f765401db4 ;;
+        *) echo "Unsupported Conda architecture: $(uname -m)" >&2; exit 1 ;;
+    esac
+    echo 'Installing Miniforge for validation'
+    download_dir=$(mktemp -d)
+    trap 'rm -rf "$download_dir"' EXIT
+    curl -fsSL --retry 3 "https://github.com/conda-forge/miniforge/releases/download/26.9.4-1/Miniforge3-26.9.4-1-Linux-$(uname -m).sh" -o "$download_dir/miniforge.sh"
+    printf '%s  %s\n' "$checksum" "$download_dir/miniforge.sh" | sha256sum --check
+    bash "$download_dir/miniforge.sh" -b -p "$conda_home"
+    printf 'channels:\n  - conda-forge\n  - bioconda\nchannel_priority: strict\n' > "$conda_home/.condarc"
+fi
+
+# Warm dependencies and build outputs for the orb snapshot.
+mise exec -- ./gradlew --no-daemon assemble test

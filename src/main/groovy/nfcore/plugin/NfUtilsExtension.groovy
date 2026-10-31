@@ -32,6 +32,7 @@ import nfcore.plugin.nfcore.ValidationAdapter
 import nfcore.plugin.nfcore.VersionAdapter
 import nfcore.plugin.nfcore.ReportingAdapter
 import nfcore.plugin.ReferencesUtils
+import nfcore.plugin.references.ReferenceSelection
 
 /**
  * Thin extension point — delegates to focused adapter modules initialized
@@ -39,7 +40,7 @@ import nfcore.plugin.ReferencesUtils
  *
  * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §5
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfUtilsExtension')
 class NfUtilsExtension extends PluginExtensionPoint {
 
     private Session session
@@ -69,6 +70,39 @@ class NfUtilsExtension extends PluginExtensionPoint {
         Map params = session?.getConfig()?.get('params') as Map
         if (!params) params = session?.params as Map
         return ReferencesUtils.getGenomeAttribute(params, attribute)
+    }
+
+    /**
+     * Get a reference attribute from a loaded reference sheet, falling back to genome config.
+     * Accepts named arguments (Groovy style).
+     * @param args Named arguments: param, datasheet, genomeMap, genomeKey
+     * @return The attribute value from sheet or genome config, or null if not found
+     */
+    @Function
+    Object getReferenceAttribute(Map args) {
+        return ReferenceSelection.getReferenceAttribute(args)
+    }
+
+    /**
+     * Determine which reference path to use: explicit --references or built from genome.
+     * Accepts named arguments (Groovy style).
+     * @param args Named arguments: references, genome, igenomesIgnore, datasheetPath
+     * @return The datasheet path to load, or null if neither references nor genome is provided
+     */
+    @Function
+    String getReferencePath(Map args) {
+        return ReferenceSelection.getReferencePath(args)
+    }
+
+    /**
+     * Extract reference metadata from parsed datasheet rows.
+     * Accepts named arguments (Groovy style).
+     * @param args Named argument: rows (output of samplesheetToList)
+     * @return Map of reference metadata attributes
+     */
+    @Function
+    Map getReferenceMetadata(Map args) {
+        return ReferenceSelection.getReferenceMetadata(args)
     }
 
     /**
@@ -129,32 +163,6 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     boolean checkConfigProvided() {
         return validationAdapter.checkConfigProvided()
-    }
-
-    // --- Methods from ReferencesExtension ---
-    /**
-     * Get references file from a references list or parameters
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The file parameter
-     * @param attribute The attribute to look for in metadata
-     * @param basepath The base path for igenomes
-     * @return A list of reference files
-     */
-    @Function
-    List getReferencesFile(List<List> referencesList, String param, String attribute, String basepath) {
-        return nfcore.plugin.references.ReferencesUtils.getReferencesFile(referencesList, param, attribute, basepath)
-    }
-
-    /**
-     * Get references value from a references list or parameters
-     * @param referencesList The references list (List of [meta, _readme])
-     * @param param The value parameter
-     * @param attribute The attribute to look for in metadata
-     * @return A list of reference values
-     */
-    @Function
-    List getReferencesValue(List<List> referencesList, String param, String attribute) {
-        return nfcore.plugin.references.ReferencesUtils.getReferencesValue(referencesList, param, attribute)
     }
 
     // --- Methods from NextflowPipelineExtension ---

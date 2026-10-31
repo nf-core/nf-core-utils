@@ -11,6 +11,7 @@ import spock.lang.Issue
 import spock.lang.PendingFeature
 import spock.lang.Specification
 import spock.lang.TempDir
+import spock.lang.Unroll
 
 import java.nio.file.Path
 
@@ -149,6 +150,54 @@ class NfcoreCitationUtilsTest extends Specification {
 
         and: 'an entry with a publication object is author-led and does not inject the tool name'
         result.bwa.bibliography == "<li>Li H. (2009). doi: <a href='https://doi.org/10.1093/bioinformatics/btp324'>10.1093/bioinformatics/btp324</a>.</li>"
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    @Unroll
+    def "publication bibliography links to homepage without DOI: nested=#nested, doi=#doi"() {
+        given:
+        def info = nested
+            ? [publication: [author: 'Andrews, S.', year: 2010, title: 'FastQC', source: 'Project']]
+            : [author: 'Andrews, S.', year: 2010, title: 'FastQC', journal: 'Project']
+        info.homepage = 'https://example.org/fastqc'
+        if (doi) info.doi = doi
+
+        when:
+        def result = NfcoreCitationUtils.processCitationsFromTopic([['FASTQC', 'fastqc', info]])
+
+        then:
+        result.fastqc.bibliography == "<li>Andrews, S. (2010). FastQC. Project. ${link}.</li>"
+
+        where:
+        nested | doi                            | link
+        true   | null                           | "<a href='https://example.org/fastqc'>https://example.org/fastqc</a>"
+        false  | null                           | "<a href='https://example.org/fastqc'>https://example.org/fastqc</a>"
+        true   | '10.5555/example-doi-12345'      | "doi: <a href='https://doi.org/10.5555/example-doi-12345'>10.5555/example-doi-12345</a>"
+        false  | '10.5555/example-doi-12345'      | "doi: <a href='https://doi.org/10.5555/example-doi-12345'>10.5555/example-doi-12345</a>"
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    def "flat author/year/title/journal fields from pre-publication meta.yml still produce full citations"() {
+        given:
+        def metaFile = new File(tempDir.toFile(), "meta_flat.yml")
+        metaFile << """
+        name: test_module
+        tools:
+          - multiqc:
+              doi: "10.1093/bioinformatics/btw354"
+              author: "Ewels P, Magnusson M, Lundin S, et al."
+              year: 2016
+              title: "MultiQC"
+              journal: "Bioinformatics"
+        """
+
+        when:
+        def result = NfcoreCitationUtils.generateModuleToolCitation(metaFile)
+        def info = [doi: '10.1093/bioinformatics/btw354', author: 'Ewels P, Magnusson M', year: 2016]
+
+        then:
+        result.multiqc.bibliography == "<li>Ewels P, Magnusson M, Lundin S, et al. (2016). MultiQC. Bioinformatics. doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li>"
+        NfcoreCitationUtils.formatShortCitation('multiqc', info, '1.21') == "multiqc (1.21, <a href='https://doi.org/10.1093/bioinformatics/btw354'>Ewels <em>et al.</em> (2016)</a>)"
     }
 
     def "toolCitationText should format citations from collected module citations"() {
@@ -983,14 +1032,26 @@ ${tool_bibliography}
         NfcoreCitationUtils.toolVersionsFromTopic(topicVersions) == ['fastqc': '0.12.1', 'multiqc': '1.21']
     }
 
-    def "formatShortCitation includes version and a single short author with year"() {
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    @Unroll
+    def "formatShortCitation distinguishes single and multiple authors: #author"() {
         expect:
-        NfcoreCitationUtils.formatShortCitation('fastqc', [publication: [author: 'Andrews S', year: 2010]], '0.12.1') == 'fastqc (0.12.1, Andrews (2010))'
-    }
+        NfcoreCitationUtils.formatShortCitation('tool', [publication: [author: author, year: 2021]], '1.21') == "tool (1.21, ${reference} (2021))"
+        NfcoreCitationUtils.formatShortCitation('tool', [author: author, year: 2021], '1.21') == "tool (1.21, ${reference} (2021))"
 
-    def "formatShortCitation uses 'et al.' for multiple authors"() {
-        expect:
-        NfcoreCitationUtils.formatShortCitation('samtools', [publication: [author: 'Danecek P, Bonfield JK, et al.', year: 2021]], '1.21') == 'samtools (1.21, Danecek <em>et al.</em> (2021))'
+        where:
+        author                                          | reference
+        'Andrews S'                                     | 'Andrews'
+        'Andrews, S.'                                   | 'Andrews'
+        'van der Walt, S.'                              | 'van der Walt'
+        'Smith-Jones, A. B.'                            | 'Smith-Jones'
+        'Einstein, A., Feynman, R. P. & Hawking, S.'     | 'Einstein <em>et al.</em>'
+        'Smith, J. & Jones, B.'                         | 'Smith <em>et al.</em>'
+        'Smith, J., Jones, B.'                          | 'Smith <em>et al.</em>'
+        'Danecek P, Bonfield JK, et al.'                | 'Danecek <em>et al.</em>'
+        'Smith J & Jones B'                            | 'Smith <em>et al.</em>'
+        'Smith J and Jones B'                          | 'Smith <em>et al.</em>'
+        'Li H et al.'                                  | 'Li <em>et al.</em>'
     }
 
     def "formatShortCitation falls back to doi then url when no author"() {
@@ -1063,11 +1124,35 @@ ${tool_bibliography}
         result.multiqcsav.citation == 'multiqcsav (<a href=\'https://github.com/MultiQC/MultiQC_SAV/\'>https://github.com/MultiQC/MultiQC_SAV/</a>)'
     }
 
+    // --- toolName fallback for DOI-only entries ---
+
+    def "formatBibliographyFromData uses toolName fallback for DOI-only entries (no publication)"() {
+        given:
+        def metaFile = File.createTempFile('doi_only', '.yml')
+        metaFile.text = '''
+        name: test_module
+        tools:
+          - samtools:
+              doi: "10.1093/bioinformatics/btp352"
+              homepage: "https://www.htslib.org/"
+        '''.stripIndent()
+
+        when:
+        def result = NfcoreCitationUtils.generateModuleToolCitation(metaFile)
+
+        then: 'bibliography entry includes tool name even without publication block'
+        result.samtools.bibliography.contains('samtools')
+        result.samtools.bibliography.contains('10.1093/bioinformatics/btp352')
+
+        cleanup:
+        metaFile.delete()
+    }
+
     // --- log capture helpers ---
 
     private ListAppender<ILoggingEvent> captureLogsFor(Class clazz) {
         def appender = new ListAppender<ILoggingEvent>()
-        def logger = (Logger) LoggerFactory.getLogger(clazz)
+        def logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.${clazz.simpleName}")
         appender.start()
         logger.addAppender(appender)
         return appender
@@ -1078,7 +1163,7 @@ ${tool_bibliography}
     }
 
     private void detachAppender(ListAppender<ILoggingEvent> appender) {
-        ((Logger) LoggerFactory.getLogger(NfcoreCitationUtils)).detachAppender(appender)
+        ((Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcoreCitationUtils")).detachAppender(appender)
     }
 
     // Helper method to create mock meta.yml files for testing

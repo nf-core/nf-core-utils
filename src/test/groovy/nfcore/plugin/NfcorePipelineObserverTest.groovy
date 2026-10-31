@@ -4,53 +4,56 @@ import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
-import nfcore.plugin.nfcore.NfcoreConfigValidator
+import java.nio.file.Paths
+import nextflow.Session
+import nextflow.script.ScriptBinding
 import org.slf4j.LoggerFactory
-import spock.lang.PendingFeature
+import spock.lang.Issue
+import spock.lang.Narrative
 import spock.lang.Specification
+import spock.lang.Subject
+import spock.lang.Title
 
+@Title('Startup validation belongs to the pipeline, not the observer')
+@Narrative('''
+Pipelines call either exported validation functions or template-local checks.
+Observer-owned checks duplicate both kinds of warnings, and Nextflow swallows
+exceptions from observer callbacks instead of aborting the run.
+''')
+@Subject(NfcorePipelineObserver)
+@Issue('https://github.com/nf-core/nf-core-utils/issues/73')
 class NfcorePipelineObserverTest extends Specification {
-    // This file is now reserved for observer-specific logic tests.
-    // All config, version, and factory tests have been moved to dedicated files.
 
-    @PendingFeature()
-    def 'onFlowCreate should call configValidator methods with correct arguments'() {
+    def 'onFlowCreate does not validate configuration or positional arguments'() {
         given:
-        def validator = Spy(NfcoreConfigValidator)
-        def observer = new NfcorePipelineObserver(validator)
-        def session = Mock(nextflow.Session) {
-            workflowMetadata >> [projectName: 'test-pipeline']
-            config >> [profile: 'standard', configFiles: ['main.config']]
-            profile >> 'standard'
-            commandLine >> '--foo bar'
-        }
+        // a real Session: Nextflow keeps the profile and config files there, not in the config map
+        def session = new Session()
+        session.profile = profile
+        session.configFiles = configFiles.collect { Paths.get(it) }
+        session.commandLine = "nextflow run main.nf -profile ${profile} ${args.join(' ')}"
+        session.binding = new ScriptBinding().setArgs(args)
+        def appender = new ListAppender<ILoggingEvent>()
+        appender.start()
+        ((Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcoreConfigValidator")).addAppender(appender)
 
         when:
-        observer.onFlowCreate(session)
+        new NfcorePipelineObserver().onFlowCreate(session)
+        def warnings = appender.list.findAll { it.level == Level.WARN }*.formattedMessage
 
         then:
-        1 * validator.checkConfigProvided('test-pipeline', { it.profile == 'standard' && it.configFiles == ['main.config'] })
-        1 * validator.checkProfileProvided('standard', '--foo bar', true)
-    }
+        noExceptionThrown()
+        warnings.empty
 
-    @PendingFeature()
-    def 'onFlowCreate handles missing metadata gracefully'() {
-        given:
-        def validator = Spy(NfcoreConfigValidator)
-        def observer = new NfcorePipelineObserver(validator)
-        def session = Mock(nextflow.Session) {
-            workflowMetadata >> null
-            config >> [profile: 'standard', configFiles: []]
-            profile >> 'standard'
-            commandLine >> ''
-        }
+        cleanup:
+        ((Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcoreConfigValidator")).detachAppender(appender)
 
-        when:
-        observer.onFlowCreate(session)
-
-        then:
-        1 * validator.checkConfigProvided(null, { it.profile == 'standard' && it.configFiles == [] })
-        1 * validator.checkProfileProvided('standard', '', true)
+        where:
+        profile    | configFiles                          | args
+        'standard' | ['nextflow.config']                  | []
+        'docker'   | ['nextflow.config']                  | []
+        'standard' | ['nextflow.config', 'custom.config'] | []
+        'test'     | ['nextflow.config']                  | ['docker']
+        'test,'    | ['nextflow.config']                  | ['docker']
     }
 
     def 'onFlowCreate should log start message at TRACE level'() {
@@ -64,7 +67,7 @@ class NfcorePipelineObserverTest extends Specification {
         }
 
         // Set up logging capture
-        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        Logger logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcorePipelineObserver")
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
         listAppender.start()
         logger.addAppender(listAppender)
@@ -88,7 +91,7 @@ class NfcorePipelineObserverTest extends Specification {
         def observer = new NfcorePipelineObserver()
 
         // Set up logging capture
-        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        Logger logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcorePipelineObserver")
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
         listAppender.start()
         logger.addAppender(listAppender)
@@ -118,7 +121,7 @@ class NfcorePipelineObserverTest extends Specification {
         }
 
         // Set up logging capture with DEBUG level
-        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        Logger logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcorePipelineObserver")
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
         listAppender.start()
         logger.addAppender(listAppender)
@@ -142,7 +145,7 @@ class NfcorePipelineObserverTest extends Specification {
         def observer = new NfcorePipelineObserver()
 
         // Set up logging capture with DEBUG level
-        Logger logger = (Logger) LoggerFactory.getLogger(NfcorePipelineObserver)
+        Logger logger = (Logger) LoggerFactory.getLogger("nextflow.nfcore.NfcorePipelineObserver")
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>()
         listAppender.start()
         logger.addAppender(listAppender)

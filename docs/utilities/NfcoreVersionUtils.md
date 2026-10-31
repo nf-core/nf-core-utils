@@ -18,7 +18,7 @@ This migration strategy ensures backward compatibility while enabling pipelines 
 
 ## Available Functions
 
-### `getWorkflowVersion(String version = null, String commitId = null)`
+### `getWorkflowVersion()`
 
 **Description:**  
 Generates a formatted version string for the workflow, combining version information with git commit details when available. This is the primary function for getting workflow version information.
@@ -32,7 +32,7 @@ String getWorkflowVersion(String version = null, String commitId = null)
 **Parameters:**
 
 - `version` (String, optional): Explicit version string to use (defaults to workflow.manifest.version)
-- `commitId` (String, optional): Explicit commit ID to use (defaults to workflow.commitId)
+- `commitId` (String, optional): Explicit commit ID to use (defaults to workflow.commitId when no `version` is given, so runs from a repository get the `-g<sha>` suffix)
 
 **Returns:**
 
@@ -69,7 +69,7 @@ workflow {
 
 ---
 
-### `softwareVersionsToYAML(Object versions, Map options = [:])`
+### `softwareVersionsToYAML()`
 
 **Description:**  
 Combines software versions from multiple sources into a single YAML string. This is the recommended function for collecting and formatting version information in pipelines. It accepts mixed input types including YAML strings, file paths, topic tuples, and maps, making it ideal for both legacy and modern pipelines.
@@ -226,7 +226,7 @@ ch_versions_yaml = softwareVersionsToYAML(ch_all)
 
 ---
 
-### `processMixedVersionSources(List<List> topicVersions, List<String> versionsFiles)`
+### `processMixedVersionSources()`
 
 **Description:**  
 Processes version information from both topic channels (modern approach) and traditional files (legacy approach). This is the key function for migration scenarios where both formats coexist.
@@ -239,8 +239,8 @@ String processMixedVersionSources(List<List> topicVersions, List<String> version
 
 **Parameters:**
 
-- `topicVersions` (List<List>): Topic channel data in `[process, name, version]` format
-- `versionsFiles` (List<String>): List of paths to legacy `versions.yml` files
+- `topicVersions` (List\<List\>): Topic channel data in `[process, name, version]` format
+- `versionsFiles` (List\<String\>): List of paths to legacy `versions.yml` files
 
 **Returns:**
 
@@ -288,7 +288,7 @@ workflow {
 
 ---
 
-### `convertLegacyYamlToEvalSyntax(String yamlContent, String processName = 'LEGACY')`
+### `convertLegacyYamlToEvalSyntax()`
 
 **Description:**  
 Converts traditional YAML version content to the new eval syntax format for topic channels. Useful for migrating existing version data or integrating legacy systems.
@@ -345,7 +345,7 @@ channel.fromList(migratedVersions)
 
 ---
 
-### `generateYamlFromEvalSyntax(List<List> evalData, boolean includeWorkflow = true)`
+### `generateYamlFromEvalSyntax()`
 
 **Description:**  
 Converts topic channel eval syntax data back to YAML format for reporting and MultiQC integration. Essential for generating traditional version reports from modern topic channels.
@@ -358,7 +358,7 @@ String generateYamlFromEvalSyntax(List<List> evalData, boolean includeWorkflow =
 
 **Parameters:**
 
-- `evalData` (List<List>): Topic channel data in `[process, name, version]` format
+- `evalData` (List\<List\>): Topic channel data in `[process, name, version]` format
 - `includeWorkflow` (boolean, optional): Include workflow version information (defaults to true)
 
 **Returns:**
@@ -408,7 +408,7 @@ workflow {
 
 ---
 
-### `processVersionsFromTopic(List<List> topicData)`
+### `processVersionsFromTopic()`
 
 **Description:**  
 Processes version information exclusively from topic channel format. This is the pure modern approach for pipelines that have fully migrated to topic channels.
@@ -421,7 +421,7 @@ String processVersionsFromTopic(List<List> topicData)
 
 **Parameters:**
 
-- `topicData` (List<List>): Topic channel data in `[process, name, version]` format
+- `topicData` (List\<List\>): Topic channel data in `[process, name, version]` format
 
 **Returns:**
 
@@ -477,7 +477,7 @@ workflow {
 
 ---
 
-### `processVersionsFromFile(List<String> versionsFiles)`
+### `processVersionsFromFile()`
 
 **Description:**  
 Processes version information exclusively from traditional YAML files. This maintains support for legacy pipelines and processes that haven't yet migrated to topic channels.
@@ -490,7 +490,7 @@ String processVersionsFromFile(List<String> versionsFiles)
 
 **Parameters:**
 
-- `versionsFiles` (List<String>): List of paths to `versions.yml` files
+- `versionsFiles` (List\<String\>): List of paths to `versions.yml` files
 
 **Returns:**
 
@@ -960,4 +960,4 @@ workflow {
 }
 ```
 
-For more information on version management and topic channels, see the [Nextflow documentation](https://www.nextflow.io/docs/latest/channel.html#topic) and [nf-core best practices](https://nf-co.re/docs/contributing/modules#software-versions).
+For more information on version management and topic channels, see the [Nextflow documentation](https://www.nextflow.io/docs/latest/channel.html#topic) and [nf-core best practices](https://nf-co.re/docs/specifications/components/modules/general#emission-of-versions).

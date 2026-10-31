@@ -17,7 +17,7 @@ The `NfcoreReportingOrchestrator` utility provides high-level orchestration of r
 
 ## Available Functions
 
-### `generateComprehensiveReport(List<List> topicVersions, List<String> legacyVersions = [], List<String> metaFilePaths = [], String mqcMethodsYamlPath = null)`
+### `generateComprehensiveReport()`
 
 **Description:**  
 Generates a complete pipeline report including version information, tool citations, bibliography, and methods description. This is the primary function for full pipeline reporting that combines all available reporting capabilities.
@@ -35,9 +35,9 @@ Map generateComprehensiveReport(
 
 **Parameters:**
 
-- `topicVersions` (List<List>): Version data from topic channels in `[process, name, version]` format
-- `legacyVersions` (List<String>, optional): List of legacy YAML version strings
-- `metaFilePaths` (List<String>, optional): List of paths to module meta.yml files for citations
+- `topicVersions` (List\<List\>): Version data from topic channels in `[process, name, version]` format
+- `legacyVersions` (List\<String\>, optional): List of legacy YAML version strings
+- `metaFilePaths` (List\<String\>, optional): List of paths to module meta.yml files for citations
 - `mqcMethodsYamlPath` (String, optional): Path to MultiQC methods description template
 
 **Returns:**
@@ -116,7 +116,7 @@ workflow {
 
 ---
 
-### `generateVersionReport(List<List> topicVersions, List<String> legacyVersions = [])`
+### `generateVersionReport()`
 
 **Description:**  
 Generates a version-only report when citations are not needed or handled separately. This function focuses exclusively on version aggregation and formatting.
@@ -129,8 +129,8 @@ Map generateVersionReport(List<List> topicVersions, List<String> legacyVersions 
 
 **Parameters:**
 
-- `topicVersions` (List<List>): Version data from topic channels in `[process, name, version]` format
-- `legacyVersions` (List<String>, optional): List of legacy YAML version strings
+- `topicVersions` (List\<List\>): Version data from topic channels in `[process, name, version]` format
+- `legacyVersions` (List\<String\>, optional): List of legacy YAML version strings
 
 **Returns:**
 
@@ -177,7 +177,7 @@ workflow VERSION_TRACKING {
 
 ---
 
-### `generateCitationReport(List<String> metaFilePaths, String mqcMethodsYamlPath = null)`
+### `generateCitationReport()`
 
 **Description:**  
 Generates a citation-only report when versions are handled separately. This function focuses exclusively on citation extraction, processing, and methods description generation.
@@ -190,7 +190,7 @@ Map generateCitationReport(List<String> metaFilePaths, String mqcMethodsYamlPath
 
 **Parameters:**
 
-- `metaFilePaths` (List<String>): List of paths to module meta.yml files
+- `metaFilePaths` (List\<String\>): List of paths to module meta.yml files
 - `mqcMethodsYamlPath` (String, optional): Path to MultiQC methods description template
 
 **Returns:**
@@ -647,4 +647,4 @@ workflow BENCHMARK_REPORTING {
 }
 ```
 
-For more information on orchestrated reporting and utility coordination, see the individual utility documentation and [nf-core reporting best practices](https://nf-co.re/docs/contributing/pipelines/reporting).
+For more information on orchestrated reporting and utility coordination, see the individual utility documentation and [nf-core reporting best practices](https://nf-co.re/docs/developing/components/automated-methods-text).

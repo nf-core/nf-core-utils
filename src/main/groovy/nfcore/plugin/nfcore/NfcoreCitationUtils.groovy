@@ -24,7 +24,7 @@ import org.yaml.snakeyaml.Yaml
  * Utility functions for nf-core citations
  * Supports both legacy meta.yml files and new topic channel approach
  */
-@Slf4j
+@Slf4j(category = 'nextflow.nfcore.NfcoreCitationUtils')
 class NfcoreCitationUtils {
 
     /**
@@ -75,7 +75,7 @@ class NfcoreCitationUtils {
     /**
      * Generate methods description for MultiQC using collected citations
      * @param collectedCitations Map containing all tool citations from modules
-     * @return Formatted citation string for tools used in the workflow
+     * @return Formatted citation string for tools used in the workflow; HTML when built from short citations
      */
     static String toolCitationText(Map collectedCitations) {
         if (collectedCitations.isEmpty()) {
@@ -248,7 +248,7 @@ class NfcoreCitationUtils {
      * @return Formatted bibliography HTML
      */
     private static String formatBibliographyFromData(String toolName, Map citationData) {
-        def pub = citationData.publication instanceof Map ? citationData.publication : [:]
+        def pub = publicationOf(citationData)
         def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
 
         // Publication present: academic-style reference "Author. (year). title. source. doi: link".
@@ -262,6 +262,7 @@ class NfcoreCitationUtils {
             if (pub.title) parts << pub.title
             if (pub.source) parts << pub.source
             if (doi) parts << doi
+            else if (citationData.homepage) parts << "<a href='${citationData.homepage}'>${citationData.homepage}</a>"
             return "<li>${parts.join('. ')}.</li>"
         }
 
@@ -533,7 +534,7 @@ class NfcoreCitationUtils {
      * @param tool Tool name (display)
      * @param info Raw meta.yml tool info (doi, homepage, description, publication.author, publication.year)
      * @param version Tool version (optional)
-     * @return Short citation string suitable for a methods paragraph
+     * @return Short citation as HTML (DOI/homepage link, {@code <em>et al.</em>}) for a methods paragraph, not plain text
      */
     static String formatShortCitation(String tool, Map info, String version = null) {
         def parts = []
@@ -609,7 +610,7 @@ class NfcoreCitationUtils {
      * else "doi: ...", else the homepage url, else description.
      */
     private static String shortReference(Map info) {
-        def pub = info.publication instanceof Map ? info.publication : [:]
+        def pub = publicationOf(info)
         def author = pub.author?.toString()?.trim()
         if (author) {
             def year = pub.year ? pub.year.toString().trim() : ''
@@ -622,14 +623,28 @@ class NfcoreCitationUtils {
     }
 
     /**
+     * Publication fields for a tool: the nested publication object, else the
+     * pre-0.7 flat fields (author/year/title/journal) so older meta.yml still cite.
+     * Null fields are dropped so a tool without any yields an empty (falsy) map.
+     */
+    private static Map publicationOf(Map info) {
+        if (info.publication instanceof Map) return info.publication as Map
+        return [author: info.author, year: info.year, title: info.title, source: info.journal].findAll { it.value }
+    }
+
+    /**
      * Reduce an author string to "Surname" (single author) or "Surname <em>et al.</em>"
-     * (multiple). Heuristic: first author is the text before the first comma;
-     * its surname is the first whitespace-delimited token.
+     * (multiple). Recognize Harvard "Surname, Initials" pairs as well as legacy
+     * "Surname Initials" lists. In Harvard names, preserve compound surnames and
+     * do not mistake the comma before initials for an author separator.
      */
     private static String shortAuthor(String author) {
-        def first = author.split(',')[0].trim()
-        def surname = first.split(/\s+/)[0]
-        def multiple = author.contains(',') || author.toLowerCase().contains('et al')
+        def authors = author.split(/\s+(?:&|and)\s+/)
+        def first = authors[0].split(',')*.trim()
+        def harvard = first.size() > 1 && first[1] ==~ /(?:\p{Lu}\.?\s*)+/
+        def surname = harvard ? first[0] : first[0].split(/\s+/)[0]
+        def multiple = authors.size() > 1 || author.toLowerCase().contains('et al') ||
+            first.size() > (harvard ? 2 : 1)
         return multiple ? "${surname} <em>et al.</em>" : surname
     }
 }

@@ -77,36 +77,23 @@ workflow {
         completionSummary(true)
         log.info("✅ completionSummary(monochrome) completed successfully")
 
-        // Test 2: completionEmail() function
+        // Exercise report generation without external delivery. Transport behavior is covered by hermetic unit tests.
         log.info("=== Testing completionEmail() function ===")
-        try {
-            completionEmail(
-                mock_summary_params,
-                'test@example.com',
-                'admin@example.com',
-                false,
-                './results',
-                false,
-                mock_multiqc_reports,
-            )
-            log.info("✅ completionEmail exercised")
-        }
-        catch (_e: Exception) {
-            log.info("✅ completionEmail exercised")
-        }
+        completionEmail(
+            mock_summary_params,
+            null,
+            null,
+            false,
+            './results',
+            false,
+            mock_multiqc_reports,
+        )
+        log.info("✅ completionEmail exercised")
 
-        // Test 3: imNotification() function
+        // Exercise the disabled-notification path without depending on Slack or the network.
         log.info("=== Testing imNotification() function ===")
-        try {
-            imNotification(
-                mock_summary_params,
-                'https://hooks.slack.com/services/test/webhook',
-            )
-            log.info("✅ imNotification exercised")
-        }
-        catch (_e: Exception) {
-            log.info("✅ imNotification exercised")
-        }
+        imNotification(mock_summary_params, null)
+        log.info("✅ imNotification exercised")
 
         log.info(
             """
