@@ -5,7 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0] - 2026-10-30
+
+### Compatibility and migration
+
+- **Nextflow:** requires 25.10.4 or newer; upgrade older runtimes before loading the plugin.
+- **References:** replace removed `getReferencesFile()` / `getReferencesValue()` calls with `getReferencePath()`, `getReferenceMetadata()` or `getReferenceAttribute()` as appropriate.
+- **Startup checks:** loading the plugin no longer validates pipeline startup. Call `checkConfigProvided()` and `checkProfileProvided(args)` explicitly during initialization, or retain equivalent pipeline-local checks.
+- **Mail:** `completionEmail()` uses Nextflow's `sendMail()` transports; the removed `emailCommands()` / `runEmailCommand()` helpers and `assets/sendmail_template.txt` are no longer needed. Platform launches skip nf-core mail unless the Boolean `params.force_completion_email = true` is set; enable Platform notifications separately when relying on them ([#81](https://github.com/nf-core/nf-core-utils/pull/81)).
+- **Citation metadata:** reads nested `publication.author`, `publication.year`, `publication.title` and `publication.source`. When no `publication` map is present, legacy flat `author`, `year`, `title` and `journal` fields remain supported; modules do not need to migrate in lockstep. DOI-only entries retain the tool name, and DOI/homepage links remain available ([#51](https://github.com/nf-core/nf-core-utils/pull/51)).
+- **Citation artifacts:** `toolCitationText()` returns HTML for MultiQC, not plain text. The citations-on-the-fly example now writes `auto_citations.html` rather than `auto_citations.txt`; open the file in a browser and copy rendered text for manuscripts. This release retains the existing citation APIs; it does not introduce CSL-JSON output.
 
 ### Added
 
@@ -40,6 +49,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed observer-owned startup validation to avoid duplicate warnings when pipelines call exported or template-local checks. Pipelines relying only on the observer must explicitly call `checkConfigProvided()` and `checkProfileProvided(args)` during initialization. Profile validation now aborts with one `ERROR` label instead of two; loading the plugin alone no longer attempts validation whose errors Nextflow swallows ([#73](https://github.com/nf-core/nf-core-utils/issues/73)).
 - Fixed `completionEmail()` renaming remote MultiQC attachments to generated temporary filenames. Attachments keep their original basename, and plaintext emails or runs without an email recipient no longer read/download reports or render the sendmail template. Temporary copies and their directories are cleaned up without changing summary report persistence ([#74](https://github.com/nf-core/nf-core-utils/issues/74)).
 - Fixed parameter types such as `List<String>` showing as `List` in the docs, on GitHub and nf-co.re, where `<String>` was taken for an HTML tag.
+
+### Known limitations
+
+- Versions-topic-driven citations cannot discover tools that do not emit to that topic, including the registry MultiQC module. Its citation and bibliography coverage remain tracked in [#89](https://github.com/nf-core/nf-core-utils/issues/89); the existing `extraTools` argument can select such tools manually, without a version segment. Do not add MultiQC to the same versions topic: its upstream module warns that this can deadlock the workflow.
 
 ## [0.6.0] - 2026-10-17
 
@@ -145,7 +158,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Port nf-core Pipeline Utils functions
 - Port references Utils functions
 
-[unreleased]: https://github.com/nf-core/nf-core-utils/compare/0.6.0...HEAD
+[unreleased]: https://github.com/nf-core/nf-core-utils/compare/0.7.0...HEAD
+[0.7.0]: https://github.com/nf-core/nf-core-utils/compare/0.6.0...0.7.0
 [0.6.0]: https://github.com/nf-core/nf-core-utils/compare/0.5.0...0.6.0
 [0.5.0]: https://github.com/nf-core/nf-core-utils/compare/0.4.0...0.5.0
 [0.3.0]: https://github.com/nf-core/nf-core-utils/compare/v0.2.0...v0.3.0
