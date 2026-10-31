@@ -1,0 +1,49 @@
+# PROPOSAL ONLY: not registered under .github/workflows and unconditionally off.
+# Do not activate until README.md's approval and access-control dependencies hold.
+name: Propose plugin release after CI
+
+on:
+  workflow_run:
+    workflows: [Plugin Validation]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+# One candidate at a time, including after a rerun. No automatic dispatch retry.
+concurrency:
+  group: plugin-release-automation
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Proposed name only. Creating an environment without protection is unsafe.
+    environment: release-automation-approval
+    steps:
+      - name: Checkout trusted default-branch automation, not candidate code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Require the approved dispatch credential without fallback
+        env:
+          RELEASE_DISPATCH_TOKEN: ${{ secrets.RELEASE_DISPATCH_TOKEN }}
+        run: test -n "$RELEASE_DISPATCH_TOKEN"
+
+      - name: Check candidate and request guarded publication
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          # Dedicated approved identity; NEVER substitute the publisher key,
+          # website bot token, or an implicitly trusted GITHUB_TOKEN bot.
+          github-token: ${{ secrets.RELEASE_DISPATCH_TOKEN }}
+          retries: 0
+          script: |
+            const dispatchRelease = require('./scripts/release-automation.cjs');
+            const result = await dispatchRelease({ github, context });
+            core.info(JSON.stringify(result));

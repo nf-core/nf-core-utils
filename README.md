@@ -117,6 +117,13 @@ The plugin can be tested without a local Nextflow installation:
 Use the manually triggered [Publish plugin release workflow](.github/workflows/release.yml).
 It publishes the commit selected when the workflow starts, not a later main-branch commit.
 
+The [release access-control proposal](docs/release-access-control.md) documents
+the proposed team, environment, credential, and tag boundaries and their limits.
+It is not enabled: team IDs need verification; credentials and live settings require approval.
+The local proposal's `expected_sha` input optionally binds a manual dispatch to a
+full commit SHA; automation must supply the main commit it checked. It is not an
+authorization override. Existing publication and partial-release checks still apply.
+
 ### One-time setup
 
 Add an Actions secret named `NPR_API_KEY` to this repository, or grant it access to an organization secret with that name.
