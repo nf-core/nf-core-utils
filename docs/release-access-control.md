@@ -1,4 +1,4 @@
-# Release access control — proposal, not enabled
+# Release access control — fail-closed, activation pending
 
 Outcome: restrict release initiation and approval to the actual nf-core core and
 infrastructure teams, without conflating repository write access with release
@@ -24,10 +24,10 @@ hierarchy expansion; future inherited-member eligibility remains a separate
 policy choice. No bot exception, machine identity or global release-access
 change is approved by this code.
 
-**Do not merge as-is.** The policy intentionally remains `approved: false`,
+**Fail-closed landing:** the policy intentionally remains `approved: false`,
 despite verified team IDs and the settled approval design. This flag gates
-activation, not agreement with the design. Merging the workflow in that state
-would block manual release dispatch, not activate a usable policy. The automation
+activation, not agreement with the design. Landing the workflow in that state
+blocks publication until the prerequisites and native tests succeed. The automation
 template is outside `.github/workflows` and unconditionally disabled.
 The already published [0.7.0 release](https://github.com/nf-core/nf-core-utils/releases/tag/0.7.0)
 must not be republished to test these proposals.
@@ -106,6 +106,10 @@ and always-uploaded evidence steps remain unchanged.
    a fresh authorization; rerunning only the failed release job cannot reuse an
    earlier attempt's output. A rerun must still follow the existing partial-release
    recovery checks; successful registry publication must never be repeated.
+7. `dry_run: true` excludes the publisher job independently of authorization.
+   A separate read-only job waits for the same environment approval and records
+   success without referencing publisher secrets or writing release state.
+   Dry runs do not override disabled policy, missing credentials or actor checks.
 
 GitHub allows up to six environment reviewers, but **one** approval among them is
 sufficient: two team reviewers mean core **OR** infrastructure, not one of each.
@@ -171,9 +175,9 @@ The design requires human team initiation plus a different eligible team
 approver and environment-scoped registry credentials, with no bot exception.
 The implementation checks direct membership and denies hierarchy expansion;
 inherited-member eligibility must not be broadened without a policy decision.
-Reviewing or publishing this draft does not authorize activation or the following
-steps. A separate permission audit/change is required for a global Releases UI/API
-restriction.
+Landing code does not establish operational enforcement. Complete and verify the
+following prerequisites before enabling the policy. A separate permission
+audit/change is required for a global Releases UI/API restriction.
 
 Before a separately authorized activation:
 
@@ -183,20 +187,22 @@ Before a separately authorized activation:
 2. Approve the read-only membership credential and how it is issued/rotated.
    Verify required API fields (`can_admins_bypass`, direct-member evidence) with
    that credential; absent fields deliberately block activation.
-3. Decide who may create release tags/releases on behalf of the workflow. No
-   dedicated publisher App or token is implicitly approved by this proposal.
-   Enabling tag restrictions before resolving that identity may block publication.
+3. Securely migrate the publisher key into the protected environment, verify the
+   replacement and recovery path, then remove broader accessible copies. Registry
+   keys cannot be retrieved through GitHub's metadata API; secure input may be
+   necessary. Do not reuse a broad operator OAuth token as the membership credential.
 4. In a non-publishing test repository, test allowed/denied humans, unauthorized
    rerunners, wrong SHA, missing policy/environment, native approval, failed-job
    reruns, tag rules, and Releases API access. Offline fixtures are not proof of
    GitHub enforcing native policy or of token scope.
-5. Precreate/protect the environment; migrate publisher credentials and remove
-   broader copies with a recovery plan; apply approved main/tag/access controls.
+5. Precreate/protect the environment and read back both team reviewers,
+   self-review prevention, no admin bypass and main-only selected branch policy.
    Never combine this with an in-progress release. Recheck the exact configuration
-   before changing `approved` and filling verified teams in the policy.
-6. Land through review only after approval and publish only under separate release
-   authority. Keep the README's partial-release recovery path. Do not roll back
-   to broadly exposed credentials to bypass a failure; pause and repair policy.
+   and native dry-run results before changing `approved`. Team-grant changes,
+   tag rules and global Releases UI/API restrictions must stay separately scoped.
+6. Publish only under separate release authority. Keep the README's partial-release
+   recovery path. Do not roll back to broadly exposed credentials to bypass a
+   failure; pause and repair policy.
 
 ## Offline verification
 

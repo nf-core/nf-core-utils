@@ -12,6 +12,11 @@ on:
         required: false
         default: ""
         type: string
+      dry_run:
+        description: "Test authorization and independent approval without publishing (version is ignored)"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: plugin-release
@@ -47,10 +52,25 @@ jobs:
           python3 scripts/release/check_release_access.py .github/release-access.json
           echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
 
+  dry_run:
+    needs: authorize
+    if: needs.authorize.outputs.attempt == github.run_attempt && inputs.dry_run
+    environment: plugin-release
+    permissions:
+      contents: read
+      actions: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Record approved non-publishing dry run
+        run: |
+          echo 'Authorization and independent environment approval passed.'
+          echo 'No publisher credential, package upload, tag, release or docs dispatch is used by this job.'
+
   release:
     needs: authorize
     # A failed-job-only rerun must not reuse another attempt's authorization.
-    if: needs.authorize.outputs.attempt == github.run_attempt
+    if: needs.authorize.outputs.attempt == github.run_attempt && !inputs.dry_run
     environment: plugin-release
     permissions:
       contents: write
