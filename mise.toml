@@ -14,6 +14,12 @@ java = "temurin-21"
 "github:nextflow-io/nextflow" = { version = "26.10.2", asset_pattern = "nextflow", bin = "nextflow" }
 "github:askimed/nf-test" = "0.9.3"
 
+[doctor.checks.tasks]
+description = "Project task definitions are valid"
+run = "mise tasks validate"
+hint = "Run `mise tasks validate` for details, then fix the reported definitions in mise.toml or mise-tasks/."
+timeout = "10s"
+
 [tasks.assemble]
 description = "Build the plugin"
 run = "./gradlew assemble"

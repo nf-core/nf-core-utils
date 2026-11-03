@@ -14,6 +14,7 @@ Install [mise](https://mise.jdx.dev/getting-started.html), then from the reposit
 
 ```bash
 mise install --locked
+mise doctor project
 mise tasks ls
 ```
 
@@ -21,6 +22,16 @@ mise tasks ls
 by the Gradle plugin), Nextflow 26.10.2, and nf-test 0.9.3. `mise.lock` records exact
 versions and checksums for Linux and macOS on x64 and ARM64. CI uses the same
 configuration via `jdx/mise-action`.
+
+Use a mise release that supports `mise doctor project` (verified with 2026.10.25).
+Orb setup and tool-using CI jobs run it immediately after installation. CI keeps
+the action's tool installation/cache behavior and repeats the idempotent install
+as an explicit step with `MISE_LOCKED=1`. The read-only `tasks` diagnostic runs
+`mise tasks validate` with a 10-second timeout and a troubleshooting hint. It
+checks task definitions without running tasks, installing tools, or building
+with Gradle. The command is platform-independent, so it needs no OS filter.
+Doctor runs before Conda bootstrap and does not check Conda; the build, test,
+and validation commands remain the checks for runtime behavior.
 
 The repo is a mise [monorepo root](https://mise.jdx.dev/tasks/workspace-graph.html)
 with a single Gradle workspace project (`gradle::` at `.`). There are no
@@ -98,8 +109,8 @@ Gradle distributions, dependencies, and build outputs between GitHub Actions run
 Only runs on the default branch write caches; pull requests restore them read-only.
 The action's job summary reports cache usage. Configuration caching is not enabled.
 
-For Amp orbs, `.agents/setup` installs mise and runs `mise install --locked` for
-Java 21, Nextflow, and nf-test. It also installs checksum-verified Miniforge
+For Amp orbs, `.agents/setup` installs mise and runs `mise install --locked`, then
+`mise doctor project`, for Java 21, Nextflow, and nf-test. It also installs checksum-verified Miniforge
 26.9.4-1 with the `conda-forge` and `bioconda` channels required by validation.
 The tools remain on `PATH` in subsequent login shells without interactive shell
 activation. Setup builds and unit-tests the plugin through mise to warm the

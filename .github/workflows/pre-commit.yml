@@ -11,4 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: jdx/mise-action@v5
+      - run: mise install
+        env:
+          MISE_LOCKED: "1"
+      - run: mise doctor project
       - uses: j178/prek-action@v2

@@ -33,6 +33,11 @@ jobs:
       - name: Set up tools
         uses: jdx/mise-action@v5
 
+      - run: mise install
+        env:
+          MISE_LOCKED: "1"
+      - run: mise doctor project
+
       - name: Set up Gradle and cache
         uses: gradle/actions/setup-gradle@v5
 
