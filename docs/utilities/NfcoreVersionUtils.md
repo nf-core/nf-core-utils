@@ -117,6 +117,8 @@ collectVersions(versions, '24.10.0')
 
 **Output Format:**
 
+Processes and tools are sorted alphabetically, then the `Workflow` block follows:
+
 <!-- prettier-ignore -->
 ```yaml
 FASTQC:
@@ -134,7 +136,7 @@ Workflow:
 - Tool names keep only their last component: `tool:fastqc` becomes `fastqc`
 - Versions without a process (flat YAML or maps) go under `Software`
 - A tool reported twice keeps the last value
-- A missing file is skipped; an entry that fails to parse is skipped with a warning
+- A missing file, or an entry that fails to parse, is skipped with a warning
 
 ---
 
