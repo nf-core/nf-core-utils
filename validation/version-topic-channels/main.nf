@@ -9,7 +9,7 @@
  */
 
 // Import plugin functions - collectVersions() is the recommended API
-include { collectVersions } from 'plugin/nf-core-utils'
+include { collectVersions ; softwareVersionsToYAML } from 'plugin/nf-core-utils'
 
 workflow {
 
@@ -43,6 +43,11 @@ workflow {
     LEGACY_TOOL.out.versions
         .map { versions -> collectVersions(versions, '99.1.0') }
         .subscribe { yaml -> file("${params.outdir}/single_versions.yml").text = yaml }
+
+    // The same Path through the deprecated softwareVersionsToYAML()
+    LEGACY_TOOL.out.versions
+        .map { versions -> softwareVersionsToYAML(versions) }
+        .subscribe { yaml -> file("${params.outdir}/deprecated_versions.yml").text = yaml }
 
     // A topic no process emits to: toList() still emits, so the workflow versions are written
     channel.topic('no_versions')

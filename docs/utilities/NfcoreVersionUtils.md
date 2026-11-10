@@ -69,119 +69,53 @@ workflow {
 
 ---
 
-### `softwareVersionsToYAML()`
+### `collectVersions()`
 
 **Description:**  
-Combines software versions from multiple sources into a single YAML string. This is the recommended function for collecting and formatting version information in pipelines. It accepts mixed input types including YAML strings, file paths, topic tuples, and maps, making it ideal for both legacy and modern pipelines.
+Merges software versions from any mix of sources into one YAML string, with the workflow name, version and Nextflow version. This is the recommended function for version reports.
 
 **Function Signature:**
 
 ```nextflow
-// Positional syntax
-String softwareVersionsToYAML(Object versions)
-String softwareVersionsToYAML(Object versions, Map options)
-
-// Named parameter syntax
-String softwareVersionsToYAML(softwareVersions: channel, nextflowVersion: version)
+String collectVersions(Object input, Object nextflowVersion = null)
 ```
 
 **Parameters:**
 
-- `versions` (Object): Can be a Nextflow channel or list containing:
-  - YAML strings (legacy inline format)
-  - File paths (String), File, or Path objects pointing to `versions.yml`
+- `input` (Object): one entry, or a list of entries of any of these types:
   - Topic tuples: `[process, tool, version]`
-  - Maps of `tool -> version`
-  - Any combination of the above
-- `options` (Map, optional):
-  - `nextflowVersion` (String/VersionNumber): Override the detected Nextflow version
+  - `versions.yml` files, as `Path`, `File`, or a path string. Remote paths, such as S3, are read through their filesystem
+  - YAML strings
+  - Maps of `tool -> version`, or of `process -> [tool -> version]`
+- `nextflowVersion` (String/VersionNumber, optional): Nextflow version to report instead of the running one
 
 **Returns:**
 
-- `String` (if input is a List): Combined YAML string directly
-- `Channel<String>` (if input is a Channel): Channel emitting the combined YAML string
+- `String`: YAML with processes and tools sorted alphabetically, then the `Workflow` block
 
-**Usage Examples:**
-
-**Basic usage with a channel:**
+**Usage Example:**
 
 ```nextflow
-include { softwareVersionsToYAML } from 'plugin/nf-core-utils'
+include { collectVersions } from 'plugin/nf-core-utils'
 
 workflow {
-    // Collect versions from multiple sources
-    ch_versions = Channel.empty()
-
-    ch_versions = ch_versions.mix(FASTQC.out.versions)
-    ch_versions = ch_versions.mix(SAMTOOLS.out.versions)
-
-    // Combine into YAML
-    ch_software_versions = softwareVersionsToYAML(ch_versions)
-
-    // Save to file
-    ch_software_versions.collectFile(
-        name: 'software_versions.yml',
-        storeDir: "${params.outdir}/pipeline_info"
-    )
+    // Modules emit tuples, or versions.yml files, on the versions topic
+    channel.topic('versions')
+        .toList()
+        .map { versions -> collectVersions(versions) }
+        .collectFile(name: 'software_versions.yml', storeDir: "${params.outdir}/pipeline_info")
 }
 ```
 
-**With custom Nextflow version:**
+Use `toList()`, not `collect()`: `collect()` flattens the tuples into one list, and emits nothing when no process sent versions. `toList()` keeps each tuple, and emits an empty list, so the report still has the `Workflow` block.
+
+**With a custom Nextflow version:**
 
 ```nextflow
-// Override the detected Nextflow version
-ch_software_versions = softwareVersionsToYAML(
-    ch_versions,
-    nextflowVersion: '24.10.0'
-)
-
-// Or using named parameters
-ch_software_versions = softwareVersionsToYAML(
-    softwareVersions: ch_versions,
-    nextflowVersion: workflow.nextflow.version
-)
-```
-
-**Mixed input types:**
-
-```nextflow
-workflow {
-    // Mix different version formats
-    ch_mixed = Channel.of(
-        'fastqc: 0.12.1',                              // YAML string
-        ['NFCORE_SAMTOOLS', 'samtools', '1.17'],       // Topic tuple
-        [multiqc: '1.15', python: '3.9.0'],            // Map
-        file('legacy_versions.yml')                     // File path
-    )
-
-    // Function handles all types seamlessly
-    ch_versions_yaml = softwareVersionsToYAML(ch_mixed)
-}
-```
-
-**Direct list processing (no channel):**
-
-```nextflow
-workflow.onComplete {
-    // Collect versions as a list
-    def versionsList = [
-        ['FASTQC', 'fastqc', '0.12.1'],
-        ['SAMTOOLS', 'samtools', '1.17']
-    ]
-
-    // Get YAML string directly
-    def versionsYaml = softwareVersionsToYAML(
-        versionsList,
-        [nextflowVersion: workflow.nextflow.version]
-    )
-
-    file("${params.outdir}/pipeline_info/versions.yml").text = versionsYaml
-}
+collectVersions(versions, '24.10.0')
 ```
 
 **Output Format:**
-
-The function generates a structured YAML with processes and tools sorted alphabetically:
 
 ```yaml
 FASTQC:
@@ -190,39 +124,31 @@ SAMTOOLS:
   samtools: 1.17
 Software:
   multiqc: 1.15
-  python: 3.9.0
 Workflow:
   nf-core/mypipeline: v1.0.0
   Nextflow: 24.10.0
 ```
 
-**Key Features:**
+- Process names keep only their last component: `NFCORE_RNASEQ:TRIMGALORE:FASTQC` becomes `FASTQC`
+- Tool names keep only their last component: `tool:fastqc` becomes `fastqc`
+- Versions without a process (flat YAML or maps) go under `Software`
+- A tool reported twice keeps the last value
+- An entry that cannot be read is skipped with a warning
 
-- **Flexible Input**: Accepts any combination of YAML strings, files, tuples, and maps
-- **Process Extraction**: Automatically extracts process names from full paths (e.g., `NFCORE_RNASEQ:TRIMGALORE:FASTQC` → `FASTQC`)
-- **Tool Name Cleaning**: Removes prefixes like `tool:` from tool names
-- **Alphabetical Sorting**: Sorts both processes and tools for consistent output
-- **Graceful Error Handling**: Continues processing even if some entries are invalid
-- **Automatic Merging**: Combines versions from the same tool across different sources
-- **Workflow Metadata**: Automatically includes workflow name, version, and Nextflow version
+---
 
-**Migration Patterns:**
+### `softwareVersionsToYAML()`
+
+**Deprecated:** use [`collectVersions()`](#collectversions). It delegates to `collectVersions()`, and takes the same inputs.
+
+**Function Signature:**
 
 ```nextflow
-// Legacy pattern (old versions.yml files)
-ch_versions = Channel.fromPath('**/versions.yml')
-ch_versions_yaml = softwareVersionsToYAML(ch_versions)
-
-// Modern pattern (topic channels)
-ch_versions = PROCESS.out.versions  // [process, tool, version]
-ch_versions_yaml = softwareVersionsToYAML(ch_versions)
-
-// Hybrid pattern (transitioning)
-ch_legacy = Channel.fromPath('legacy/**/versions.yml')
-ch_modern = MODERN_PROCESS.out.versions
-ch_all = ch_legacy.mix(ch_modern)
-ch_versions_yaml = softwareVersionsToYAML(ch_all)
+Object softwareVersionsToYAML(Object versions, Map options = [:])
+Object softwareVersionsToYAML(softwareVersions: versions, nextflowVersion: version)
 ```
+
+Given a channel, it collects it with `toList()` and returns a channel emitting the YAML. Given anything else, it returns the YAML string. `options.nextflowVersion` overrides the reported Nextflow version.
 
 ---
 
@@ -469,7 +395,7 @@ workflow {
         .mix(PROCESS_C.out.versions)
 
     // Generate final versions report
-    ch_versions.collect().map { versions ->
+    ch_versions.toList().map { versions ->
         processVersionsFromTopic(versions)
     }.set { ch_versions_yaml }
 }
@@ -599,7 +525,7 @@ workflow {
         .mix(PROCESS_B.out.versions)
 
     // Process all versions together
-    ch_versions.collect().map { versions ->
+    ch_versions.toList().map { versions ->
         processVersionsFromTopic(versions)
     }.set { ch_comprehensive_versions }
 }
@@ -856,7 +782,7 @@ workflow {
     ch_multiqc_files = ch_multiqc_files.mix(PROCESS_MODULE.out.reports)
 
     // Generate versions YAML for MultiQC
-    ch_versions.collect().map { versions ->
+    ch_versions.toList().map { versions ->
         def yamlContent = processVersionsFromTopic(versions)
         return tuple('software_versions_mqc.yaml', yamlContent)
     }.set { ch_versions_mqc }
@@ -903,7 +829,7 @@ Converting between formats produces malformed YAML
 
 ```nextflow
 // Validate input formats
-def topicVersions = ch_versions.collect().map { versions ->
+def topicVersions = ch_versions.toList().map { versions ->
     versions.findAll { version ->
         version instanceof List && version.size() == 3
     }

@@ -347,16 +347,12 @@ class NfUtilsExtension extends PluginExtensionPoint {
         if (versions instanceof DataflowReadChannel ||
             versions instanceof DataflowWriteChannel) {
             return versions.toList().map { versionsList ->
-                NfcoreVersionUtils.softwareVersionsToYAML(
-                    versionsList as List,
-                    this.session as Session,
-                    nextflowVersion
-                )
+                NfcoreVersionUtils.softwareVersionsToYAML(versionsList, this.session, nextflowVersion)
             }
         }
 
         // If it's a list, process directly
-        return NfcoreVersionUtils.softwareVersionsToYAML(versions as List, this.session as Session, nextflowVersion)
+        return NfcoreVersionUtils.softwareVersionsToYAML(versions, this.session, nextflowVersion)
     }
 
     // --- Citation Management Functions ---

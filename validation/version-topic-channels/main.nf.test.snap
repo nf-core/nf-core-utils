@@ -36,6 +36,13 @@
                     "    nf-core-utils-validation: v1.0.0",
                     "    Nextflow: [VERSION]"
                 ],
+                "deprecated": [
+                    "LEGACY_TOOL:",
+                    "  legacy: '2.0'",
+                    "Workflow:",
+                    "    nf-core-utils-validation: v1.0.0",
+                    "    Nextflow: [VERSION]"
+                ],
                 "single": [
                     "LEGACY_TOOL:",
                     "  legacy: '2.0'",
@@ -45,10 +52,10 @@
                 ]
             }
         ],
+        "timestamp": "2026-11-10T12:22:58.894799469",
         "meta": {
-            "nf-test": "0.9.3",
+            "nf-test": "0.9.5",
             "nextflow": "26.10.2"
-        },
-        "timestamp": "2026-11-10T12:10:49.886843494"
+        }
     }
 }
