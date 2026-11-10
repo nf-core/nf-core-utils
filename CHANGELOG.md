@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `completionEmail()`, `completionSummary()` and `checkProfileProvided()` accept the strings "true" and "false" for their boolean arguments, as do `params.force_completion_email` and the `igenomesIgnore` argument of `getReferencePath()`. Under Nextflow's strict syntax parser, command-line values for params without a declared type reach pipelines as strings, which failed the typed signatures or, for `igenomesIgnore`, counted "false" as true. An unrecognised value is an error in `checkProfileProvided()` and `getReferencePath()`, and a warning that falls back to the default in the completion functions and `force_completion_email`.
+- `completionEmail()`, `completionSummary()` and `checkProfileProvided()` accept the strings "true" and "false" for their boolean arguments, as do `params.force_completion_email` and the `igenomesIgnore` argument of `getReferencePath()`. Under Nextflow's strict syntax parser, command-line values for params without a declared type reach pipelines as strings, which failed the typed signatures or, for `igenomesIgnore`, counted "false" as true. An unrecognised value is an error in `checkProfileProvided()` and `getReferencePath()`, and a warning that falls back to the default in the completion functions and `force_completion_email`. ([#95](https://github.com/nf-core/nf-core-utils/pull/95))
 
 ## [0.7.0] - 2026-10-30
 
