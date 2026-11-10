@@ -171,8 +171,8 @@ workflow.onComplete {
 void completionSummary(Object monochromeLogs = true)
 ```
 
-| Parameter        | Type    | Default | Description                                           |
-| ---------------- | ------- | ------- | ----------------------------------------------------- |
+| Parameter        | Type                            | Default | Description                                           |
+| ---------------- | ------------------------------- | ------- | ----------------------------------------------------- |
 | `monochromeLogs` | Boolean or `"true"` / `"false"` | `true`  | If `true`, disables color codes for plain text output |
 
 **Color-Coded Output Examples**
