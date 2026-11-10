@@ -84,7 +84,7 @@ String collectVersions(Object input, Object nextflowVersion = null)
 
 - `input` (Object): one entry, or a list of entries of any of these types:
   - Topic tuples: `[process, tool, version]`
-  - `versions.yml` files, as `Path`, `File`, or a path string. Remote paths, such as S3, are read through their filesystem
+  - `versions.yml` files, as `Path`, `File`, or a local path string. A remote `Path`, such as S3, is read through its filesystem
   - YAML strings
   - Maps of `tool -> version`, or of `process -> [tool -> version]`
 - `nextflowVersion` (String/VersionNumber, optional): Nextflow version to report instead of the running one

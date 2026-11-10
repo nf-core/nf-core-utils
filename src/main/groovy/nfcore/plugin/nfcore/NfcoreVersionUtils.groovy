@@ -40,7 +40,7 @@ import org.yaml.snakeyaml.Yaml
  * </ul>
  *
  * <h2>Deprecated Methods</h2>
- * The following methods are deprecated and delegate to collectVersions():
+ * The following methods are deprecated in favour of collectVersions():
  * <ul>
  *   <li>{@link #softwareVersionsToYAML} - use collectVersions() instead</li>
  *   <li>{@link #processVersionsFromYAML} - use collectVersions() instead</li>
@@ -98,10 +98,7 @@ class NfcoreVersionUtils {
         report.addInput(input)
 
         if (session) {
-            def manifest = session.getManifest()
-            def wfName = manifest?.getName() ?: 'unknown'
-            def wfVersion = getWorkflowVersion(session)
-            report.addWorkflowVersion(wfName, wfVersion, resolveNextflowVersion(session, nextflowVersion))
+            report.addWorkflowVersion(session.getManifest()?.getName(), getWorkflowVersion(session), resolveNextflowVersion(session, nextflowVersion))
         }
 
         return report.renderYaml()
@@ -168,7 +165,7 @@ class NfcoreVersionUtils {
     }
 
     // =========================================================================
-    // DEPRECATED METHODS - delegate to collectVersions()
+    // DEPRECATED METHODS - use collectVersions() instead
     // =========================================================================
 
     /**
@@ -180,17 +177,7 @@ class NfcoreVersionUtils {
     @Deprecated
     static String processVersionsFromYAML(String yamlFile) {
         log.debug("processVersionsFromYAML() is deprecated. Use collectVersions() instead.")
-        def yaml = new Yaml()
-        def loaded = yaml.load(yamlFile)
-        if (!(loaded instanceof Map)) return ''
-        def versions = ((Map) loaded).collectEntries { k, v ->
-            if (k instanceof String) {
-                [k.tokenize(':')[-1], v]
-            } else {
-                [k, v]
-            }
-        }
-        return yaml.dumpAsMap(versions).trim()
+        return SoftwareVersionReport.flattenYamlKeys(yamlFile)
     }
 
     /**
@@ -275,15 +262,7 @@ class NfcoreVersionUtils {
      * Get workflow version for pipeline as YAML string
      */
     static String workflowVersionToYAML(Session session, Object nextflowVersion = null) {
-        def manifest = session.getManifest()
-        def workflowName = manifest?.getName() ?: 'unknown'
-        def workflowVersion = getWorkflowVersion(session)
-        def nfVer = resolveNextflowVersion(session, nextflowVersion)
-        return """
-        Workflow:
-            ${workflowName}: ${workflowVersion}
-            Nextflow: ${nfVer}
-        """.stripIndent().trim()
+        return collectVersions(null, session, nextflowVersion)
     }
 
     /**

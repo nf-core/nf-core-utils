@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed `collectVersions()` and `softwareVersionsToYAML()` dropping a single versions YAML `Path`. Remote paths, such as S3, are now read through their filesystem ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
-- `softwareVersionsToYAML()` delegates to `collectVersions()`. The docs now describe `collectVersions()`, with `toList()` instead of `collect()`, which flattens the tuples ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
+- `softwareVersionsToYAML()`, `workflowVersionToYAML()` and `processVersionsFromYAML()` delegate to `collectVersions()` and `SoftwareVersionReport`, and a missing versions file logs a warning. The docs now describe `collectVersions()` and recommend `toList()`: `collect()` flattens the tuples ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
 
 ## [0.7.0] - 2026-10-30
 

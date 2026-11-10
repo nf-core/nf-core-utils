@@ -16,6 +16,7 @@
 
 package nfcore.plugin.nfcore
 
+import groovy.transform.PackageScope
 import groovy.util.logging.Slf4j
 import org.yaml.snakeyaml.Yaml
 
@@ -124,8 +125,8 @@ class SoftwareVersionReport {
     private void processStringEntry(String s) {
         if (!s) return
         def f = new File(s)
-        if (f.exists() && f.isFile()) {
-            processYamlContent(f.text)
+        if (f.isFile()) {
+            processPathEntry(f.toPath())
         } else {
             processYamlContent(s)
         }
@@ -134,6 +135,8 @@ class SoftwareVersionReport {
     private void processPathEntry(Path path) {
         if (Files.isRegularFile(path)) {
             processYamlContent(Files.readString(path))
+        } else {
+            log.warn("Versions file not found: ${path.toUri()}")
         }
     }
 
@@ -171,7 +174,8 @@ class SoftwareVersionReport {
     }
 
     /** Flatten colon-prefixed keys: "tool:foo: 1.0" -> "foo: 1.0" */
-    private static String flattenYamlKeys(String yamlContent) {
+    @PackageScope
+    static String flattenYamlKeys(String yamlContent) {
         def yaml = new Yaml()
         def loaded = yaml.load(yamlContent)
         if (!(loaded instanceof Map)) return ''
