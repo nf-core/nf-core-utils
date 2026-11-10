@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the mise workspace graph (`monorepo_root`, `[monorepo]`, `gradle::`): with one Gradle project, `--affected` runs every task.
 - Pinned GitHub Actions by commit SHA at their latest releases, and mise 2026.11.5 in CI.
 - Added a `CI pass` job to `validation.yml`, the single required check.
-- Added Renovate with the nf-core preset.
+- Added Renovate with the nf-core preset. It does not update Nextflow, which is bumped by hand.
 
 ## [0.7.0] - 2026-10-30
 
