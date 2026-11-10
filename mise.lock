@@ -3,29 +3,33 @@
 lockfile_version = 3
 
 [[tools."github:askimed/nf-test"]]
-version = "0.9.3"
+version = "0.9.5"
 backend = "github:askimed/nf-test"
-specifiers = ["0.9.3"]
+specifiers = ["v0.9.5"]
 
 [tools."github:askimed/nf-test"."platforms.linux-arm64"]
-checksum = "sha256:2cbca582fdf81e231783eb2305b31d78b54f315e7e87e676c44582881a9b3446"
-url = "https://github.com/askimed/nf-test/releases/download/v0.9.3/nf-test-0.9.3.tar.gz"
-url_api = "https://api.github.com/repos/askimed/nf-test/releases/assets/298856465"
+checksum = "sha256:b7679eb90cdc9642bfa89e9634db02ce6e699de53ad35ef0e2f4847634fc1641"
+checksum_source = "mise-versions"
+url = "https://github.com/askimed/nf-test/releases/download/v0.9.5/nf-test-0.9.5.tar.gz"
+url_api = "https://api.github.com/repos/askimed/nf-test/releases/assets/377285164"
 
 [tools."github:askimed/nf-test"."platforms.linux-x64"]
-checksum = "sha256:2cbca582fdf81e231783eb2305b31d78b54f315e7e87e676c44582881a9b3446"
-url = "https://github.com/askimed/nf-test/releases/download/v0.9.3/nf-test-0.9.3.tar.gz"
-url_api = "https://api.github.com/repos/askimed/nf-test/releases/assets/298856465"
+checksum = "sha256:b7679eb90cdc9642bfa89e9634db02ce6e699de53ad35ef0e2f4847634fc1641"
+checksum_source = "mise-versions"
+url = "https://github.com/askimed/nf-test/releases/download/v0.9.5/nf-test-0.9.5.tar.gz"
+url_api = "https://api.github.com/repos/askimed/nf-test/releases/assets/377285164"
 
 [tools."github:askimed/nf-test"."platforms.macos-arm64"]
-checksum = "sha256:2cbca582fdf81e231783eb2305b31d78b54f315e7e87e676c44582881a9b3446"
-url = "https://github.com/askimed/nf-test/releases/download/v0.9.3/nf-test-0.9.3.tar.gz"
-url_api = "https://api.github.com/repos/askimed/nf-test/releases/assets/298856465"
+checksum = "sha256:b7679eb90cdc9642bfa89e9634db02ce6e699de53ad35ef0e2f4847634fc1641"
+checksum_source = "mise-versions"
+url = "https://github.com/askimed/nf-test/releases/download/v0.9.5/nf-test-0.9.5.tar.gz"
+url_api = "https://api.github.com/repos/askimed/nf-test/releases/assets/377285164"
 
 [tools."github:askimed/nf-test"."platforms.macos-x64"]
-checksum = "sha256:2cbca582fdf81e231783eb2305b31d78b54f315e7e87e676c44582881a9b3446"
-url = "https://github.com/askimed/nf-test/releases/download/v0.9.3/nf-test-0.9.3.tar.gz"
-url_api = "https://api.github.com/repos/askimed/nf-test/releases/assets/298856465"
+checksum = "sha256:b7679eb90cdc9642bfa89e9634db02ce6e699de53ad35ef0e2f4847634fc1641"
+checksum_source = "mise-versions"
+url = "https://github.com/askimed/nf-test/releases/download/v0.9.5/nf-test-0.9.5.tar.gz"
+url_api = "https://api.github.com/repos/askimed/nf-test/releases/assets/377285164"
 
 [[tools."github:nextflow-io/nextflow"]]
 version = "26.10.2"
