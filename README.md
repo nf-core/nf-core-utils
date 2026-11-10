@@ -13,26 +13,18 @@ The nf-core-utils plugin provides utility functions used by nf-core pipelines.
 Install [mise](https://mise.jdx.dev/getting-started.html), then from the repository root:
 
 ```bash
-mise install --locked
+mise install
 mise tasks ls
 ```
 
 `mise.toml` defines the development commands and tools: Temurin Java 21 (required
-by the Gradle plugin), Nextflow 26.10.2, and nf-test 0.9.3. `mise.lock` records exact
+by the Gradle plugin), Nextflow 26.10.2, nf-test 0.9.3, and uv 0.13.7. `mise.lock` records exact
 versions and checksums for Linux and macOS on x64 and ARM64. CI uses the same
 configuration via `jdx/mise-action`.
 
-The repo is a mise [monorepo root](https://mise.jdx.dev/tasks/workspace-graph.html)
-with a single Gradle workspace project (`gradle::` at `.`). There are no
-`include` directives in `settings.gradle`, so the project is declared under
-`[monorepo.projects]` rather than inferred. Inspect it with
-`mise tasks graph` (add `--explain` or `--json` as needed). Run tasks only in
-projects touched by a change with `mise run --affected <task>` (for example
-`mise run --affected test`).
-
 Make is no longer used: replace `make <target>` with `mise run <target>`.
 Available tasks are `assemble`, `test`, `clean`, `install`, `validate`,
-`update-snapshots`, `website-docs`, and `release` (also as `//:assemble`, and so on). The Gradle
+`update-snapshots`, `website-docs`, and `release`. The Gradle
 wrapper still manages Gradle itself.
 
 `mise run website-docs --release <tag> [--output <dir>]` writes the user docs
@@ -98,8 +90,8 @@ Gradle distributions, dependencies, and build outputs between GitHub Actions run
 Only runs on the default branch write caches; pull requests restore them read-only.
 The action's job summary reports cache usage. Configuration caching is not enabled.
 
-For Amp orbs, `.agents/setup` installs mise and runs `mise install --locked` for
-Java 21, Nextflow, and nf-test. It also installs checksum-verified Miniforge
+For Amp orbs, `.agents/setup` installs mise and runs `mise install` for
+Java 21, Nextflow, nf-test, and uv. It also installs checksum-verified Miniforge
 26.9.4-1 with the `conda-forge` and `bioconda` channels required by validation.
 The tools remain on `PATH` in subsequent login shells without interactive shell
 activation. Setup builds and unit-tests the plugin through mise to warm the

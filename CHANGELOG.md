@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Set `locked = true` in `mise.toml`, replacing `mise install --locked`.
+- Unset `AGENT` and `CLAUDECODE` in `mise.toml` `[env]`: they turn on Nextflow agent mode, which breaks validation snapshots.
+- Added uv 0.13.7 to `mise.toml` for the `website-docs` task.
+- Removed the mise workspace graph (`monorepo_root`, `[monorepo]`, `gradle::`): with one Gradle project, `--affected` runs every task.
+- Pinned GitHub Actions by commit SHA at their latest releases, and mise 2026.11.5 in CI.
+- Added a `CI pass` job to `validation.yml`, the single required check.
+- Added Renovate with the nf-core preset.
+
 ## [0.7.0] - 2026-10-30
 
 ### Compatibility and migration

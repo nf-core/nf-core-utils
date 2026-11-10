@@ -28,19 +28,21 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up tools
-        uses: jdx/mise-action@v5
+        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          version: 2026.11.5
 
       - name: Set up Gradle and cache
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Install snapshot diff formatter
         run: python -m pip install pdiff
 
       - name: Conda setup
-        uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3
+        uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4.1.0
         with:
           auto-update-conda: true
           channels: conda-forge, bioconda
@@ -60,7 +62,7 @@ jobs:
 
       - name: Upload validation artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: validation-results-${{ matrix.nextflow }}
           path: |
@@ -73,7 +75,7 @@ jobs:
 
       - name: Upload test logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: validation-logs-${{ matrix.nextflow }}
           path: |
@@ -81,3 +83,19 @@ jobs:
             validation/*/work/**/*.log
             validation/.nf-test/**/*.log
           retention-days: 7
+
+  # Single required check, so matrix changes need no ruleset change
+  ci-pass:
+    name: CI pass
+    needs: [validation]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          case "$RESULTS" in
+            *failure*|*cancelled*) exit 1 ;;
+          esac

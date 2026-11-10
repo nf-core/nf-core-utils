@@ -12,7 +12,7 @@ This is the nf-core-utils Nextflow plugin, which provides utility functions used
 
 ```bash
 # Install the locked development toolchain
-mise install --locked
+mise install
 
 # Build the plugin
 mise run assemble
@@ -99,16 +99,13 @@ The plugin provides three main extension categories accessible via @Function ann
 
 ### mise.toml and mise.lock
 
-Define common development tasks and lock Java 21, Nextflow, and nf-test for local
+Define common development tasks and lock Java 21, Nextflow, nf-test, and uv for local
 development and CI. Use `mise tasks ls` to list commands. Gradle itself is managed
 by the Gradle wrapper.
 
-`monorepo_root = true` enables the workspace project graph. The single root
-Gradle project is declared as `[monorepo.projects."gradle::"]` because
-`settings.gradle` has no literal `include` directives for mise to parse. Use
-`mise tasks graph` to inspect projects and `mise run --affected <task>` to run
-tasks only for changed projects. If multi-project Gradle `include`s are added
-later, remove the `gradle::` override so the Gradle provider can infer membership.
+`locked = true` makes `mise install` fail when `mise.lock` lacks a tool or platform.
+After changing `[tools]`, refresh it with `MISE_LOCKED=0 mise lock`.
+`[env]` unsets `AGENT` and `CLAUDECODE`: they turn on Nextflow agent mode, which breaks snapshots.
 
 `gradle.properties` includes `org.gradle.java.installations.fromEnv=JAVA_HOME`
 so Gradle toolchains pick up the JDK selected by mise. Verify with
