@@ -9,7 +9,8 @@
  */
 
 // Import plugin functions - collectVersions() is the recommended API
-include { collectVersions ; softwareVersionsToYAML } from 'plugin/nf-core-utils'
+include { collectVersions        } from 'plugin/nf-core-utils'
+include { softwareVersionsToYAML } from 'plugin/nf-core-utils'
 
 workflow {
 
