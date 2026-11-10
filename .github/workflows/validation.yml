@@ -84,7 +84,7 @@ jobs:
             validation/.nf-test/**/*.log
           retention-days: 7
 
-  # The only required check here, so matrix changes need no ruleset change
+  # Single required check, so matrix changes need no ruleset change
   ci-pass:
     name: CI pass
     needs: [validation]

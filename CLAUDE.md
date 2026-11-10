@@ -105,7 +105,7 @@ by the Gradle wrapper.
 
 `locked = true` makes `mise install` fail when `mise.lock` lacks a tool or platform.
 After changing `[tools]`, refresh it with `MISE_LOCKED=0 mise lock`.
-`[env]` unsets `AGENT` and `CLAUDECODE`, which turn on Nextflow's agent mode and break snapshots.
+`[env]` unsets `AGENT` and `CLAUDECODE`: they turn on Nextflow agent mode, which breaks snapshots.
 
 `gradle.properties` includes `org.gradle.java.installations.fromEnv=JAVA_HOME`
 so Gradle toolchains pick up the JDK selected by mise. Verify with

@@ -7,9 +7,9 @@ java = "temurin-21"
 "github:askimed/nf-test" = "0.9.3"
 uv = "0.13.7"
 
-# Settings that change nf-test snapshots, so local runs match CI
+# Match CI snapshots. false unsets AGENT and CLAUDECODE: they turn on Nextflow agent mode,
+# which NXF_AGENT_MODE cannot override before 26.10.
 [env]
-# Unset, as these turn on Nextflow's agent mode, and NXF_AGENT_MODE cannot override them before 26.10
 AGENT = false
 CLAUDECODE = false
 NXF_ANSI_LOG = "false"
