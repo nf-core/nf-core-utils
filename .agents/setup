@@ -14,7 +14,7 @@ fi
 
 echo 'Installing locked development tools'
 mise trust mise.toml
-mise install --locked
+mise install
 mise reshim
 
 # Validation checks the real Conda channel configuration, as in CI.
