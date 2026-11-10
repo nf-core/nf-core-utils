@@ -3,11 +3,10 @@
         "content": [
             {
                 "topic": [
-                    "FASTQC:",
-                    "  fastqc: 0.11.9",
-                    "MULTIQC:",
-                    "  multiqc: '1.12'",
-                    "SAMTOOLS:",
+                    "LEGACY_TOOL:",
+                    "  legacy: '2.0'",
+                    "TOPIC_TOOL:",
+                    "  fastqc: 0.12.1",
                     "  samtools: '1.17'",
                     "Workflow:",
                     "    nf-core-utils-validation: v1.0.0",
@@ -31,13 +30,25 @@
                     "Workflow:",
                     "    nf-core-utils-validation: v1.0.0",
                     "    Nextflow: [VERSION]"
+                ],
+                "empty": [
+                    "Workflow:",
+                    "    nf-core-utils-validation: v1.0.0",
+                    "    Nextflow: [VERSION]"
+                ],
+                "single": [
+                    "LEGACY_TOOL:",
+                    "  legacy: '2.0'",
+                    "Workflow:",
+                    "    nf-core-utils-validation: v1.0.0",
+                    "    Nextflow: 99.1.0"
                 ]
             }
         ],
         "meta": {
             "nf-test": "0.9.3",
-            "nextflow": "26.04.7"
+            "nextflow": "26.10.2"
         },
-        "timestamp": "2026-10-17T13:05:38.010426865"
+        "timestamp": "2026-11-10T12:10:49.886843494"
     }
 }

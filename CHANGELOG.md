@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a `CI pass` job to `validation.yml`, the single required check.
 - Added Renovate with the nf-core preset.
 
+### Fixed
+
+- Fixed `collectVersions()` and `softwareVersionsToYAML()` dropping a single versions YAML `Path`, and reading remote paths (e.g. S3) through their filesystem. `softwareVersionsToYAML()` now delegates to `collectVersions()` ([#23](https://github.com/nf-core/nf-core-utils/pull/23)).
+
 ## [0.7.0] - 2026-10-30
 
 ### Compatibility and migration

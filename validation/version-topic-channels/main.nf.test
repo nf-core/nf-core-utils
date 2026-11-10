@@ -16,12 +16,14 @@ nextflow_pipeline {
             assert workflow.success
 
             // Channels finish independently; compare each complete report, not console arrival order.
-            def reports = ['topic', 'file', 'mixed'].collectEntries { kind ->
+            def reports = ['topic', 'file', 'mixed', 'empty'].collectEntries { kind ->
                 def lines = path("${params.outdir}/${kind}_versions.yml").text.readLines().collect { line ->
                     line.replaceAll(/^(\s*Nextflow: )\S+$/, '$1[VERSION]')
                 }
                 [kind, lines]
             }
+            // Not normalized: the positional override must appear as given
+            reports.single = path("${params.outdir}/single_versions.yml").text.readLines()
             assert snapshot(reports).match()
         }
     }

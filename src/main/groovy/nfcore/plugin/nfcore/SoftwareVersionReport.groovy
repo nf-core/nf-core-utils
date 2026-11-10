@@ -19,6 +19,9 @@ package nfcore.plugin.nfcore
 import groovy.util.logging.Slf4j
 import org.yaml.snakeyaml.Yaml
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 /**
  * Collects heterogeneous software version inputs and renders a merged YAML report.
  *
@@ -88,6 +91,8 @@ class SoftwareVersionReport {
         if (input == null) return []
         if (input instanceof CharSequence) return [input.toString()]
         if (input instanceof Map) return [input]
+        // a Path is Iterable over its name components
+        if (input instanceof Path) return [input]
         if (input instanceof List) return input
         if (input.getClass().isArray()) return (input as Object[]).toList()
         if (input instanceof Iterable) return input.toList()
@@ -101,11 +106,11 @@ class SoftwareVersionReport {
             if (entry instanceof CharSequence) {
                 processStringEntry(entry.toString().trim())
             } else if (entry instanceof File) {
-                processFileEntry(entry)
+                processPathEntry(entry.toPath())
+            } else if (entry instanceof Path) {
+                processPathEntry(entry)
             } else if (entry instanceof Map) {
                 mergeParsedYaml(entry as Map)
-            } else if (hasToFileMethod(entry)) {
-                processPathLikeEntry(entry)
             } else if (entry instanceof List || entry.getClass().isArray()) {
                 processListEntry(entry)
             } else {
@@ -126,23 +131,9 @@ class SoftwareVersionReport {
         }
     }
 
-    private void processFileEntry(File file) {
-        if (file.exists() && file.isFile()) {
-            processYamlContent(file.text)
-        }
-    }
-
-    private void processPathLikeEntry(Object entry) {
-        try {
-            def f = entry.toFile()
-            if (f.exists() && f.isFile()) {
-                processYamlContent(f.text)
-            }
-        } catch (Exception e) {
-            def f = new File(entry.toString())
-            if (f.exists() && f.isFile()) {
-                processYamlContent(f.text)
-            }
+    private void processPathEntry(Path path) {
+        if (Files.isRegularFile(path)) {
+            processYamlContent(Files.readString(path))
         }
     }
 
@@ -221,13 +212,4 @@ class SoftwareVersionReport {
         }
     }
 
-    private static boolean hasToFileMethod(Object o) {
-        if (o == null) return false
-        try {
-            def m = o.getClass().getMethod('toFile' as String)
-            return m != null && m.getParameterCount() == 0
-        } catch (NoSuchMethodException | SecurityException ignore) {
-            return false
-        }
-    }
 }
