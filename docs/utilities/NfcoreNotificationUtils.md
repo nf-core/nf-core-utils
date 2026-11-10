@@ -168,7 +168,7 @@ workflow.onComplete {
 **Function Parameters**
 
 ```groovy title="Function signature"
-void completionSummary(boolean monochromeLogs = true)
+void completionSummary(Object monochromeLogs = true)
 ```
 
 | Parameter        | Type    | Default | Description                                           |

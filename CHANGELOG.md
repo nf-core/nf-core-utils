@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `completionEmail()`, `completionSummary()` and `checkProfileProvided()` accept the strings "true" and "false" for their boolean arguments, and `params.force_completion_email` accepts the string "true". Command-line flags such as `--plaintext_email` reach pipelines as strings under Nextflow's v2 syntax parser, which previously failed the strictly typed signatures.
+
 ## [0.7.0] - 2026-10-30
 
 ### Compatibility and migration

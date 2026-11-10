@@ -110,14 +110,16 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @param summaryParams Map of parameter groups and their parameters
      * @param email Email address to send to
      * @param emailOnFail Email address to send to on failure
-     * @param plaintextEmail Whether to send plaintext email
+     * @param plaintextEmail Whether to send plaintext email (Boolean, or the string "true" / "false")
      * @param outdir Output directory
      * @param monochromeLogs Whether to use monochrome logs
      * @param multiqcReports List of MultiQC report paths
      */
     @Function
-    void completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports) {
-        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionEmail(summaryParams, email, emailOnFail, plaintextEmail, outdir, monochromeLogs, multiqcReports)
+    void completionEmail(Map summaryParams, String email, String emailOnFail, Object plaintextEmail, String outdir, Object monochromeLogs, List multiqcReports) {
+        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionEmail(
+            summaryParams, email, emailOnFail, nfcore.plugin.nfcore.BooleanParam.coerce(plaintextEmail), outdir, nfcore.plugin.nfcore.BooleanParam.coerce(monochromeLogs), multiqcReports
+        )
     }
 
     /**
@@ -125,14 +127,14 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @param monochromeLogs Whether to use monochrome logs
      */
     @Function
-    void completionSummary(boolean monochromeLogs) {
+    void completionSummary(Object monochromeLogs) {
         def manifest = this.session?.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def statsObserver = this.session?.getStatsObserver()
         def stats = statsObserver ? statsObserver.getStats() : null
         def ignoredCount = (stats != null) ? stats.getIgnoredCount() : 0
         nfcore.plugin.nfcore.NfcoreNotificationUtils.completionSummary(
-            workflowName, this.session?.success ?: false, ignoredCount, monochromeLogs
+            workflowName, this.session?.success ?: false, ignoredCount, nfcore.plugin.nfcore.BooleanParam.coerce(monochromeLogs)
         )
     }
 
@@ -152,8 +154,8 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @param monochromeLogs Whether to use monochrome logs (default: true)
      */
     @Function
-    void checkProfileProvided(List args, boolean monochromeLogs = true) {
-        validationAdapter.checkProfileProvided(args, monochromeLogs)
+    void checkProfileProvided(List args, Object monochromeLogs = true) {
+        validationAdapter.checkProfileProvided(args, nfcore.plugin.nfcore.BooleanParam.coerce(monochromeLogs, true))
     }
 
     /**
