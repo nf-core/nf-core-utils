@@ -3,7 +3,7 @@ locked = true
 
 [tools]
 java = "temurin-21"
-"github:nextflow-io/nextflow" = { version = "26.10.2", asset_pattern = "nextflow", bin = "nextflow" }
+"github:nextflow-io/nextflow" = { version = "v26.10.5", asset_pattern = "nextflow", bin = "nextflow" }
 "github:askimed/nf-test" = "v0.9.5"
 uv = "0.13.7"
 
