@@ -380,7 +380,7 @@ workflow {
 
 Use `toList()`, not `collect()`: `collect()` flattens the tuples, and emits nothing when no process sent versions.
 
-To report another Nextflow version, pass it as second argument: `collectVersions(versions, '24.10.0')`.
+To report another Nextflow version, pass it as the second argument: `collectVersions(versions, '24.10.0')`.
 
 `softwareVersionsToYAML()` is deprecated and delegates to `collectVersions()`. See [NfcoreVersionUtils](utilities/NfcoreVersionUtils.md#collectversions) for the inputs and the output format.
 

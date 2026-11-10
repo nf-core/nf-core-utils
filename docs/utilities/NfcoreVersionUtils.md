@@ -117,23 +117,24 @@ collectVersions(versions, '24.10.0')
 
 **Output Format:**
 
+<!-- prettier-ignore -->
 ```yaml
 FASTQC:
   fastqc: 0.12.1
 SAMTOOLS:
-  samtools: 1.17
+  samtools: '1.17'
 Software:
-  multiqc: 1.15
+  multiqc: '1.15'
 Workflow:
-  nf-core/mypipeline: v1.0.0
-  Nextflow: 24.10.0
+    nf-core/mypipeline: v1.0.0
+    Nextflow: 24.10.0
 ```
 
 - Process names keep only their last component: `NFCORE_RNASEQ:TRIMGALORE:FASTQC` becomes `FASTQC`
 - Tool names keep only their last component: `tool:fastqc` becomes `fastqc`
 - Versions without a process (flat YAML or maps) go under `Software`
 - A tool reported twice keeps the last value
-- An entry that cannot be read is skipped with a warning
+- A missing file is skipped; an entry that fails to parse is skipped with a warning
 
 ---
 

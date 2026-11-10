@@ -15,7 +15,7 @@ workflow {
 
     file(params.outdir).mkdirs()
 
-    // Test 1: collectVersions with a versions topic fed by real processes: tuples, a repeat, and a versions.yml path
+    // Test 1: collectVersions on the versions topic, fed by processes with tuples and a versions.yml
     log.info("=== Testing collectVersions() with topic tuples ===")
 
     TOPIC_TOOL(channel.of(['samtools', '1.17'], ['fastqc', '0.12.1'], ['samtools', '1.17']))
