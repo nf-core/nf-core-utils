@@ -20,6 +20,22 @@ class BooleanParamTest extends Specification {
         ' false ' | false
     }
 
+    def "coerceOrWarn returns the default for an unrecognised value"() {
+        expect:
+        BooleanParam.coerceOrWarn('yes', true, 'x') == true
+        BooleanParam.coerceOrWarn('yes', false, 'x') == false
+        BooleanParam.coerceOrWarn('false', true, 'x') == false
+    }
+
+    def "coerce names the parameter in its error"() {
+        when:
+        BooleanParam.coerce('yes', false, 'plaintextEmail')
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains('plaintextEmail')
+    }
+
     def "coerce uses the default for null"() {
         expect:
         BooleanParam.coerce(null) == false

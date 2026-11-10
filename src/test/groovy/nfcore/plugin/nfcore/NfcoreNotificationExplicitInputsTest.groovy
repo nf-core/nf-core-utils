@@ -414,7 +414,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         'explicit false'            | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: false] | true      | true    | 'test@example.invalid' | null                   || false      | true
         'string false'              | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: 'false'] | true    | true    | 'test@example.invalid' | null                   || false      | true
         'forced Platform success'   | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: true]  | true      | true    | 'test@example.invalid' | null                   || true       | false
-        'string true (CLI)'           | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: 'true'] | true      | true    | 'test@example.invalid' | null                   || true       | false
+        'forced Platform success (string)' | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: 'true'] | true      | true    | 'test@example.invalid' | null                   || true       | false
         'forced Platform failure'   | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: true]  | true      | false   | null                   | 'fail@example.invalid' || true       | false
         'forced without recipient'  | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: true]  | true      | true    | null                   | 'fail@example.invalid' || false      | false
         'CLI monitoring'            | [TOWER_ACCESS_TOKEN: 'test-token']    | [:]                             | true      | true    | 'test@example.invalid' | null                   || true       | false

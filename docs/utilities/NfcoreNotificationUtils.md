@@ -173,7 +173,7 @@ void completionSummary(Object monochromeLogs = true)
 
 | Parameter        | Type    | Default | Description                                           |
 | ---------------- | ------- | ------- | ----------------------------------------------------- |
-| `monochromeLogs` | Boolean | `true`  | If `true`, disables color codes for plain text output |
+| `monochromeLogs` | Boolean or `"true"` / `"false"` | `true`  | If `true`, disables color codes for plain text output |
 
 **Color-Coded Output Examples**
 
@@ -372,9 +372,9 @@ void completionEmail(
     Map summaryParams,        // Grouped parameter summary
     String email,            // Primary email address
     String emailOnFail,      // Failure notification email
-    boolean plaintextEmail,  // Use plain text instead of HTML
+    Object plaintextEmail,   // Use plain text instead of HTML (Boolean or "true" / "false")
     String outdir,          // Output directory path
-    boolean monochromeLogs, // Color settings for email content
+    Object monochromeLogs,   // Color settings for email content (Boolean or "true" / "false")
     List multiqcReports    // MultiQC report attachments
 )
 ```

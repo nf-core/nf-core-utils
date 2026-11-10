@@ -266,13 +266,13 @@ HINT: A common mistake is to provide multiple values separated by spaces e.g. `-
 **Function Reference**
 
 ```groovy title="Function signature"
-void checkProfileProvided(List args, boolean monochromeLogs = true)
+void checkProfileProvided(List args, Object monochromeLogs = true)
 ```
 
 | Parameter        | Type    | Default  | Description                                           |
 | ---------------- | ------- | -------- | ----------------------------------------------------- |
 | `args`           | List    | Required | Command-line arguments (use built-in `args` variable) |
-| `monochromeLogs` | Boolean | `true`   | If `true`, disables color codes in error messages     |
+| `monochromeLogs` | Boolean or `"true"` / `"false"` | `true`   | If `true`, disables color codes in error messages     |
 
 **Comprehensive Profile Validation**
 

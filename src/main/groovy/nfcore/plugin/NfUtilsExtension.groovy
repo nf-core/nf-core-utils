@@ -118,7 +118,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     void completionEmail(Map summaryParams, String email, String emailOnFail, Object plaintextEmail, String outdir, Object monochromeLogs, List multiqcReports) {
         nfcore.plugin.nfcore.NfcoreNotificationUtils.completionEmail(
-            summaryParams, email, emailOnFail, nfcore.plugin.nfcore.BooleanParam.coerce(plaintextEmail), outdir, nfcore.plugin.nfcore.BooleanParam.coerce(monochromeLogs), multiqcReports
+            summaryParams, email, emailOnFail, nfcore.plugin.nfcore.BooleanParam.coerceOrWarn(plaintextEmail, false, 'plaintextEmail'), outdir, nfcore.plugin.nfcore.BooleanParam.coerceOrWarn(monochromeLogs, true, 'monochromeLogs'), multiqcReports
         )
     }
 
@@ -127,14 +127,14 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @param monochromeLogs Whether to use monochrome logs
      */
     @Function
-    void completionSummary(Object monochromeLogs) {
+    void completionSummary(Object monochromeLogs = true) {
         def manifest = this.session?.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def statsObserver = this.session?.getStatsObserver()
         def stats = statsObserver ? statsObserver.getStats() : null
         def ignoredCount = (stats != null) ? stats.getIgnoredCount() : 0
         nfcore.plugin.nfcore.NfcoreNotificationUtils.completionSummary(
-            workflowName, this.session?.success ?: false, ignoredCount, nfcore.plugin.nfcore.BooleanParam.coerce(monochromeLogs)
+            workflowName, this.session?.success ?: false, ignoredCount, nfcore.plugin.nfcore.BooleanParam.coerceOrWarn(monochromeLogs, true, 'monochromeLogs')
         )
     }
 
@@ -155,7 +155,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void checkProfileProvided(List args, Object monochromeLogs = true) {
-        validationAdapter.checkProfileProvided(args, nfcore.plugin.nfcore.BooleanParam.coerce(monochromeLogs, true))
+        validationAdapter.checkProfileProvided(args, nfcore.plugin.nfcore.BooleanParam.coerce(monochromeLogs, true, 'monochromeLogs'))
     }
 
     /**

@@ -16,6 +16,8 @@
 
 package nfcore.plugin.references
 
+import nfcore.plugin.nfcore.BooleanParam
+
 /**
  * Concentrates reference-shape knowledge: genome lookup, attribute extraction,
  * basepath substitution, and null handling in a single deep module.
@@ -94,7 +96,7 @@ class ReferenceSelection {
         args = checkArgs(args, 'getReferencePath', ['references', 'genome', 'igenomesIgnore', 'datasheetPath'])
         String references = args.references
         String genome = args.genome
-        Boolean igenomesIgnore = args.igenomesIgnore
+        boolean igenomesIgnore = BooleanParam.coerce(args.igenomesIgnore, false, 'igenomesIgnore')
         String datasheetPath = args.datasheetPath
         genome = genome in [null, 'null'] ? null : genome
 
