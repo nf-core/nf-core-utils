@@ -4,7 +4,7 @@ locked = true
 [tools]
 java = "temurin-21"
 "github:nextflow-io/nextflow" = { version = "26.10.2", asset_pattern = "nextflow", bin = "nextflow" }
-"github:askimed/nf-test" = "0.9.3"
+"github:askimed/nf-test" = "v0.9.5"
 uv = "0.13.7"
 
 # Match CI snapshots. false unsets AGENT and CLAUDECODE: they turn on Nextflow agent mode,
