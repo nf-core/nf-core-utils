@@ -29,7 +29,7 @@ Map generateComprehensiveReport(
     List<List> topicVersions,
     List<String> legacyVersions = [],
     List<String> metaFilePaths = [],
-    String mqcMethodsYamlPath = null
+    Object mqcMethodsYaml = null
 )
 ```
 
@@ -38,7 +38,7 @@ Map generateComprehensiveReport(
 - `topicVersions` (List\<List\>): Version data from topic channels in `[process, name, version]` format
 - `legacyVersions` (List\<String\>, optional): List of legacy YAML version strings
 - `metaFilePaths` (List\<String\>, optional): List of paths to module meta.yml files for citations
-- `mqcMethodsYamlPath` (String, optional): Path to MultiQC methods description template
+- `mqcMethodsYaml` (Path or String, optional): MultiQC methods description template, local or remote (`s3://`, `gs://`, `az://`)
 
 **Returns:**
 
@@ -185,13 +185,13 @@ Generates a citation-only report when versions are handled separately. This func
 **Function Signature:**
 
 ```nextflow
-Map generateCitationReport(List<String> metaFilePaths, String mqcMethodsYamlPath = null)
+Map generateCitationReport(List<String> metaFilePaths, Object mqcMethodsYaml = null)
 ```
 
 **Parameters:**
 
 - `metaFilePaths` (List\<String\>): List of paths to module meta.yml files
-- `mqcMethodsYamlPath` (String, optional): Path to MultiQC methods description template
+- `mqcMethodsYaml` (Path or String, optional): MultiQC methods description template, local or remote (`s3://`, `gs://`, `az://`)
 
 **Returns:**
 

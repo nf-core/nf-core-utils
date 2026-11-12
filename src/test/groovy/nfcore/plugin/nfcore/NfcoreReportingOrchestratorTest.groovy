@@ -21,6 +21,8 @@ import nextflow.config.Manifest
 import spock.lang.Specification
 import spock.lang.Issue
 
+import java.nio.file.Path
+
 class NfcoreReportingOrchestratorTest extends Specification {
 
     @Issue("https://github.com/nf-core/proposals/issues/46")
@@ -92,7 +94,7 @@ class NfcoreReportingOrchestratorTest extends Specification {
             ['NFCORE_FASTQC', 'fastqc', '0.12.1']
         ]
         def metaFilePath = 'src/test/resources/example_meta.yml'
-        def mqcMethodsFile = new File('src/test/resources/multiqc_methods_description.yml')
+        def mqcMethodsFile = Path.of('src/test/resources/multiqc_methods_description.yml')
         def manifest = Mock(Manifest) {
             getName() >> 'testpipeline'
             getVersion() >> '1.0.0'
@@ -208,7 +210,7 @@ class NfcoreReportingOrchestratorTest extends Specification {
     def 'generateCitationReport should handle methods description template'() {
         given:
         def metaFilePath = 'src/test/resources/example_meta.yml'
-        def mqcMethodsFile = new File('src/test/resources/multiqc_methods_description.yml')
+        def mqcMethodsFile = Path.of('src/test/resources/multiqc_methods_description.yml')
         def manifest = Mock(Manifest) {
             getName() >> 'testpipeline'
             getVersion() >> '1.0.0'
@@ -233,7 +235,7 @@ class NfcoreReportingOrchestratorTest extends Specification {
     def 'generateCitationReport should handle missing session gracefully'() {
         given:
         def metaFilePath = 'src/test/resources/example_meta.yml'
-        def mqcMethodsFile = new File('src/test/resources/multiqc_methods_description.yml')
+        def mqcMethodsFile = Path.of('src/test/resources/multiqc_methods_description.yml')
 
         when:
         def result = NfcoreReportingOrchestrator.generateCitationReport(

@@ -24,6 +24,7 @@ import nextflow.extension.FilesEx
 import nextflow.file.FileHelper
 import nextflow.mail.Mail
 import nextflow.util.MemoryUnit
+import nfcore.plugin.nextflow.NextflowPipelineUtils
 
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -146,22 +147,19 @@ class NfcoreNotificationUtils {
      * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §2
      */
     static Path getSingleReport(def multiqc_reports, String workflowName) {
-        // FileHelper keeps the file system of a path given as a string (s3://, gs://, az://), unlike Paths.get()
-        def toPath = { it instanceof Path ? it : (it != null ? FileHelper.asPath(it.toString()) : null) }
-
         if (multiqc_reports instanceof Path) {
             return multiqc_reports
         } else if (multiqc_reports instanceof CharSequence) {
-            return toPath(multiqc_reports)
+            return NextflowPipelineUtils.toPath(multiqc_reports)
         } else if (multiqc_reports instanceof List) {
             if (multiqc_reports.size() == 0) {
                 log.warn("[${workflowName}] No reports found from process 'MULTIQC'")
                 return null
             } else if (multiqc_reports.size() == 1) {
-                return toPath(multiqc_reports.first())
+                return NextflowPipelineUtils.toPath(multiqc_reports.first())
             } else {
                 log.warn("[${workflowName}] Found multiple reports from process 'MULTIQC', will use only one")
-                return toPath(multiqc_reports.first())
+                return NextflowPipelineUtils.toPath(multiqc_reports.first())
             }
         } else {
             return null

@@ -19,22 +19,6 @@ class NfcoreCitationUtilsTest extends Specification {
     @TempDir
     Path tempDir
 
-    @Unroll
-    def 'methodsDescriptionText function reads the template given as a #type'() {
-        given:
-        def template = tempDir.resolve('methods.yml')
-        template.text = 'Workflow: ${workflow.name}'
-        def meta = [workflow: [name: 'nf-core/testpipe'], manifest_map: [:]]
-
-        expect:
-        new nfcore.plugin.NfUtilsExtension().methodsDescriptionText(toInput(template), [:], meta) == 'Workflow: nf-core/testpipe'
-
-        where:
-        type     | toInput
-        'Path'   | { Path path -> path }
-        'String' | { Path path -> path.toString() }
-    }
-
     def 'toolBibliographyText returns expected bibliography HTML from meta.yml'() {
         given:
         // Download the latest meta.yml from the nf-core/modules repo

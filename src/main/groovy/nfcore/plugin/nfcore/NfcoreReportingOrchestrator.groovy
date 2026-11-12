@@ -19,6 +19,8 @@ package nfcore.plugin.nfcore
 import groovy.util.logging.Slf4j
 import nextflow.Session
 
+import java.nio.file.Path
+
 /**
  * Single reporting seam that coordinates version and citation report assembly.
  *
@@ -52,7 +54,7 @@ class NfcoreReportingOrchestrator {
         List<List> topicVersions,
         List<String> legacyVersions = [],
         List<String> metaFilePaths = [],
-        File mqcMethodsYaml = null
+        Path mqcMethodsYaml = null
     ) {
         def versionsYaml = buildVersionsYaml(ctx, topicVersions, legacyVersions)
 
@@ -91,7 +93,7 @@ class NfcoreReportingOrchestrator {
     static Map generateCitationReport(
         PipelineExecutionContext ctx,
         List<String> metaFilePaths,
-        File mqcMethodsYaml = null
+        Path mqcMethodsYaml = null
     ) {
         def allCitations = collectCitationsFromMetaFiles(metaFilePaths)
         def toolCitations = NfcoreCitationUtils.toolCitationText(allCitations)
@@ -115,14 +117,14 @@ class NfcoreReportingOrchestrator {
     // =========================================================================
 
     /**
-     * @deprecated Use {@link #generateComprehensiveReport(PipelineExecutionContext, List, List, List, File)}
+     * @deprecated Use {@link #generateComprehensiveReport(PipelineExecutionContext, List, List, List, Path)}
      */
     @Deprecated
     static Map generateComprehensiveReport(
         List<List> topicVersions,
         List<String> legacyVersions = [],
         List<String> metaFilePaths = [],
-        File mqcMethodsYaml = null,
+        Path mqcMethodsYaml = null,
         Session session
     ) {
         def ctx = PipelineExecutionContext.fromSession(session)
@@ -143,12 +145,12 @@ class NfcoreReportingOrchestrator {
     }
 
     /**
-     * @deprecated Use {@link #generateCitationReport(PipelineExecutionContext, List, File)}
+     * @deprecated Use {@link #generateCitationReport(PipelineExecutionContext, List, Path)}
      */
     @Deprecated
     static Map generateCitationReport(
         List<String> metaFilePaths,
-        File mqcMethodsYaml = null,
+        Path mqcMethodsYaml = null,
         Session session = null
     ) {
         def ctx = session ? PipelineExecutionContext.fromSession(session) : null
@@ -192,13 +194,13 @@ class NfcoreReportingOrchestrator {
         return allCitations
     }
 
-    private static String generateMethodsDescription(File mqcMethodsYaml, Map allCitations, PipelineExecutionContext ctx) {
+    private static String generateMethodsDescription(Path mqcMethodsYaml, Map allCitations, PipelineExecutionContext ctx) {
         try {
             def meta = [
                 manifest_map: ctx?.manifestMap ?: [:],
                 workflow: ctx?.workflowMap ?: [:]
             ]
-            return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml.toPath(), allCitations, meta)
+            return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml, allCitations, meta)
         } catch (Exception e) {
             log.warn("Could not generate methods description: ${e.message}")
             return ""
@@ -207,10 +209,10 @@ class NfcoreReportingOrchestrator {
 
     /** @deprecated kept for Session-based overload */
     @Deprecated
-    private static String generateMethodsDescription(File mqcMethodsYaml, Map allCitations, Session session) {
+    private static String generateMethodsDescription(Path mqcMethodsYaml, Map allCitations, Session session) {
         try {
             def meta = prepareMetadataForTemplate(session)
-            return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml.toPath(), allCitations, meta)
+            return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml, allCitations, meta)
         } catch (Exception e) {
             log.warn("Could not generate methods description: ${e.message}")
             return ""
