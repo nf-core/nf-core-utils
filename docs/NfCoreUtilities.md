@@ -99,6 +99,30 @@ CPU hours   : 0.1
 Succeeded   : 3
 ```
 
+### Boolean CLI arguments
+
+You can pass `params.monochrome_logs` directly to `checkProfileProvided()`,
+`completionSummary()`, and `completionEmail()`, and `params.plaintext_email`
+directly to `completionEmail()`. These arguments accept Booleans and
+case-insensitive `"true"` / `"false"` strings, including values from untyped
+strict-syntax CLI params. Surrounding whitespace is ignored. Do not convert with
+Groovy truth: a nonempty `"false"` string would become true.
+
+For a pipeline that passes these params to the functions above, both forms work
+without caller-side conversion:
+
+```bash
+# Plain-text email and logs without color
+nextflow run main.nf --monochrome_logs --plaintext_email
+
+# HTML email and colored logs (the strings "false" really mean false)
+nextflow run main.nf --monochrome_logs false --plaintext_email false
+```
+
+Null uses monochrome logs and HTML email. Invalid values stop profile validation
+with a parameter-named error; completion handlers instead warn and use the defaults
+so reports and notifications are not dropped. Typed pipeline params remain recommended.
+
 ### 2.3. Complete Import Pattern
 
 For production pipelines, you'll typically need multiple utilities. Here's a recommended import pattern:
@@ -646,7 +670,7 @@ workflow.onComplete {
     log.info "Success: ${workflow.success}"
 
     // Test basic functions first
-    completionSummary(false)  // Force colors off for testing
+    completionSummary(true)   // Force colors off for testing
 
     log.info "Basic functions working correctly"
 }

@@ -168,12 +168,17 @@ workflow.onComplete {
 **Function Parameters**
 
 ```groovy title="Function signature"
-void completionSummary(boolean monochromeLogs = true)
+void completionSummary(Object monochromeLogs = true)
 ```
 
-| Parameter        | Type    | Default | Description                                           |
-| ---------------- | ------- | ------- | ----------------------------------------------------- |
-| `monochromeLogs` | Boolean | `true`  | If `true`, disables color codes for plain text output |
+| Parameter        | Type              | Default | Description                                         |
+| ---------------- | ----------------- | ------- | --------------------------------------------------- |
+| `monochromeLogs` | Boolean or String | `true`  | If `true`, disables color codes for plain text output |
+
+`monochromeLogs` accepts Booleans and case-insensitive `"true"` / `"false"` strings
+(with surrounding whitespace ignored). Omitted or null values use `true`.
+Invalid values log a warning naming the parameter and use `true`, so the completion
+summary is still printed.
 
 **Color-Coded Output Examples**
 
@@ -372,12 +377,20 @@ void completionEmail(
     Map summaryParams,        // Grouped parameter summary
     String email,            // Primary email address
     String emailOnFail,      // Failure notification email
-    boolean plaintextEmail,  // Use plain text instead of HTML
+    Object plaintextEmail,   // Boolean or "true" / "false": use plain text instead of HTML
     String outdir,          // Output directory path
-    boolean monochromeLogs, // Color settings for email content
+    Object monochromeLogs,   // Boolean or "true" / "false": color settings for email content
     List multiqcReports    // MultiQC report attachments
 )
 ```
+
+`plaintextEmail` and `monochromeLogs` accept Booleans and case-insensitive
+`"true"` / `"false"` strings (with surrounding whitespace ignored), including
+untyped strict-syntax CLI params. Null defaults to `false` for `plaintextEmail`
+(HTML email) and `true` for `monochromeLogs`. Invalid values log a warning naming
+the parameter and use the same defaults, rather than preventing report generation
+or email delivery. The string `"false"` is false, not Groovy-truthy.
+Typed pipeline params remain recommended; callers do not need to pre-convert these flags.
 
 **Advanced Email with MultiQC Reports**
 

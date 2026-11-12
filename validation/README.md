@@ -60,6 +60,16 @@ Tests the notification functions used in pipeline completion:
 - `completionSummary()` - Terminal completion summaries
 - `imNotification()` - Slack/Teams webhook notifications
 
+`notification-system/boolean-params-checks.sh` also runs real strict-syntax CLI
+calls with bare flags, explicit true/false strings, mixed case, and invalid values. It checks
+profile-validation errors, summary colors, and saved HTML/text reports without
+sending email. It requires the installed plugin and runs automatically before
+nf-test in `mise run validate`. To run just this regression from the repo root:
+
+```bash
+mise exec -- bash validation/notification-system/boolean-params-checks.sh
+```
+
 ### 🔧 pipeline-utilities/
 
 **Core Pipeline Utilities**

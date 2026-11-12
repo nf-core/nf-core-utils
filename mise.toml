@@ -45,6 +45,7 @@ depends = ["install"]
 dir = "{{ config_root }}/validation"
 run = """
 bash config-validation/startup-checks.sh
+bash notification-system/boolean-params-checks.sh
 nf-test test --verbose
 """
 

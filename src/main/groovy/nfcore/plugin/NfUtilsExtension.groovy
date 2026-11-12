@@ -23,6 +23,7 @@ import nextflow.Session
 import nextflow.Nextflow
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
+import nfcore.plugin.nfcore.BooleanParam
 import nfcore.plugin.nfcore.NfcoreConfigValidator
 import nfcore.plugin.nfcore.NfcoreVersionUtils
 import nfcore.plugin.nfcore.NfcoreCitationUtils
@@ -110,29 +111,34 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @param summaryParams Map of parameter groups and their parameters
      * @param email Email address to send to
      * @param emailOnFail Email address to send to on failure
-     * @param plaintextEmail Whether to send plaintext email
+     * @param plaintextEmail Boolean or case-insensitive "true"/"false"; null or invalid values use false (with a warning if invalid)
      * @param outdir Output directory
-     * @param monochromeLogs Whether to use monochrome logs
+     * @param monochromeLogs Boolean or case-insensitive "true"/"false"; null or invalid values use true (with a warning if invalid)
      * @param multiqcReports List of MultiQC report paths
      */
     @Function
-    void completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports) {
-        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionEmail(summaryParams, email, emailOnFail, plaintextEmail, outdir, monochromeLogs, multiqcReports)
+    void completionEmail(Map summaryParams, String email, String emailOnFail, Object plaintextEmail, String outdir, Object monochromeLogs, List multiqcReports) {
+        boolean plaintext = BooleanParam.coerceOrWarn(plaintextEmail, false, 'plaintextEmail')
+        boolean monochrome = BooleanParam.coerceOrWarn(monochromeLogs, true, 'monochromeLogs')
+        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionEmail(
+            summaryParams, email, emailOnFail, plaintext, outdir, monochrome, multiqcReports
+        )
     }
 
     /**
      * Send completion summary to log
-     * @param monochromeLogs Whether to use monochrome logs
+     * @param monochromeLogs Boolean or case-insensitive "true"/"false"; null or invalid values use true (with a warning if invalid)
      */
     @Function
-    void completionSummary(boolean monochromeLogs) {
+    void completionSummary(Object monochromeLogs = true) {
+        boolean monochrome = BooleanParam.coerceOrWarn(monochromeLogs, true, 'monochromeLogs')
         def manifest = this.session?.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def statsObserver = this.session?.getStatsObserver()
         def stats = statsObserver ? statsObserver.getStats() : null
         def ignoredCount = (stats != null) ? stats.getIgnoredCount() : 0
         nfcore.plugin.nfcore.NfcoreNotificationUtils.completionSummary(
-            workflowName, this.session?.success ?: false, ignoredCount, monochromeLogs
+            workflowName, this.session?.success ?: false, ignoredCount, monochrome
         )
     }
 
@@ -149,11 +155,12 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Check if the profile string is valid and warn about positional arguments
      * @param args The command line arguments (as List)
-     * @param monochromeLogs Whether to use monochrome logs (default: true)
+     * @param monochromeLogs Boolean or case-insensitive "true"/"false"; null uses true, invalid values are rejected
      */
     @Function
-    void checkProfileProvided(List args, boolean monochromeLogs = true) {
-        validationAdapter.checkProfileProvided(args, monochromeLogs)
+    void checkProfileProvided(List args, Object monochromeLogs = true) {
+        boolean monochrome = BooleanParam.coerce(monochromeLogs, true, 'monochromeLogs')
+        validationAdapter.checkProfileProvided(args, monochrome)
     }
 
     /**

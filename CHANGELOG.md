@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `completionEmail()` (`plaintextEmail`, `monochromeLogs`), `completionSummary()` and `checkProfileProvided()` accept Boolean values and case-insensitive `"true"` / `"false"` strings from untyped strict-syntax CLI params. Null uses the default (HTML email and monochrome logs). Invalid values are rejected during profile validation, or warn and use the default in completion handlers so notifications are not dropped ([#94](https://github.com/nf-core/nf-core-utils/issues/94)).
+
 ### Changed
 
 - Set `locked = true` in `mise.toml`, replacing `mise install --locked`.
