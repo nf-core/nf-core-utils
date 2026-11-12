@@ -17,10 +17,12 @@
 package nfcore.plugin
 
 import groovy.util.logging.Slf4j
+import java.nio.file.Path
 import groovyx.gpars.dataflow.DataflowReadChannel
 import groovyx.gpars.dataflow.DataflowWriteChannel
 import nextflow.Session
 import nextflow.Nextflow
+import nextflow.file.FileHelper
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
 import nfcore.plugin.nfcore.NfcoreConfigValidator
@@ -396,15 +398,16 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate methods description text using collected citations
      *
-     * @param mqcMethodsYaml MultiQC methods YAML file path
+     * @param mqcMethodsYaml MultiQC methods YAML file, as a Path or a path string (local or remote, e.g. s3://)
      * @param collectedCitations Map containing all tool citations from modules (optional)
      * @param meta Additional metadata (optional)
      * @return Formatted methods description HTML
      */
     @Function
-    String methodsDescriptionText(String mqcMethodsYamlPath, Map collectedCitations = [:], Map meta = [:]) {
-        def mqcFile = new File(mqcMethodsYamlPath)
-        return NfcoreCitationUtils.methodsDescriptionText(mqcFile, collectedCitations, meta)
+    String methodsDescriptionText(Object mqcMethodsYaml, Map collectedCitations = [:], Map meta = [:]) {
+        // FileHelper keeps the file system of a path given as a string (s3://, gs://, az://), unlike new File()
+        Path mqcPath = mqcMethodsYaml instanceof Path ? mqcMethodsYaml : FileHelper.asPath(mqcMethodsYaml.toString())
+        return NfcoreCitationUtils.methodsDescriptionText(mqcPath, collectedCitations, meta)
     }
 
     /**

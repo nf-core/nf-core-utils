@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `methodsDescriptionText()` takes the methods YAML template as a `Path` or a path string, local or remote (`s3://`, `gs://`, `az://`); it was opened with `new File()`, which only read local files.
 - Set `locked = true` in `mise.toml`, replacing `mise install --locked`.
 - Unset `AGENT` and `CLAUDECODE` in `mise.toml` `[env]`: they turn on Nextflow agent mode, which breaks validation snapshots.
 - Added uv 0.13.7 to `mise.toml` for the `website-docs` task.

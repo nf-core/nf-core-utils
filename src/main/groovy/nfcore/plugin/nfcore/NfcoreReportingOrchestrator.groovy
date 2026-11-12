@@ -198,7 +198,7 @@ class NfcoreReportingOrchestrator {
                 manifest_map: ctx?.manifestMap ?: [:],
                 workflow: ctx?.workflowMap ?: [:]
             ]
-            return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml, allCitations, meta)
+            return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml.toPath(), allCitations, meta)
         } catch (Exception e) {
             log.warn("Could not generate methods description: ${e.message}")
             return ""
@@ -210,7 +210,7 @@ class NfcoreReportingOrchestrator {
     private static String generateMethodsDescription(File mqcMethodsYaml, Map allCitations, Session session) {
         try {
             def meta = prepareMetadataForTemplate(session)
-            return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml, allCitations, meta)
+            return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml.toPath(), allCitations, meta)
         } catch (Exception e) {
             log.warn("Could not generate methods description: ${e.message}")
             return ""
