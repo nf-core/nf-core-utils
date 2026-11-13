@@ -41,18 +41,15 @@ workflow {
     ]
 
     // Test version report generation
-    version_report = generateVersionReport(sample_versions, [])
+    generateVersionReport(sample_versions, [])
     log.info("Version report generated successfully")
 
     // Test 5: Test citation processing with sample data
     log.info("Testing citation processing...")
 
-    // Create sample meta.yml files for testing
-    sample_meta_paths = []
-
     // Test mixed version sources (topic + legacy)
     log.info("Testing mixed version sources...")
-    mixed_versions = processMixedVersionSources(sample_versions, [])
+    processMixedVersionSources(sample_versions, [])
     log.info("Mixed versions processed successfully")
 
     // Test 6: Completion summary

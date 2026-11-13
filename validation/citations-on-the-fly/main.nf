@@ -35,7 +35,7 @@ workflow {
     )
 
     // Create sample data
-    samples = Channel.of('sample1', 'sample2', 'sample3')
+    samples = channel.of('sample1', 'sample2', 'sample3')
 
     // Run processes - each emits its version to the `versions` topic when it runs
     fastqc_out = FASTQC(samples)
@@ -49,7 +49,7 @@ workflow {
 
     // Citation metadata source: every module meta.yml under this pipeline.
     // files() returns an empty list when nothing matches the glob.
-    def meta_yml_paths = files("${projectDir}/modules/**/meta.yml").collect { it.toString() }
+    def meta_yml_paths = files("${projectDir}/modules/**/meta.yml").collect { meta_yml -> meta_yml.toString() }
 
     // Build citations from the tools that actually ran (the versions topic).
     // collect(flat: false) preserves each [process, tool, version] tuple.
