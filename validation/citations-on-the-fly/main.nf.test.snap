@@ -2,12 +2,69 @@
     "Citations reflect only the tools that ran": {
         "content": [
             "Tools used in the workflow included: fastqc (0.12.1, <a href='https://doi.org/10.1093/bioinformatics/btw354'>Andrews (2010)</a>), multiqc (1.21, <a href='https://doi.org/10.1093/bioinformatics/btw354'>doi: 10.1093/bioinformatics/btw354</a>), multiqcsav (<a href='https://github.com/MultiQC/MultiQC_SAV/'>https://github.com/MultiQC/MultiQC_SAV/</a>), samtools (1.21, <a href='https://doi.org/10.1093/bioinformatics/btp352'>Danecek <em>et al.</em> (2021)</a>).",
-            "<li>Andrews S. (2010). doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>multiqc. doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>multiqcsav. <a href='https://github.com/MultiQC/MultiQC_SAV/'>https://github.com/MultiQC/MultiQC_SAV/</a>.</li> <li>Danecek P, Bonfield JK, Liddle J, et al. (2021). doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li>"
+            "<li>Andrews S. (2010). doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>multiqc. doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>multiqcsav. <a href='https://github.com/MultiQC/MultiQC_SAV/'>https://github.com/MultiQC/MultiQC_SAV/</a>.</li> <li>Danecek P, Bonfield JK, Liddle J, et al. (2021). doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li>",
+            "@misc{fastqc,\n  author = {{Andrews S}},\n  title = {fastqc},\n  year = {2010},\n  doi = {10.1093/bioinformatics/btw354},\n  url = {https://www.bioinformatics.babraham.ac.uk/projects/fastqc/},\n  version = {0.12.1}\n}\n\n@misc{multiqc,\n  title = {multiqc},\n  doi = {10.1093/bioinformatics/btw354},\n  url = {https://multiqc.info/},\n  version = {1.21}\n}\n\n@misc{multiqcsav,\n  title = {multiqcsav},\n  url = {https://github.com/MultiQC/MultiQC_SAV/}\n}\n\n@misc{samtools,\n  author = {{Danecek P, Bonfield JK, Liddle J, et al.}},\n  title = {samtools},\n  year = {2021},\n  doi = {10.1093/bioinformatics/btp352},\n  url = {http://www.htslib.org/},\n  version = {1.21}\n}\n",
+            [
+                {
+                    "id": "fastqc",
+                    "type": "software",
+                    "title": "fastqc",
+                    "author": [
+                        {
+                            "literal": "Andrews S"
+                        }
+                    ],
+                    "issued": {
+                        "date-parts": [
+                            [
+                                2010
+                            ]
+                        ]
+                    },
+                    "DOI": "10.1093/bioinformatics/btw354",
+                    "URL": "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/",
+                    "version": "0.12.1"
+                },
+                {
+                    "id": "multiqc",
+                    "type": "software",
+                    "title": "multiqc",
+                    "DOI": "10.1093/bioinformatics/btw354",
+                    "URL": "https://multiqc.info/",
+                    "version": "1.21"
+                },
+                {
+                    "id": "multiqcsav",
+                    "type": "software",
+                    "title": "multiqcsav",
+                    "URL": "https://github.com/MultiQC/MultiQC_SAV/"
+                },
+                {
+                    "id": "samtools",
+                    "type": "software",
+                    "title": "samtools",
+                    "author": [
+                        {
+                            "literal": "Danecek P, Bonfield JK, Liddle J, et al."
+                        }
+                    ],
+                    "issued": {
+                        "date-parts": [
+                            [
+                                2021
+                            ]
+                        ]
+                    },
+                    "DOI": "10.1093/bioinformatics/btp352",
+                    "URL": "http://www.htslib.org/",
+                    "version": "1.21"
+                }
+            ]
         ],
-        "timestamp": "2026-06-23T15:10:13.25862127",
+        "timestamp": "2026-11-13T11:27:23.49981092",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "26.04.4"
+            "nextflow": "26.10.2"
         }
     }
 }

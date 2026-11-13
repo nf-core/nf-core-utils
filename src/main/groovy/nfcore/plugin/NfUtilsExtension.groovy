@@ -586,6 +586,19 @@ class NfUtilsExtension extends PluginExtensionPoint {
     }
 
     /**
+     * Render citations in the chosen formats
+     *
+     * @param citations Citations map, e.g. from {@link #citationsOnTheFly}
+     * @param formats Any of html, bibtex, csl_json (default: html)
+     * @param mqcMethodsYaml MultiQC methods description template, as a Path or a path string, local or remote; adds methods_description to html (optional)
+     * @return Map with tool_citations, tool_bibliography and methods_description (html), bibtex, csl_json
+     */
+    @Function
+    Map citationOutputs(Map citations, List<String> formats = ['html'], Object mqcMethodsYaml = null) {
+        return NfcoreCitationUtils.citationOutputs(citations, formats, NextflowPipelineUtils.toPath(mqcMethodsYaml))
+    }
+
+    /**
      * Generate workflow summary for MultiQC
      * @param summaryParams Map of parameter groups and their parameters
      * @return YAML formatted string for MultiQC

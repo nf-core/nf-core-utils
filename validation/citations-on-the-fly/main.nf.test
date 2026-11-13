@@ -39,6 +39,8 @@ nextflow_pipeline {
             assert snapshot(
                 path("${params.outdir}/auto_citations.html").text,
                 path("${params.outdir}/auto_bibliography.html").text,
+                path("${params.outdir}/citations.bib").text,
+                path("${params.outdir}/citations.json").json,
             ).match()
         }
     }
