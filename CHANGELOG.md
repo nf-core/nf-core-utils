@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- `methodsDescriptionText()`, `generateComprehensiveReport()` and `generateCitationReport()` take the methods YAML template as a `Path` or a path string, local or remote (`s3://`, `gs://`, `az://`); it was opened with `new File()`, which only read local files.
-
 ### Changed
 
 - Set `locked = true` in `mise.toml`, replacing `mise install --locked`.
@@ -25,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed `collectVersions()` dropping a single versions `Path`, local or remote ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
+- Fixed `methodsDescriptionText()` and the report helpers failing on remote methods templates ([#110](https://github.com/nf-core/nf-core-utils/pull/110)).
 
 ## [0.7.0] - 2026-10-30
 
