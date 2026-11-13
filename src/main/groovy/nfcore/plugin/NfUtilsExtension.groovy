@@ -23,6 +23,7 @@ import nextflow.Session
 import nextflow.Nextflow
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
+import nfcore.plugin.nextflow.NextflowPipelineUtils
 import nfcore.plugin.nfcore.NfcoreConfigValidator
 import nfcore.plugin.nfcore.NfcoreVersionUtils
 import nfcore.plugin.nfcore.NfcoreCitationUtils
@@ -186,7 +187,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     void dumpParametersToJSON(String outdir, Map params) {
         if (outdir == null) return
         java.nio.file.Path outdirPath = Nextflow.file(outdir)
-        nfcore.plugin.nextflow.NextflowPipelineUtils.dumpParametersToJSON(outdirPath, params)
+        NextflowPipelineUtils.dumpParametersToJSON(outdirPath, params)
     }
 
     /**
@@ -195,7 +196,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     boolean checkCondaChannels() {
-        return nfcore.plugin.nextflow.NextflowPipelineUtils.checkCondaChannels()
+        return NextflowPipelineUtils.checkCondaChannels()
     }
 
     // --- Version Utilities ---
@@ -219,12 +220,12 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * <h3>Example Usage</h3>
      * <pre>
      * // From collected channel
-     * ch_versions.collect().map { versions ->
-     *     workflow.collectVersions(versions)
+     * ch_versions.toList().map { versions ->
+     *     collectVersions(versions)
      * }
      *
      * // With custom Nextflow version
-     * workflow.collectVersions(versions, nextflowVersion: workflow.nextflow.version)
+     * collectVersions(versions, workflow.nextflow.version)
      * </pre>
      *
      * @param input Single input or List of mixed inputs
@@ -347,16 +348,12 @@ class NfUtilsExtension extends PluginExtensionPoint {
         if (versions instanceof DataflowReadChannel ||
             versions instanceof DataflowWriteChannel) {
             return versions.toList().map { versionsList ->
-                NfcoreVersionUtils.softwareVersionsToYAML(
-                    versionsList as List,
-                    this.session as Session,
-                    nextflowVersion
-                )
+                NfcoreVersionUtils.collectVersions(versionsList, this.session, nextflowVersion)
             }
         }
 
         // If it's a list, process directly
-        return NfcoreVersionUtils.softwareVersionsToYAML(versions as List, this.session as Session, nextflowVersion)
+        return NfcoreVersionUtils.collectVersions(versions, this.session, nextflowVersion)
     }
 
     // --- Citation Management Functions ---
@@ -396,15 +393,14 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate methods description text using collected citations
      *
-     * @param mqcMethodsYaml MultiQC methods YAML file path
+     * @param mqcMethodsYaml MultiQC methods description template, as a Path or a path string, local or remote
      * @param collectedCitations Map containing all tool citations from modules (optional)
      * @param meta Additional metadata (optional)
      * @return Formatted methods description HTML
      */
     @Function
-    String methodsDescriptionText(String mqcMethodsYamlPath, Map collectedCitations = [:], Map meta = [:]) {
-        def mqcFile = new File(mqcMethodsYamlPath)
-        return NfcoreCitationUtils.methodsDescriptionText(mqcFile, collectedCitations, meta)
+    String methodsDescriptionText(Object mqcMethodsYaml, Map collectedCitations = [:], Map meta = [:]) {
+        return NfcoreCitationUtils.methodsDescriptionText(NextflowPipelineUtils.toPath(mqcMethodsYaml), collectedCitations, meta)
     }
 
     /**
@@ -434,7 +430,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @param topicVersions List of topic channel data [process, name, version]
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @param metaFilePaths List of paths to module meta.yml files (optional)
-     * @param mqcMethodsYamlPath Path to MultiQC methods description template (optional)
+     * @param mqcMethodsYaml MultiQC methods description template, as a Path or a path string, local or remote (optional)
      * @return Map containing versions YAML, citations, bibliography, and methods description
      */
     @Function
@@ -442,11 +438,10 @@ class NfUtilsExtension extends PluginExtensionPoint {
         List<List> topicVersions,
         List<String> legacyVersions = [],
         List<String> metaFilePaths = [],
-        String mqcMethodsYamlPath = null
+        Object mqcMethodsYaml = null
     ) {
-        def mqcFile = mqcMethodsYamlPath ? new File(mqcMethodsYamlPath) : null
         return reportingAdapter.generateComprehensiveReport(
-            topicVersions, legacyVersions, metaFilePaths, mqcFile
+            topicVersions, legacyVersions, metaFilePaths, NextflowPipelineUtils.toPath(mqcMethodsYaml)
         )
     }
 
@@ -466,13 +461,12 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * Generate citation-only report
      *
      * @param metaFilePaths List of paths to module meta.yml files
-     * @param mqcMethodsYamlPath Path to MultiQC methods description template (optional)
+     * @param mqcMethodsYaml MultiQC methods description template, as a Path or a path string, local or remote (optional)
      * @return Map containing only citation information
      */
     @Function
-    Map generateCitationReport(List<String> metaFilePaths, String mqcMethodsYamlPath = null) {
-        def mqcFile = mqcMethodsYamlPath ? new File(mqcMethodsYamlPath) : null
-        return reportingAdapter.generateCitationReport(metaFilePaths, mqcFile)
+    Map generateCitationReport(List<String> metaFilePaths, Object mqcMethodsYaml = null) {
+        return reportingAdapter.generateCitationReport(metaFilePaths, NextflowPipelineUtils.toPath(mqcMethodsYaml))
     }
 
     // --- Enhanced Citation Topic Channel Functions ---
@@ -538,7 +532,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Automatically generate citation text from topic channel data
-     * Use after collecting from topic: channel.topic('citation').collect()
+     * Use after collecting from topic: channel.topic('citation').toList()
      *
      * @param topicCitations Citation data collected from topic channel
      * @return Formatted citation text ready for reports
@@ -550,7 +544,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Automatically generate bibliography from topic channel data
-     * Use after collecting from topic: channel.topic('citation').collect()
+     * Use after collecting from topic: channel.topic('citation').toList()
      *
      * @param topicCitations Citation data collected from topic channel
      * @return Formatted bibliography HTML ready for reports
@@ -564,7 +558,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * Extract the unique set of tool names that actually ran, from collected
      * 'versions' topic data ([process, tool, version] tuples).
      *
-     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect()
+     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').toList()
      * @return Sorted, de-duplicated list of tool names
      */
     @Function
@@ -581,7 +575,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * {@link #toolCitationText}, {@link #toolBibliographyText} and
      * {@link #methodsDescriptionText}.
      *
-     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect(flat: false)
+     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').toList()
      * @param metaFilePaths Paths to module meta.yml files
      * @param extraTools Extra tool names to cite even though they did not emit a version (e.g. multiqcsav)
      * @return Citations map (tool -> [citation, bibliography]) for tools that ran

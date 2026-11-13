@@ -16,6 +16,8 @@
 
 package nfcore.plugin.nfcore
 
+import java.nio.file.Path
+
 /**
  * Adapts reporting @Function calls using PipelineExecutionContext
  * instead of reaching into Session directly.
@@ -34,7 +36,7 @@ class ReportingAdapter {
         List<List> topicVersions,
         List<String> legacyVersions = [],
         List<String> metaFilePaths = [],
-        File mqcMethodsYaml = null
+        Path mqcMethodsYaml = null
     ) {
         return NfcoreReportingOrchestrator.generateComprehensiveReport(
             ctx, topicVersions, legacyVersions, metaFilePaths, mqcMethodsYaml
@@ -45,7 +47,7 @@ class ReportingAdapter {
         return NfcoreReportingOrchestrator.generateVersionReport(ctx, topicVersions, legacyVersions)
     }
 
-    Map generateCitationReport(List<String> metaFilePaths, File mqcMethodsYaml = null) {
+    Map generateCitationReport(List<String> metaFilePaths, Path mqcMethodsYaml = null) {
         return NfcoreReportingOrchestrator.generateCitationReport(ctx, metaFilePaths, mqcMethodsYaml)
     }
 }

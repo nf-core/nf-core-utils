@@ -464,12 +464,12 @@ Generates methods description text using collected citations and a MultiQC metho
 **Function Signature:**
 
 ```nextflow
-String methodsDescriptionText(String mqcMethodsYamlPath, Map collectedCitations = [:], Map meta = [:])
+String methodsDescriptionText(Object mqcMethodsYaml, Map collectedCitations = [:], Map meta = [:])
 ```
 
 **Parameters:**
 
-- `mqcMethodsYamlPath` (String): Path to MultiQC methods YAML template file
+- `mqcMethodsYaml` (Path or String): MultiQC methods YAML template file, local or remote (`s3://`, `gs://`, `az://`). Pass a remote file as a `Path` or as its full URI string: `Path.toString()` drops the scheme of a remote path.
 - `collectedCitations` (Map, optional): Map containing all tool citations
 - `meta` (Map, optional): Additional metadata for template substitution
 

@@ -21,9 +21,9 @@ import nextflow.Nextflow
 import nextflow.Session
 import nextflow.SysEnv
 import nextflow.extension.FilesEx
-import nextflow.file.FileHelper
 import nextflow.mail.Mail
 import nextflow.util.MemoryUnit
+import nfcore.plugin.nextflow.NextflowPipelineUtils
 
 import java.nio.file.FileSystems
 import java.nio.file.Files
@@ -146,26 +146,17 @@ class NfcoreNotificationUtils {
      * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §2
      */
     static Path getSingleReport(def multiqc_reports, String workflowName) {
-        // FileHelper keeps the file system of a path given as a string (s3://, gs://, az://), unlike Paths.get()
-        def toPath = { it instanceof Path ? it : (it != null ? FileHelper.asPath(it.toString()) : null) }
-
-        if (multiqc_reports instanceof Path) {
-            return multiqc_reports
-        } else if (multiqc_reports instanceof CharSequence) {
-            return toPath(multiqc_reports)
-        } else if (multiqc_reports instanceof List) {
-            if (multiqc_reports.size() == 0) {
+        if (multiqc_reports instanceof List) {
+            if (!multiqc_reports) {
                 log.warn("[${workflowName}] No reports found from process 'MULTIQC'")
                 return null
-            } else if (multiqc_reports.size() == 1) {
-                return toPath(multiqc_reports.first())
-            } else {
-                log.warn("[${workflowName}] Found multiple reports from process 'MULTIQC', will use only one")
-                return toPath(multiqc_reports.first())
             }
-        } else {
-            return null
+            if (multiqc_reports.size() > 1) {
+                log.warn("[${workflowName}] Found multiple reports from process 'MULTIQC', will use only one")
+            }
+            return NextflowPipelineUtils.toPath(multiqc_reports.first())
         }
+        return multiqc_reports instanceof Path || multiqc_reports instanceof CharSequence ? NextflowPipelineUtils.toPath(multiqc_reports) : null
     }
 
     /**
@@ -330,7 +321,7 @@ class NfcoreNotificationUtils {
 
                 // Ensure pipeline_info directory exists, in a local outdir: copyTo creates it in a remote one, where
                 // new File() would make a local directory named after it (`s3:/bucket/results/pipeline_info`)
-                def pipeline_info_dir = FileHelper.asPath("${outdir}/pipeline_info")
+                def pipeline_info_dir = NextflowPipelineUtils.toPath("${outdir}/pipeline_info")
                 if (isLocal(pipeline_info_dir)) {
                     Files.createDirectories(pipeline_info_dir)
                 }

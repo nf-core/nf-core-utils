@@ -29,7 +29,7 @@ Map generateComprehensiveReport(
     List<List> topicVersions,
     List<String> legacyVersions = [],
     List<String> metaFilePaths = [],
-    String mqcMethodsYamlPath = null
+    Object mqcMethodsYaml = null
 )
 ```
 
@@ -38,7 +38,7 @@ Map generateComprehensiveReport(
 - `topicVersions` (List\<List\>): Version data from topic channels in `[process, name, version]` format
 - `legacyVersions` (List\<String\>, optional): List of legacy YAML version strings
 - `metaFilePaths` (List\<String\>, optional): List of paths to module meta.yml files for citations
-- `mqcMethodsYamlPath` (String, optional): Path to MultiQC methods description template
+- `mqcMethodsYaml` (Path or String, optional): MultiQC methods description template, local or remote (`s3://`, `gs://`, `az://`)
 
 **Returns:**
 
@@ -65,7 +65,7 @@ workflow {
         .mix(MULTIQC.out.versions)
 
     // Collect all data for comprehensive reporting
-    def topicVersions = ch_versions.collect()
+    def topicVersions = ch_versions.toList()
     def legacyVersions = ['legacy_versions.yml']
     def metaFilePaths = [
         'modules/nf-core/fastqc/meta.yml',
@@ -99,7 +99,7 @@ workflow {
     PROCESS_SAMPLES(samples)
 
     // Single function call for complete reporting
-    def allVersions = ch_versions.collect()
+    def allVersions = ch_versions.toList()
     def citations = collectAllMetaFiles()
 
     def completeReport = generateComprehensiveReport(
@@ -145,7 +145,7 @@ include { generateVersionReport } from 'plugin/nf-core-utils'
 
 workflow {
     // Collect only version information
-    def versions = ch_versions.collect()
+    def versions = ch_versions.toList()
     def legacyFiles = ['old_process/versions.yml']
 
     def versionReport = generateVersionReport(versions, legacyFiles)
@@ -166,7 +166,7 @@ workflow VERSION_TRACKING {
     ANALYSIS_MODULES(data)
 
     // Generate version report without citations
-    def versionData = ch_versions.collect()
+    def versionData = ch_versions.toList()
     def report = generateVersionReport(versionData)
 
     // Lightweight reporting for version tracking only
@@ -185,13 +185,13 @@ Generates a citation-only report when versions are handled separately. This func
 **Function Signature:**
 
 ```nextflow
-Map generateCitationReport(List<String> metaFilePaths, String mqcMethodsYamlPath = null)
+Map generateCitationReport(List<String> metaFilePaths, Object mqcMethodsYaml = null)
 ```
 
 **Parameters:**
 
 - `metaFilePaths` (List\<String\>): List of paths to module meta.yml files
-- `mqcMethodsYamlPath` (String, optional): Path to MultiQC methods description template
+- `mqcMethodsYaml` (Path or String, optional): MultiQC methods description template, local or remote (`s3://`, `gs://`, `az://`)
 
 **Returns:**
 
@@ -291,8 +291,8 @@ workflow LARGE_SCALE_ANALYSIS {
     MASSIVELY_PARALLEL_ANALYSIS(samples)
 
     // Efficient orchestrated reporting
-    def versionData = ch_versions.collect()
-    def citationData = ch_citations.collect()
+    def versionData = ch_versions.toList()
+    def citationData = ch_citations.toList()
 
     // Single coordinated processing call
     def report = generateComprehensiveReport(versionData, [], citationData, methodsTemplate)
@@ -335,7 +335,7 @@ workflow {
         .mix(ANALYSIS.out.reports)
 
     // Orchestrated reporting
-    def versionData = ch_versions.collect()
+    def versionData = ch_versions.toList()
     def citationFiles = [
         'modules/nf-core/fastqc/meta.yml',
         'modules/nf-core/multiqc/meta.yml',
@@ -397,7 +397,7 @@ include { generateComprehensiveReport } from 'plugin/nf-core-utils'
 
 workflow MIGRATED_REPORTING {
     // Same data collection
-    def versions = ch_versions.collect()
+    def versions = ch_versions.toList()
     def citations = ['modules/tool/meta.yml']
     def methods = "${projectDir}/methods.yml"
 
@@ -414,7 +414,7 @@ workflow MIGRATED_REPORTING {
 ```nextflow
 workflow ADAPTIVE_REPORTING {
     // Collect available data
-    def versions = ch_versions.collect()
+    def versions = ch_versions.toList()
     def citationFiles = findAvailableCitations()
     def methodsTemplate = findMethodsTemplate()
 
@@ -493,12 +493,12 @@ workflow LARGE_SCALE_REPORTING {
     // Batch process versions efficiently
     def versionBatches = ch_versions
         .buffer(size: 100)
-        .collect()
+        .toList()
 
     // Efficient citation collection
     def citationBatches = ch_citation_files
         .collate(50)
-        .collect()
+        .toList()
 
     // Coordinated batch processing
     def reports = []
@@ -579,8 +579,8 @@ Large version/citation datasets cause memory issues
 ```nextflow
 // Process in chunks
 workflow MEMORY_EFFICIENT {
-    def versionChunks = ch_versions.collate(1000).collect()
-    def citationChunks = ch_citations.collate(100).collect()
+    def versionChunks = ch_versions.collate(1000).toList()
+    def citationChunks = ch_citations.collate(100).toList()
 
     def reports = []
     versionChunks.each { chunk ->

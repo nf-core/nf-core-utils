@@ -17,6 +17,7 @@
 package nfcore.plugin.nextflow
 
 import nextflow.extension.FilesEx
+import nextflow.file.FileHelper
 import nextflow.script.types.Duration
 import nextflow.script.types.MemoryUnit
 import nextflow.script.types.VersionNumber
@@ -82,6 +83,17 @@ class NextflowPipelineUtils {
         } catch (Exception e) {
             log.error("Failed to dump parameters to JSON: ${e.message}")
         }
+    }
+
+    /**
+     * Resolve a Path or a path string, keeping the file system of a remote path (s3://, gs://, az://), unlike new File()
+     *
+     * @param path A Path, or a path string
+     * @return The Path, or null for a null or empty path
+     */
+    static Path toPath(Object path) {
+        if (path instanceof Path) return (Path) path
+        return path ? FileHelper.asPath(path.toString()) : null
     }
 
     /**

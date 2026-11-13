@@ -80,7 +80,7 @@ class NfcoreCitationUtilsTest extends Specification {
         def citations = NfcoreCitationUtils.generateModuleToolCitation(tempMeta)
         meta["tool_citations"] = NfcoreCitationUtils.toolCitationText(citations)
         meta["tool_bibliography"] = NfcoreCitationUtils.toolBibliographyText(citations)
-        def result = NfcoreCitationUtils.methodsDescriptionText(tempYaml, citations, meta)
+        def result = NfcoreCitationUtils.methodsDescriptionText(tempYaml.toPath(), citations, meta)
 
         then:
         result.contains('<h2>Workflow: nf-core/testpipe</h2>')
@@ -290,7 +290,7 @@ ${tool_bibliography}
         meta["tool_bibliography"] = NfcoreCitationUtils.toolBibliographyText(collectedCitations)
         def result
         try {
-            result = NfcoreCitationUtils.methodsDescriptionText(mqcMethodsFile, collectedCitations, meta)
+            result = NfcoreCitationUtils.methodsDescriptionText(mqcMethodsFile.toPath(), collectedCitations, meta)
         } catch (Exception e) {
             println "DEBUG: Exception in methodsDescriptionText: ${e}"
             throw e
@@ -393,7 +393,7 @@ ${tool_bibliography}
         meta["tool_bibliography"] = NfcoreCitationUtils.toolBibliographyText(allCitations)
         def methodsHtml
         try {
-            methodsHtml = NfcoreCitationUtils.methodsDescriptionText(mqcMethodsFile, allCitations, meta)
+            methodsHtml = NfcoreCitationUtils.methodsDescriptionText(mqcMethodsFile.toPath(), allCitations, meta)
         } catch (Exception e) {
             println "DEBUG: Exception in integration test methodsDescriptionText: ${e}"
             throw e

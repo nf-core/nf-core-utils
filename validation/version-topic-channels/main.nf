@@ -9,26 +9,23 @@
  */
 
 // Import plugin functions - collectVersions() is the recommended API
-include { collectVersions } from 'plugin/nf-core-utils'
+include { collectVersions        } from 'plugin/nf-core-utils'
+include { softwareVersionsToYAML } from 'plugin/nf-core-utils'
 
 workflow {
 
     file(params.outdir).mkdirs()
 
-    // Test 1: collectVersions with topic tuples (most common pattern)
+    // Test 1: collectVersions on the versions topic, fed by processes with tuples and a versions.yml
     log.info("=== Testing collectVersions() with topic tuples ===")
 
-    ch_topic_versions = channel.of(
-        ['FASTQC', 'fastqc', '0.11.9'],
-        ['MULTIQC', 'multiqc', '1.12'],
-        ['SAMTOOLS', 'samtools', '1.17'],
-    )
+    TOPIC_TOOL(channel.of(['samtools', '1.17'], ['fastqc', '0.12.1'], ['samtools', '1.17']))
+    LEGACY_TOOL('sample')
 
-    // Collect all versions and process with single call
-    ch_topic_versions
-        .collect(flat: false)
+    channel.topic('versions')
+        .toList()
         .map { versions ->
-            log.info("Processing ${versions.size()} topic tuples")
+            log.info("Processing ${versions.size()} topic entries")
             collectVersions(versions)
         }
         .subscribe { yaml ->
@@ -36,12 +33,28 @@ workflow {
             log.info("=== Topic tuple result ===")
             log.info(yaml)
             assert yaml.contains('fastqc')
-            assert yaml.contains('multiqc')
+            assert yaml.contains('legacy')
             assert yaml.contains('samtools')
             assert yaml.contains('Workflow:')
             assert yaml.contains('Nextflow:')
             log.info("✅ Topic tuple test passed")
         }
+
+    // A single Path, with the Nextflow version as positional override
+    LEGACY_TOOL.out.versions
+        .map { versions -> collectVersions(versions, '99.1.0') }
+        .subscribe { yaml -> file("${params.outdir}/single_versions.yml").text = yaml }
+
+    // The same Path through the deprecated softwareVersionsToYAML()
+    LEGACY_TOOL.out.versions
+        .map { versions -> softwareVersionsToYAML(versions) }
+        .subscribe { yaml -> file("${params.outdir}/deprecated_versions.yml").text = yaml }
+
+    // A topic no process emits to: toList() still emits, so the workflow versions are written
+    channel.topic('no_versions')
+        .toList()
+        .map { versions -> collectVersions(versions) }
+        .subscribe { yaml -> file("${params.outdir}/empty_versions.yml").text = yaml }
 
     // Test 2: collectVersions with file paths (legacy pattern)
     log.info("=== Testing collectVersions() with file paths ===")
@@ -63,7 +76,7 @@ workflow {
     }
 
     ch_version_files
-        .collect()
+        .toList()
         .map { files ->
             log.info("Processing ${files.size()} version files")
             // collectVersions handles File objects directly
@@ -88,7 +101,7 @@ workflow {
     )
 
     ch_mixed
-        .collect(flat: false)
+        .toList()
         .map { mixed ->
             log.info("Processing mixed inputs: ${mixed.size()} items")
             collectVersions(mixed)
@@ -125,4 +138,33 @@ workflow {
             """.stripIndent().trim()
         )
     }
+}
+
+process TOPIC_TOOL {
+    input:
+    tuple val(tool), val(version)
+
+    output:
+    tuple val(task.process), val(tool), eval("printf '%s' '${version}'"), topic: versions
+
+    script:
+    """
+    true
+    """
+}
+
+process LEGACY_TOOL {
+    input:
+    val sample
+
+    output:
+    path 'versions.yml', topic: versions, emit: versions
+
+    script:
+    """
+    cat > versions.yml <<'END_VERSIONS'
+    PIPELINE:LEGACY_TOOL:
+      legacy: '2.0'
+    END_VERSIONS
+    """
 }
