@@ -264,12 +264,10 @@ workflow {
 
 These functions support the older meta.yml file approach:
 
-| Function                                   | Purpose                                         | Usage Context |
-| ------------------------------------------ | ----------------------------------------------- | ------------- |
-| `generateModuleToolCitation(metaFilePath)` | Extract citations from meta.yml file            | Anywhere      |
-| `toolCitationText(citationsMap)`           | Generate citation text from collected citations | Anywhere      |
-| `toolBibliographyText(citationsMap)`       | Generate bibliography HTML from citations       | Anywhere      |
-| `collectCitationsFromFiles(metaFilePaths)` | Collect citations from multiple meta.yml files  | Anywhere      |
+| Function                                   | Purpose                                        | Usage Context |
+| ------------------------------------------ | ---------------------------------------------- | ------------- |
+| `generateModuleToolCitation(metaFilePath)` | Extract citations from meta.yml file           | Anywhere      |
+| `collectCitationsFromFiles(metaFilePaths)` | Collect citations from multiple meta.yml files | Anywhere      |
 
 **Migration and Mixed Approaches**
 

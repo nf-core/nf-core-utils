@@ -36,12 +36,12 @@ Two functions cover the flow:
 `citationsOnTheFly(List topicVersions, List<String> metaFilePaths)`
 
 **Description:**
-Builds a citations map for **only the tools that ran**, by intersecting the `versions` topic (what executed) with citations parsed from the supplied `meta.yml` files (the citation source). The returned map plugs directly into `toolCitationText()`, `toolBibliographyText()`, and `methodsDescriptionText()`.
+Builds a citations map for **only the tools that ran**, by intersecting the `versions` topic (what executed) with citations parsed from the supplied `meta.yml` files (the citation source). The returned map plugs directly into [`citationOutputs()`](#citation-outputs-html-bibtex-and-csl-json).
 
 Each **short citation** is formatted for a methods paragraph — `tool (version, Author (year))` — with the version taken from the `versions` topic and the author/year from `meta.yml`. The reference segment degrades gracefully: short author + year → `doi: …` → homepage url → description. So richer `meta.yml` files produce richer citations:
 
 !!! note "HTML output"
-Short citations are HTML, meant for the MultiQC methods section: the reference links to the DOI (else the homepage) and `et al.` is wrapped in `<em>`. The table below shows the rendered text. Save `toolCitationText(citations)` to an `.html` file, such as `auto_citations.html`, not a `.txt` file. To reuse a citation in a manuscript, open that file or the MultiQC report in a browser and copy the rendered text. Pasting the HTML source without formatting does not remove literal tags.
+Short citations are HTML, meant for the MultiQC methods section: the reference links to the DOI (else the homepage) and `et al.` is wrapped in `<em>`. The table below shows the rendered text. Save `tool_citations` to an `.html` file, such as `auto_citations.html`, not a `.txt` file. To reuse a citation in a manuscript, open that file or the MultiQC report in a browser and copy the rendered text. Pasting the HTML source without formatting does not remove literal tags.
 
 !!! info "Harvard style"
 Short citations follow the Harvard style recommended by [nf-core/modules](https://github.com/nf-core/modules/blob/master/modules/meta-schema.json) for `meta.yml` author fields: `Last, F. M.` for author names, with `Author (year)` for single authors and `Author et al. (year)` for multiple.
@@ -119,7 +119,7 @@ def citation_text = [
 ```nextflow title="After — citations on the fly, zero maintenance"
 // Cites exactly the tools that ran, metadata from each module's meta.yml
 def citations = citationsOnTheFly(topic_versions, meta_yml_paths)
-def citation_text = toolCitationText(citations)
+def citation_text = citationOutputs(citations).tool_citations
 ```
 
 ---
@@ -345,7 +345,7 @@ Map generateModuleToolCitation(Object metaFilePath)
 ### `toolCitationText()`
 
 **Description:**  
-Generates formatted citation text from collected citations map (legacy approach).
+Generates formatted citation text from collected citations map. [`citationOutputs()`](#citation-outputs-html-bibtex-and-csl-json) returns it as `tool_citations`, with the bibliography and the other formats; prefer it in pipelines.
 
 **Function Signature:**
 
@@ -364,16 +364,17 @@ String toolCitationText(Map collectedCitations)
 **Usage Example:**
 
 ```nextflow
-include { generateModuleToolCitation; toolCitationText; toolBibliographyText } from 'plugin/nf-core-utils'
+include { generateModuleToolCitation; citationOutputs } from 'plugin/nf-core-utils'
 
 workflow {
     def citations = ['fastqc', 'multiqc'].collectEntries { tool ->
         generateModuleToolCitation("${projectDir}/modules/nf-core/${tool}/meta.yml")
     }
 
-    log.info(toolCitationText(citations))
+    def outputs = citationOutputs(citations)
+    log.info(outputs.tool_citations)
     // Tools used in the workflow included: fastqc (DOI: …), multiqc (DOI: 10.1093/bioinformatics/btw354).
-    log.info(toolBibliographyText(citations))
+    log.info(outputs.tool_bibliography)
 }
 ```
 
@@ -382,7 +383,7 @@ workflow {
 ### `toolBibliographyText()`
 
 **Description:**  
-Generates HTML bibliography from collected citations (legacy approach). See [`toolCitationText()`](#toolcitationtext) for usage.
+Generates HTML bibliography from collected citations. [`citationOutputs()`](#citation-outputs-html-bibtex-and-csl-json) returns it as `tool_bibliography`. See [`toolCitationText()`](#toolcitationtext) for usage.
 
 **Function Signature:**
 
@@ -403,7 +404,7 @@ String toolBibliographyText(Map collectedCitations)
 ### `methodsDescriptionText()`
 
 **Description:**  
-Generates methods description text using collected citations and a MultiQC methods template. This function substitutes citation and bibliography variables into the template.
+Generates methods description text using collected citations and a MultiQC methods template. This function substitutes citation and bibliography variables into the template. [`citationOutputs()`](#citation-outputs-html-bibtex-and-csl-json) returns it as `methods_description` when given a template; call `methodsDescriptionText()` directly to pass extra `meta` variables.
 
 **Function Signature:**
 
@@ -497,7 +498,7 @@ Map processMixedCitationSources(List<List> topicCitations, List<String> citation
 **Migration Example:**
 
 ```nextflow
-include { processMixedCitationSources; toolCitationText } from 'plugin/nf-core-utils'
+include { processMixedCitationSources; citationOutputs } from 'plugin/nf-core-utils'
 
 workflow {
     MODERN_PROCESS(ch_input) // emits getCitation() to the citation topic
@@ -508,7 +509,7 @@ workflow {
     channel.topic('citation')
         .flatMap { citations -> citations }
         .toList()
-        .map { topic_citations -> toolCitationText(processMixedCitationSources(topic_citations, legacy_files)) }
+        .map { topic_citations -> citationOutputs(processMixedCitationSources(topic_citations, legacy_files)).tool_citations }
         .view()
 }
 ```
@@ -567,7 +568,7 @@ Map processCitationsFromTopic(List<List> topicData)
 
 **Returns:**
 
-- `Map`: Processed citations map, ready for `toolCitationText()` and `toolBibliographyText()`
+- `Map`: Processed citations map, ready for [`citationOutputs()`](#citation-outputs-html-bibtex-and-csl-json)
 
 ---
 
