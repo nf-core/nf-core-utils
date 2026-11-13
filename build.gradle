@@ -17,7 +17,7 @@ nextflowPlugin {
 }
 
 dependencies {
-    implementation 'org.yaml:snakeyaml:2.2'
+    implementation 'org.yaml:snakeyaml:2.7'
 }
 
 test {
