@@ -1247,7 +1247,7 @@ ${tool_bibliography}
 
     def "citationOutputs renders the MultiQC methods description from a template"() {
         given:
-        def template = new File(tempDir.toFile(), 'methods_description_template.yml')
+        def template = tempDir.resolve('methods_description_template.yml')
         template.text = 'Tools: ${tool_citations} Refs: ${tool_bibliography}'
         def citations = [seqtk: [citation: 'seqtk', bibliography: '<li>seqtk.</li>']]
         def mockSession = Mock(Session) {
@@ -1270,7 +1270,7 @@ ${tool_bibliography}
 
     def "citationOutputs rejects a template without the html format"() {
         when:
-        NfcoreCitationUtils.citationOutputs([:], ['bibtex'], new File('methods.yml'))
+        NfcoreCitationUtils.citationOutputs([:], ['bibtex'], Path.of('methods.yml'))
 
         then:
         thrown(IllegalArgumentException)
@@ -1278,7 +1278,7 @@ ${tool_bibliography}
 
     def "methodsDescriptionText does not modify the meta map it is given"() {
         given:
-        def template = new File(tempDir.toFile(), 'methods.yml')
+        def template = tempDir.resolve('methods.yml')
         template.text = '${tool_citations}'
         def meta = [workflow: [:], manifest_map: [:], tool_citations: 'seqtk']
 

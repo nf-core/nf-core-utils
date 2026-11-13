@@ -603,7 +603,7 @@ class NfcoreCitationUtils {
      * @param mqcMethodsYaml MultiQC methods description template; adds {@code methods_description} to {@code html}
      * @return Map with the output keys of each requested format
      */
-    static Map citationOutputs(Map citations, List<String> formats = ['html'], File mqcMethodsYaml = null) {
+    static Map citationOutputs(Map citations, List<String> formats = ['html'], Path mqcMethodsYaml = null) {
         def unknown = formats - CITATION_FORMATS
         if (unknown) {
             throw new IllegalArgumentException("Unknown citation format(s): ${unknown.join(', ')}; expected ${CITATION_FORMATS.join(', ')}")

@@ -126,7 +126,7 @@ def citation_text = toolCitationText(citations)
 
 #### Citation outputs: HTML, BibTeX and CSL-JSON
 
-`citationOutputs(Map citations, List<String> formats = ['html'], String mqcMethodsYamlPath = null)` returns several formats in one call. Pick any of:
+`citationOutputs(Map citations, List<String> formats = ['html'], Object mqcMethodsYaml = null)` returns several formats in one call. The template is a `Path` or a path string, local or remote. Pick any of:
 
 | Format     | Output keys                                                                               |
 | ---------- | ----------------------------------------------------------------------------------------- |
@@ -147,7 +147,7 @@ Authors are copied verbatim from `meta.yml` (a BibTeX `{{...}}` literal, a CSL `
 include { citationsOnTheFly; citationOutputs } from 'plugin/nf-core-utils'
 
 ch_citations = channel.topic('versions')
-    .collect(flat: false)
+    .toList()
     .map { versions ->
         citationOutputs(
             citationsOnTheFly(versions, meta_yml_paths),

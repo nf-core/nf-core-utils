@@ -229,15 +229,15 @@ The lowest-friction option: derive citations from the tools that actually ran (t
 | `citationOutputs(citations, formats, template)`   | MultiQC HTML, BibTeX and CSL-JSON citations in one call | Workflow completion |
 
 ```nextflow title="Citations on the fly"
-include { citationsOnTheFly; methodsDescriptionText } from 'plugin/nf-core-utils'
+include { citationsOnTheFly; citationOutputs } from 'plugin/nf-core-utils'
 
 def meta_yml_paths = files("${projectDir}/modules/**/meta.yml").collect { it.toString() }
 
 ch_methods_description = channel.topic('versions')
-    .collect(flat: false)
+    .toList()
     .map { versions ->
         def citations = citationsOnTheFly(versions, meta_yml_paths)
-        methodsDescriptionText("${projectDir}/assets/methods_description_template.yml", citations, [:])
+        citationOutputs(citations, ['html'], "${projectDir}/assets/methods_description_template.yml").methods_description
     }
 ```
 
