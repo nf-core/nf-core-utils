@@ -18,6 +18,7 @@ package nfcore.plugin.nfcore
 
 import groovy.transform.PackageScope
 import groovy.util.logging.Slf4j
+import nfcore.plugin.nextflow.NextflowPipelineUtils
 import org.yaml.snakeyaml.Yaml
 
 import java.nio.file.Files
@@ -124,9 +125,11 @@ class SoftwareVersionReport {
 
     private void processStringEntry(String s) {
         if (!s) return
-        def f = new File(s)
-        if (f.isFile()) {
-            processPathEntry(f.toPath())
+        // A remote path string (s3://, gs://, az://) through its file system; anything else that is not a local file is YAML
+        if (s ==~ /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/\S+$/) {
+            processPathEntry(NextflowPipelineUtils.toPath(s))
+        } else if (new File(s).isFile()) {
+            processPathEntry(new File(s).toPath())
         } else {
             processYamlContent(s)
         }

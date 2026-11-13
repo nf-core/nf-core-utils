@@ -29,7 +29,7 @@ import org.yaml.snakeyaml.Yaml
 import java.nio.file.Path
 
 /**
- * Implements utility functions for Nextflow pipelines, mostly those previously
+ * Implements utility functions for Nextflow pipelines that were previously
  * available in the utils_nextflow_pipeline subworkflow.
  */
 @Slf4j(category = 'nextflow.nfcore.NextflowPipelineUtils')

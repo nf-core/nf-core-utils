@@ -206,30 +206,4 @@ class NfcoreReportingOrchestrator {
             return ""
         }
     }
-
-    /** @deprecated kept for Session-based overload */
-    @Deprecated
-    private static String generateMethodsDescription(Path mqcMethodsYaml, Map allCitations, Session session) {
-        try {
-            def meta = prepareMetadataForTemplate(session)
-            return NfcoreCitationUtils.methodsDescriptionText(mqcMethodsYaml, allCitations, meta)
-        } catch (Exception e) {
-            log.warn("Could not generate methods description: ${e.message}")
-            return ""
-        }
-    }
-
-    /** @deprecated kept for Session-based overload */
-    @Deprecated
-    private static Map prepareMetadataForTemplate(Session session) {
-        def meta = [:]
-        def manifest = session?.getManifest()
-        meta["manifest_map"] = manifest?.toMap() ?: [:]
-        try {
-            meta.workflow = session?.getWorkflowMetadata()?.toMap() ?: [:]
-        } catch (Exception e) {
-            meta.workflow = [:]
-        }
-        return meta
-    }
 }
