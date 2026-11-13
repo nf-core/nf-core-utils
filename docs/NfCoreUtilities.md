@@ -270,7 +270,7 @@ workflow {
     FASTQC(samples)
 
     // Collect citations from all processes
-    citation_ch = FASTQC.out.citation.collect()
+    citation_ch = FASTQC.out.citation.toList()
 
     // Generate formatted citations
     citation_ch.view { citations ->
@@ -327,8 +327,8 @@ workflow {
     // Your pipeline processes with version and citation collection...
 
     // Collect versions and citations
-    ch_versions = PROCESS1.out.versions.mix(PROCESS2.out.versions).collect()
-    ch_citations = PROCESS1.out.citation.mix(PROCESS2.out.citation).collect()
+    ch_versions = PROCESS1.out.versions.mix(PROCESS2.out.versions).toList()
+    ch_citations = PROCESS1.out.citation.mix(PROCESS2.out.citation).toList()
 }
 
 workflow.onComplete {

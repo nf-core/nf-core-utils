@@ -182,7 +182,7 @@ include { processMixedVersionSources } from 'plugin/nf-core-utils'
 
 workflow {
     // Collect from both sources during migration
-    def topicVersions = PROCESS_A.out.versions.collect()
+    def topicVersions = PROCESS_A.out.versions.toList()
     def legacyFiles = ['process_b/versions.yml', 'process_c/versions.yml']
 
     def allVersions = processMixedVersionSources(topicVersions, legacyFiles)
@@ -207,9 +207,9 @@ workflow {
     // Combine both approaches seamlessly
     def modernVersions = FASTQC.out.versions
         .mix(MULTIQC.out.versions)
-        .collect()
+        .toList()
 
-    def legacyFiles = LEGACY_PROCESS.out.versions.collect()
+    def legacyFiles = LEGACY_PROCESS.out.versions.toList()
 
     def combinedVersions = processMixedVersionSources(modernVersions, legacyFiles)
 }
@@ -321,7 +321,7 @@ workflow {
 // Generate versions file for MultiQC
 workflow {
     // Collect all topic versions
-    def allVersions = ch_versions.collect()
+    def allVersions = ch_versions.toList()
 
     allVersions.map { versions ->
         def yamlContent = generateYamlFromEvalSyntax(versions)
@@ -372,7 +372,7 @@ workflow {
     versions_ch = versions_ch.mix(MULTIQC.out.versions)
 
     // Process topic versions
-    def versionsYaml = processVersionsFromTopic(versions_ch.collect())
+    def versionsYaml = processVersionsFromTopic(versions_ch.toList())
 
     // Output for MultiQC
     file("${params.outdir}/pipeline_info/software_versions.yml").text = versionsYaml
@@ -457,7 +457,7 @@ workflow {
 
     // Collect all versions.yml files
     def version_files = LEGACY_PROCESS.out.versions
-        .collect()
+        .toList()
         .map { files -> files.collect { it.toString() } }
 
     version_files.map { files ->
@@ -498,7 +498,7 @@ workflow {
 
     // Combine with process versions
     def allVersions = ch_process_versions
-        .collect()
+        .toList()
         .map { processVersions ->
             processVersions + workflowVersions
         }
@@ -559,7 +559,7 @@ workflow {
     FASTQC(samples)
 
     // Process legacy versions
-    def versionsYaml = processVersionsFromFile(FASTQC.out.versions.collect())
+    def versionsYaml = processVersionsFromFile(FASTQC.out.versions.toList())
 }
 ```
 
@@ -577,8 +577,8 @@ workflow {
     LEGACY_PROCESS(input_legacy)
 
     // Combine both approaches
-    def topicVersions = MODERN_PROCESS.out.versions.collect()
-    def legacyFiles = LEGACY_PROCESS.out.versions.collect()
+    def topicVersions = MODERN_PROCESS.out.versions.toList()
+    def legacyFiles = LEGACY_PROCESS.out.versions.toList()
 
     def allVersions = processMixedVersionSources(topicVersions, legacyFiles)
 
@@ -609,7 +609,7 @@ workflow {
     ch_versions = ch_versions.mix(FASTQC.out.versions)
 
     // Process modern versions
-    def versionsYaml = processVersionsFromTopic(ch_versions.collect())
+    def versionsYaml = processVersionsFromTopic(ch_versions.toList())
 }
 ```
 
@@ -635,8 +635,8 @@ workflow {
 
     // Use mixed processing during transition
     def versions = processMixedVersionSources(
-        modern_versions.collect(),
-        legacy_files.collect()
+        modern_versions.toList(),
+        legacy_files.toList()
     )
 }
 ```
@@ -666,7 +666,7 @@ Handle missing or malformed version data gracefully:
 // Robust version processing
 workflow {
     try {
-        def versionsYaml = processVersionsFromTopic(ch_versions.collect())
+        def versionsYaml = processVersionsFromTopic(ch_versions.toList())
         file("${params.outdir}/pipeline_info/software_versions.yml").text = versionsYaml
     } catch (Exception e) {
         log.warn "Version processing failed: ${e.message}"
@@ -752,8 +752,8 @@ workflow {
     LEGACY_TOOL(data)
 
     // Combine modern and legacy versions
-    def topicVersions = ch_versions.collect()
-    def legacyFiles = LEGACY_TOOL.out.versions.collect()
+    def topicVersions = ch_versions.toList()
+    def legacyFiles = LEGACY_TOOL.out.versions.toList()
 
     // Generate comprehensive versions report
     def versionsYaml = processMixedVersionSources(topicVersions, legacyFiles)
@@ -820,7 +820,7 @@ def versionsYaml = processVersionsFromTopic([])
 ch_versions.view { "Collected version: $it" }
 
 // Ensure proper collection
-ch_versions.collect().view { "All versions: $it" }
+ch_versions.toList().view { "All versions: $it" }
 ```
 
 ### Issue: Mixed Format Conversion Errors
@@ -879,8 +879,8 @@ def versionsYaml = processVersionsFromFile(validFiles)
 // Optimize mixed processing during migration
 workflow {
     // Process in parallel where possible
-    def topicVersionsFuture = ch_topic_versions.collect()
-    def legacyFilesFuture = ch_legacy_files.collect()
+    def topicVersionsFuture = ch_topic_versions.toList()
+    def legacyFilesFuture = ch_legacy_files.toList()
 
     // Combine results efficiently
     tuple(topicVersionsFuture, legacyFilesFuture).map { topic, files ->

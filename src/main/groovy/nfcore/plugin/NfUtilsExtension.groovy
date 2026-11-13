@@ -534,7 +534,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Automatically generate citation text from topic channel data
-     * Use after collecting from topic: channel.topic('citation').collect()
+     * Use after collecting from topic: channel.topic('citation').toList()
      *
      * @param topicCitations Citation data collected from topic channel
      * @return Formatted citation text ready for reports
@@ -546,7 +546,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Automatically generate bibliography from topic channel data
-     * Use after collecting from topic: channel.topic('citation').collect()
+     * Use after collecting from topic: channel.topic('citation').toList()
      *
      * @param topicCitations Citation data collected from topic channel
      * @return Formatted bibliography HTML ready for reports
@@ -560,7 +560,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * Extract the unique set of tool names that actually ran, from collected
      * 'versions' topic data ([process, tool, version] tuples).
      *
-     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect()
+     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').toList()
      * @return Sorted, de-duplicated list of tool names
      */
     @Function
@@ -577,7 +577,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * {@link #toolCitationText}, {@link #toolBibliographyText} and
      * {@link #methodsDescriptionText}.
      *
-     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').collect(flat: false)
+     * @param topicVersions Versions-topic data, e.g. channel.topic('versions').toList()
      * @param metaFilePaths Paths to module meta.yml files
      * @param extraTools Extra tool names to cite even though they did not emit a version (e.g. multiqcsav)
      * @return Citations map (tool -> [citation, bibliography]) for tools that ran
