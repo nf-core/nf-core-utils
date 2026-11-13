@@ -361,7 +361,7 @@ include { checkConfigProvided; checkProfileProvided } from 'plugin/nf-core-utils
 // Detect environment and adjust validation accordingly
 def isCI = System.getenv('CI') != null
 def isHPC = System.getenv('SLURM_JOB_ID') != null
-def isCloud = workflow.workDir.toString().startsWith('s3://')
+def isCloud = workflow.workDir.toUri().scheme == 's3'
 
 // Validate configuration with environment-specific guidance
 def hasCustomConfig = checkConfigProvided()
