@@ -14,7 +14,7 @@ versions reporting modules already do.
 ## Key validations
 
 - `citationsOnTheFly(topicVersions, metaFilePaths)` cites exactly the tools that ran.
-- `toolCitationText()` / `toolBibliographyText()` render the selected citations.
+- `citationOutputs()` renders them as MultiQC HTML, BibTeX and CSL-JSON.
 - A tool with a `meta.yml` that **did not run** (`STAR_ALIGN`, gated off by
   `params.run_optional = false`) is **not** cited — proving citations track
   execution, not the module inventory.
@@ -26,6 +26,9 @@ citations contain DOI/homepage links and italic `et al.`, so the citation file
 is HTML rather than plain text. Open it in a browser and copy the rendered
 text for a manuscript; pasting HTML source without formatting does not remove
 the tags. The workflow logs the output paths rather than raw HTML.
+
+It also writes `citations.bib` (BibTeX) and `citations.json` (CSL-JSON) for
+reference managers such as Zotero, or for Pandoc.
 
 ## Run
 

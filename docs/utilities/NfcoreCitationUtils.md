@@ -70,7 +70,7 @@ Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<Strin
 
 **Returns:**
 
-- `Map`: Citations keyed by tool name (`[citation: ..., bibliography: ...]`), restricted to tools that ran.
+- `Map`: Citations keyed by tool name (`[citation: ..., bibliography: ..., info: ..., version: ...]`), restricted to tools that ran. `info` is the raw `meta.yml` tool map and `version` the version from the `versions` topic; [`citationOutputs()`](#citation-outputs-html-bibtex-and-csl-json) reads them.
 
 :::note{title="Tool-name matching"}
 Tool names from the `versions` topic are matched against `meta.yml` tool keys **exactly first, then case-insensitively** (so `FastQC` lines up with `fastqc`). A tool that ran but has no matching `meta.yml` citation entry is logged as a warning — add it to that module's `meta.yml` `tools:` section to silence it.
@@ -120,6 +120,55 @@ def citation_text = [
 // Cites exactly the tools that ran, metadata from each module's meta.yml
 def citations = citationsOnTheFly(topic_versions, meta_yml_paths)
 def citation_text = toolCitationText(citations)
+```
+
+---
+
+#### Citation outputs: HTML, BibTeX and CSL-JSON
+
+`citationOutputs(Map citations, List<String> formats = ['html'], Object mqcMethodsYaml = null)` returns several formats in one call. The template is a `Path` or a path string, local or remote. Pick any of:
+
+| Format     | Output keys                                                                               |
+| ---------- | ----------------------------------------------------------------------------------------- |
+| `html`     | `tool_citations`, `tool_bibliography`, and `methods_description` when a template is given |
+| `bibtex`   | `bibtex`                                                                                  |
+| `csl_json` | `csl_json`                                                                                |
+
+`html` is the default. An unknown format, or a template without `html`, throws an `IllegalArgumentException`.
+
+`bibtex` and `csl_json` hold one entry per tool, built from each entry's `info` (set by `citationsOnTheFly()`, `processCitationsFromTopic()` and `generateModuleToolCitation()`) and `version` (set by `citationsOnTheFly()` only).
+
+- **BibTeX:** `@article` when `publication.title` and `publication.source` are set, else `@misc`. Fields: `author`, `title`, `journal`, `year`, `doi`, `url`, `version`.
+- **CSL-JSON:** for Zotero, Pandoc and citeproc. Type `article-journal` or `software`, with `title`, `container-title`, `author`, `issued`, `DOI`, `URL`, `version`.
+
+Authors are copied verbatim from `meta.yml` (a BibTeX `{{...}}` literal, a CSL `literal` name), so citation styles do not abbreviate them.
+
+```nextflow
+include { citationsOnTheFly; citationOutputs } from 'plugin/nf-core-utils'
+
+workflow {
+    def meta_yml_paths = files("${projectDir}/modules/**/meta.yml").collect { f -> f.toString() }
+
+    ch_citations = channel.topic('versions')
+        .toList()
+        .map { versions ->
+            citationOutputs(
+                citationsOnTheFly(versions, meta_yml_paths),
+                ['html', 'bibtex', 'csl_json'],
+                file("${projectDir}/assets/methods_description_template.yml")
+            )
+        }
+
+    // MultiQC methods section
+    ch_multiqc_files = ch_multiqc_files.mix(
+        ch_citations.map { outputs -> outputs.methods_description }.collectFile(name: 'methods_description_mqc.yaml')
+    )
+
+    // Reference-manager files
+    ch_citations
+        .flatMap { outputs -> [['citations.bib', outputs.bibtex], ['citations.json', outputs.csl_json]] }
+        .collectFile(storeDir: "${params.outdir}/pipeline_info") { name, text -> [name, text] }
+}
 ```
 
 ---

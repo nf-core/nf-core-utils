@@ -1205,4 +1205,87 @@ ${tool_bibliography}
         tempFile.text = content
         return tempFile.absolutePath
     }
+
+    // --- Citation files (BibTeX, CSL-JSON) ---
+
+    def "citationsOnTheFly entries carry raw info and version"() {
+        given:
+        def meta = new File(tempDir.toFile(), 'multiqc_meta.yml')
+        meta << '''
+        tools:
+          - multiqc:
+              doi: "10.1093/bioinformatics/btw354"
+        '''.stripIndent()
+
+        when:
+        def result = NfcoreCitationUtils.citationsOnTheFly([['MULTIQC', 'multiqc', '1.21']], [meta.absolutePath])
+
+        then:
+        result.multiqc.info == [doi: '10.1093/bioinformatics/btw354']
+        result.multiqc.version == '1.21'
+    }
+
+    def "citationOutputs returns MultiQC HTML by default and the requested formats"() {
+        given:
+        def citations = [seqtk: [citation: 'seqtk', bibliography: '<li>seqtk.</li>', info: [homepage: 'https://github.com/lh3/seqtk']]]
+
+        expect:
+        NfcoreCitationUtils.citationOutputs(citations).keySet() == ['tool_citations', 'tool_bibliography'] as Set
+        NfcoreCitationUtils.citationOutputs(citations, ['bibtex']) == [bibtex: NfcoreCitationFormats.bibtex(citations)]
+        NfcoreCitationUtils.citationOutputs(citations, ['html', 'bibtex', 'csl_json']).keySet() ==
+            ['tool_citations', 'tool_bibliography', 'bibtex', 'csl_json'] as Set
+    }
+
+    def "citationOutputs rejects unknown formats"() {
+        when:
+        NfcoreCitationUtils.citationOutputs([:], ['html', 'ris'])
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains('ris')
+    }
+
+    def "citationOutputs renders the MultiQC methods description from a template"() {
+        given:
+        def template = tempDir.resolve('methods_description_template.yml')
+        template.text = 'Tools: ${tool_citations} Refs: ${tool_bibliography}'
+        def citations = [seqtk: [citation: 'seqtk', bibliography: '<li>seqtk.</li>']]
+        def mockSession = Mock(Session) {
+            getManifest() >> Mock(nextflow.config.Manifest) { toMap() >> [:] }
+            getWorkflowMetadata() >> Mock(nextflow.script.WorkflowMetadata) { toMap() >> [:] }
+        }
+        def originalSession = nextflow.Nextflow.metaClass.static.getSession
+        nextflow.Nextflow.metaClass.static.getSession = { -> mockSession }
+
+        when:
+        def outputs = NfcoreCitationUtils.citationOutputs(citations, ['html', 'bibtex'], template)
+
+        then:
+        outputs.keySet() == ['tool_citations', 'tool_bibliography', 'methods_description', 'bibtex'] as Set
+        outputs.methods_description == 'Tools: Tools used in the workflow included: seqtk. Refs: <li>seqtk.</li>'
+
+        cleanup:
+        nextflow.Nextflow.metaClass.static.getSession = originalSession
+    }
+
+    def "citationOutputs rejects a template without the html format"() {
+        when:
+        NfcoreCitationUtils.citationOutputs([:], ['bibtex'], Path.of('methods.yml'))
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def "methodsDescriptionText does not modify the meta map it is given"() {
+        given:
+        def template = tempDir.resolve('methods.yml')
+        template.text = '${tool_citations}'
+        def meta = [workflow: [:], manifest_map: [:], tool_citations: 'seqtk']
+
+        when:
+        NfcoreCitationUtils.methodsDescriptionText(template, [:], meta)
+
+        then:
+        meta == [workflow: [:], manifest_map: [:], tool_citations: 'seqtk']
+    }
 }

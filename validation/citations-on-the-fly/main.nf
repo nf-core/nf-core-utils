@@ -11,14 +11,13 @@
  * what executed — with zero per-module changes.
  */
 
-include { citationsOnTheFly    } from 'plugin/nf-core-utils'
-include { toolCitationText     } from 'plugin/nf-core-utils'
-include { toolBibliographyText } from 'plugin/nf-core-utils'
+include { citationsOnTheFly } from 'plugin/nf-core-utils'
+include { citationOutputs   } from 'plugin/nf-core-utils'
 
-include { FASTQC               } from './modules/local/fastqc/main'
-include { MULTIQC              } from './modules/local/multiqc/main'
-include { SAMTOOLS_VIEW        } from './modules/local/samtools/view/main'
-include { STAR_ALIGN           } from './modules/local/star/align/main'
+include { FASTQC            } from './modules/local/fastqc/main'
+include { MULTIQC           } from './modules/local/multiqc/main'
+include { SAMTOOLS_VIEW     } from './modules/local/samtools/view/main'
+include { STAR_ALIGN        } from './modules/local/star/align/main'
 
 workflow {
 
@@ -60,18 +59,17 @@ workflow {
         .map { versions ->
             def citations = citationsOnTheFly(versions, meta_yml_paths, ['multiqcsav'])
             log.info("=== Cited tools: ${citations.keySet().sort().join(', ')} ===")
-            [
-                citation_text: toolCitationText(citations),
-                bibliography: toolBibliographyText(citations),
-            ]
+            citationOutputs(citations, ['html', 'bibtex', 'csl_json'])
         }
 
     // Write outputs and demonstrate usage
     ch_citations.subscribe { citations ->
         def output_dir = params.outdir
         new File(output_dir).mkdirs()
-        new File("${output_dir}/auto_citations.html").text = citations.citation_text
-        new File("${output_dir}/auto_bibliography.html").text = citations.bibliography
+        new File("${output_dir}/auto_citations.html").text = citations.tool_citations
+        new File("${output_dir}/auto_bibliography.html").text = citations.tool_bibliography
+        new File("${output_dir}/citations.bib").text = citations.bibtex
+        new File("${output_dir}/citations.json").text = citations.csl_json
 
         log.info("HTML citations: ${output_dir}/auto_citations.html")
         log.info("HTML bibliography: ${output_dir}/auto_bibliography.html")
