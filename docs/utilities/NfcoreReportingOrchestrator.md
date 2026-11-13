@@ -24,7 +24,7 @@ Generates a complete pipeline report including version information, tool citatio
 
 **Function Signature:**
 
-```nextflow
+```groovy
 Map generateComprehensiveReport(
     List<List> topicVersions,
     List<String> legacyVersions = [],
@@ -36,7 +36,7 @@ Map generateComprehensiveReport(
 **Parameters:**
 
 - `topicVersions` (List\<List\>): Version data from topic channels in `[process, name, version]` format
-- `legacyVersions` (List\<String\>, optional): List of legacy YAML version strings
+- `legacyVersions` (List\<String\>, optional): Legacy `versions.yml` contents or file paths
 - `metaFilePaths` (List\<String\>, optional): List of paths to module meta.yml files for citations
 - `mqcMethodsYaml` (Path or String, optional): MultiQC methods description template, local or remote (`s3://`, `gs://`, `az://`)
 
@@ -46,7 +46,8 @@ Map generateComprehensiveReport(
   - `versions_yaml` (String): Complete YAML with all version information
   - `tool_citations` (String): Formatted citation text for methods descriptions
   - `tool_bibliography` (String): HTML bibliography for references
-  - `methods_description` (String): Complete methods description with templates
+  - `methods_description` (String): Rendered methods description (empty without a template)
+  - `citations_map` (Map): Collected citations, keyed by tool
 
 **Usage Example:**
 
@@ -54,63 +55,25 @@ Map generateComprehensiveReport(
 include { generateComprehensiveReport } from 'plugin/nf-core-utils'
 
 workflow {
-    // Collect versions from topic channels
-    ch_versions = channel.empty()
+    main:
+    FASTQC(ch_reads)
 
-    FASTQC(samples)
-    MULTIQC(reports)
-
-    ch_versions = ch_versions
-        .mix(FASTQC.out.versions)
-        .mix(MULTIQC.out.versions)
-
-    // Collect all data for comprehensive reporting
-    def topicVersions = ch_versions.toList()
-    def legacyVersions = ['legacy_versions.yml']
-    def metaFilePaths = [
-        'modules/nf-core/fastqc/meta.yml',
-        'modules/nf-core/multiqc/meta.yml'
+    def meta_files = [
+        "${projectDir}/modules/nf-core/fastqc/meta.yml",
+        "${projectDir}/modules/nf-core/multiqc/meta.yml",
     ]
-    def methodsTemplate = "${projectDir}/assets/methods_description_template.yml"
+    def methods_template = file("${projectDir}/assets/methods_description_template.yml")
 
-    // Generate complete report
-    def report = generateComprehensiveReport(
-        topicVersions,
-        legacyVersions,
-        metaFilePaths,
-        methodsTemplate
-    )
+    ch_report = channel.topic('versions')
+        .toList()
+        .map { versions -> generateComprehensiveReport(versions, [], meta_files, methods_template) }
 
-    // Write all report components
-    file("${params.outdir}/pipeline_info/software_versions.yml").text = report.versions_yaml
-    file("${params.outdir}/pipeline_info/citations.txt").text = report.tool_citations
-    file("${params.outdir}/pipeline_info/bibliography.html").text = report.tool_bibliography
-    file("${params.outdir}/pipeline_info/methods_description.html").text = report.methods_description
-
-    log.info "Generated comprehensive report with versions and citations"
-}
-```
-
-**Pipeline Integration:**
-
-```nextflow
-workflow {
-    // Standard processing
-    PROCESS_SAMPLES(samples)
-
-    // Single function call for complete reporting
-    def allVersions = ch_versions.toList()
-    def citations = collectAllMetaFiles()
-
-    def completeReport = generateComprehensiveReport(
-        allVersions,
-        [],  // No legacy versions
-        citations,
-        "${projectDir}/assets/methods_template.yml"
-    )
-
-    // All reporting outputs ready for MultiQC
-    publishReportFiles(completeReport)
+    ch_report
+        .map { report -> report.versions_yaml }
+        .collectFile(name: 'software_versions.yml', storeDir: "${params.outdir}/pipeline_info")
+    ch_report
+        .map { report -> report.methods_description }
+        .collectFile(name: 'methods_description_mqc.yaml', storeDir: "${params.outdir}/pipeline_info")
 }
 ```
 
@@ -123,20 +86,19 @@ Generates a version-only report when citations are not needed or handled separat
 
 **Function Signature:**
 
-```nextflow
+```groovy
 Map generateVersionReport(List<List> topicVersions, List<String> legacyVersions = [])
 ```
 
 **Parameters:**
 
 - `topicVersions` (List\<List\>): Version data from topic channels in `[process, name, version]` format
-- `legacyVersions` (List\<String\>, optional): List of legacy YAML version strings
+- `legacyVersions` (List\<String\>, optional): Legacy `versions.yml` contents or file paths
 
 **Returns:**
 
 - `Map`: Version report containing:
-  - `versions_yaml` (String): Complete YAML with all version information
-  - `workflow_version` (String): Formatted workflow version string
+  - `versions_yaml` (String): Complete YAML with all version information, including the `Workflow` section
 
 **Usage Example:**
 
@@ -144,34 +106,11 @@ Map generateVersionReport(List<List> topicVersions, List<String> legacyVersions 
 include { generateVersionReport } from 'plugin/nf-core-utils'
 
 workflow {
-    // Collect only version information
-    def versions = ch_versions.toList()
-    def legacyFiles = ['old_process/versions.yml']
-
-    def versionReport = generateVersionReport(versions, legacyFiles)
-
-    // Write version file for MultiQC
-    file("${params.outdir}/pipeline_info/software_versions.yml").text = versionReport.versions_yaml
-
-    log.info "Pipeline version: ${versionReport.workflow_version}"
-}
-```
-
-**Specialized Use Cases:**
-
-```nextflow
-// When you only need version tracking
-workflow VERSION_TRACKING {
-    // Process with version-aware modules
-    ANALYSIS_MODULES(data)
-
-    // Generate version report without citations
-    def versionData = ch_versions.toList()
-    def report = generateVersionReport(versionData)
-
-    // Lightweight reporting for version tracking only
-    Channel.value(report.versions_yaml)
-        .collectFile(name: 'software_versions.yml', storeDir: "${params.outdir}/versions")
+    main:
+    channel.topic('versions')
+        .toList()
+        .map { versions -> generateVersionReport(versions).versions_yaml }
+        .collectFile(name: 'software_versions.yml', storeDir: "${params.outdir}/pipeline_info")
 }
 ```
 
@@ -184,7 +123,7 @@ Generates a citation-only report when versions are handled separately. This func
 
 **Function Signature:**
 
-```nextflow
+```groovy
 Map generateCitationReport(List<String> metaFilePaths, Object mqcMethodsYaml = null)
 ```
 
@@ -198,7 +137,8 @@ Map generateCitationReport(List<String> metaFilePaths, Object mqcMethodsYaml = n
 - `Map`: Citation report containing:
   - `tool_citations` (String): Formatted citation text for methods descriptions
   - `tool_bibliography` (String): HTML bibliography for references
-  - `methods_description` (String): Methods description with citation integration (if template provided)
+  - `methods_description` (String): Methods description with citation integration (empty without a template)
+  - `citations_map` (Map): Collected citations, keyed by tool
 
 **Usage Example:**
 
@@ -206,39 +146,16 @@ Map generateCitationReport(List<String> metaFilePaths, Object mqcMethodsYaml = n
 include { generateCitationReport } from 'plugin/nf-core-utils'
 
 workflow {
-    // Collect citation sources
-    def metaFiles = [
-        'modules/nf-core/fastqc/meta.yml',
-        'modules/nf-core/multiqc/meta.yml',
-        'modules/local/custom_tool/meta.yml'
+    main:
+    def meta_files = [
+        "${projectDir}/modules/nf-core/fastqc/meta.yml",
+        "${projectDir}/modules/nf-core/multiqc/meta.yml",
+        "${projectDir}/modules/local/custom_tool/meta.yml",
     ]
-    def methodsTemplate = "${projectDir}/assets/methods_description_template.yml"
+    def report = generateCitationReport(meta_files, file("${projectDir}/assets/methods_description_template.yml"))
 
-    def citationReport = generateCitationReport(metaFiles, methodsTemplate)
-
-    // Write citation components
-    file("${params.outdir}/pipeline_info/tool_citations.txt").text = citationReport.tool_citations
-    file("${params.outdir}/pipeline_info/bibliography.html").text = citationReport.tool_bibliography
-    file("${params.outdir}/pipeline_info/methods.html").text = citationReport.methods_description
-
-    log.info "Generated citations for ${metaFiles.size()} modules"
-}
-```
-
-**Publication-Ready Citations:**
-
-```nextflow
-// Generate publication-ready citation materials
-workflow PUBLICATION_PREP {
-    def citationSources = collectPublicationModules()
-    def publicationTemplate = "${projectDir}/assets/publication_methods.yml"
-
-    def report = generateCitationReport(citationSources, publicationTemplate)
-
-    // Create publication materials
-    file("${params.outdir}/publication/methods_section.html").text = report.methods_description
-    file("${params.outdir}/publication/references.html").text = report.tool_bibliography
-    file("${params.outdir}/publication/inline_citations.txt").text = report.tool_citations
+    channel.value(report.methods_description)
+        .collectFile(name: 'methods_description_mqc.yaml', storeDir: "${params.outdir}/pipeline_info")
 }
 ```
 
@@ -252,55 +169,18 @@ The orchestrator provides several advantages over calling individual utility fun
 
 ```nextflow
 // Instead of separate utility calls:
-// def versions = NfcoreVersionUtils.processMixedVersionSources(...)
-// def citations = NfcoreCitationUtils.collectCitationsFromFiles(...)
-// def methods = NfcoreCitationUtils.methodsDescriptionText(...)
+// processMixedVersionSources(topicVersions, legacyVersions)
+// collectCitationsFromFiles(metaFiles)
+// methodsDescriptionText(methodsTemplate, citations)
 
 // Single orchestrated call:
-def report = generateComprehensiveReport(topicVersions, legacyVersions, metaFiles, methodsTemplate)
-// Gets: versions_yaml, tool_citations, tool_bibliography, methods_description
+// generateComprehensiveReport(topicVersions, legacyVersions, metaFiles, methodsTemplate)
+// returns versions_yaml, tool_citations, tool_bibliography, methods_description, citations_map
 ```
 
 ### Error Handling Coordination
 
-```nextflow
-// Robust error handling across all reporting components
-workflow {
-    try {
-        def report = generateComprehensiveReport(versions, [], citations, methods)
-
-        // All components generated successfully
-        publishAllReports(report)
-
-    } catch (Exception e) {
-        log.warn "Comprehensive reporting failed: ${e.message}"
-
-        // Fallback to basic reporting
-        def basicReport = generateVersionReport(versions)
-        file("${params.outdir}/software_versions.yml").text = basicReport.versions_yaml
-    }
-}
-```
-
-### Performance Optimization
-
-```nextflow
-// Optimized processing for large datasets
-workflow LARGE_SCALE_ANALYSIS {
-    // Process thousands of samples
-    MASSIVELY_PARALLEL_ANALYSIS(samples)
-
-    // Efficient orchestrated reporting
-    def versionData = ch_versions.toList()
-    def citationData = ch_citations.toList()
-
-    // Single coordinated processing call
-    def report = generateComprehensiveReport(versionData, [], citationData, methodsTemplate)
-
-    // Optimized output generation
-    publishOptimizedReports(report)
-}
-```
+The report functions do not throw on bad inputs: a `meta.yml` that cannot be read is logged as a warning and skipped, and a methods template that fails to render yields an empty `methods_description`.
 
 ---
 
@@ -309,136 +189,35 @@ workflow LARGE_SCALE_ANALYSIS {
 ### Complete Pipeline Integration
 
 ```nextflow
-#!/usr/bin/env nextflow
-
 include { generateComprehensiveReport } from 'plugin/nf-core-utils'
 
 workflow {
-    // Initialize reporting channels
-    ch_versions = channel.empty()
-    ch_multiqc_files = channel.empty()
-
-    // Main analysis pipeline
-    PREPROCESSING(samples)
+    main:
+    PREPROCESSING(ch_samples)
     QUALITY_CONTROL(PREPROCESSING.out.processed)
-    ANALYSIS(QUALITY_CONTROL.out.passed)
 
-    // Collect versions
-    ch_versions = ch_versions
-        .mix(PREPROCESSING.out.versions)
-        .mix(QUALITY_CONTROL.out.versions)
-        .mix(ANALYSIS.out.versions)
-
-    // Collect MultiQC files
-    ch_multiqc_files = ch_multiqc_files
-        .mix(QUALITY_CONTROL.out.reports)
-        .mix(ANALYSIS.out.reports)
-
-    // Orchestrated reporting
-    def versionData = ch_versions.toList()
-    def citationFiles = [
-        'modules/nf-core/fastqc/meta.yml',
-        'modules/nf-core/multiqc/meta.yml',
-        'modules/local/analysis_tool/meta.yml'
+    def meta_files = [
+        "${projectDir}/modules/nf-core/fastqc/meta.yml",
+        "${projectDir}/modules/nf-core/multiqc/meta.yml",
     ]
-    def methodsTemplate = "${projectDir}/assets/methods_description_template.yml"
+    def methods_template = file("${projectDir}/assets/methods_description_template.yml")
 
-    // Generate complete report
-    def comprehensiveReport = generateComprehensiveReport(
-        versionData,
-        [],
-        citationFiles,
-        methodsTemplate
-    )
+    ch_report = channel.topic('versions')
+        .toList()
+        .map { versions -> generateComprehensiveReport(versions, [], meta_files, methods_template) }
 
-    // Prepare MultiQC inputs
-    def mqc_versions = Channel.value([
-        'software_versions_mqc.yaml',
-        comprehensiveReport.versions_yaml
-    ])
+    ch_versions_mqc = ch_report
+        .map { report -> report.versions_yaml }
+        .collectFile(name: 'software_versions_mqc.yml')
+    ch_methods_mqc = ch_report
+        .map { report -> report.methods_description }
+        .collectFile(name: 'methods_description_mqc.yaml')
 
-    def mqc_methods = Channel.value([
-        'methods_description_mqc.yaml',
-        comprehensiveReport.methods_description
-    ])
-
-    // Run MultiQC with orchestrated reports
     MULTIQC(
-        ch_multiqc_files
-            .mix(mqc_versions)
-            .mix(mqc_methods)
+        QUALITY_CONTROL.out.reports
+            .mix(ch_versions_mqc, ch_methods_mqc)
             .collect()
     )
-
-    // Publish comprehensive reports
-    publishReportingOutputs(comprehensiveReport)
-}
-
-def publishReportingOutputs(report) {
-    file("${params.outdir}/pipeline_info/software_versions.yml").text = report.versions_yaml
-    file("${params.outdir}/pipeline_info/citations.txt").text = report.tool_citations
-    file("${params.outdir}/pipeline_info/bibliography.html").text = report.tool_bibliography
-    file("${params.outdir}/pipeline_info/methods_description.html").text = report.methods_description
-}
-```
-
-### Migration from Individual Utilities
-
-```nextflow
-// Before: Multiple utility calls
-// include {
-//     processMixedVersionSources;
-//     collectCitationsFromFiles;
-//     methodsDescriptionText
-// } from 'plugin/nf-core-utils'
-
-// After: Orchestrated approach
-include { generateComprehensiveReport } from 'plugin/nf-core-utils'
-
-workflow MIGRATED_REPORTING {
-    // Same data collection
-    def versions = ch_versions.toList()
-    def citations = ['modules/tool/meta.yml']
-    def methods = "${projectDir}/methods.yml"
-
-    // Single orchestrated call replaces multiple utility calls
-    def report = generateComprehensiveReport(versions, [], citations, methods)
-
-    // Same outputs, simplified generation
-    publishUnifiedReports(report)
-}
-```
-
-### Conditional Reporting Strategies
-
-```nextflow
-workflow ADAPTIVE_REPORTING {
-    // Collect available data
-    def versions = ch_versions.toList()
-    def citationFiles = findAvailableCitations()
-    def methodsTemplate = findMethodsTemplate()
-
-    // Choose reporting strategy based on available data
-    def report = null
-
-    if (citationFiles.size() > 0 && methodsTemplate) {
-        // Full comprehensive reporting
-        report = generateComprehensiveReport(versions, [], citationFiles, methodsTemplate)
-        log.info "Generated comprehensive report with ${citationFiles.size()} citations"
-
-    } else if (citationFiles.size() > 0) {
-        // Version + citations without methods
-        report = generateComprehensiveReport(versions, [], citationFiles, null)
-        log.info "Generated report with versions and citations"
-
-    } else {
-        // Version-only reporting
-        report = generateVersionReport(versions)
-        log.info "Generated version-only report"
-    }
-
-    // Publish available report components
-    publishAvailableReports(report)
 }
 ```
 
@@ -450,69 +229,14 @@ workflow ADAPTIVE_REPORTING {
 
 ```nextflow
 // Use comprehensive reporting for full pipelines
-def fullReport = generateComprehensiveReport(versions, [], citations, methods)
+// generateComprehensiveReport(versions, [], metaFiles, methodsTemplate)
 
 // Use specialized reporting for focused needs
-def versionOnly = generateVersionReport(versions)  // Version tracking only
-def citationOnly = generateCitationReport(citations, methods)  // Publication prep
+// generateVersionReport(versions)                  // Version tracking only
+// generateCitationReport(metaFiles, methodsTemplate) // Publication prep
 ```
 
-### 2. Error Handling Strategies
-
-```nextflow
-workflow ROBUST_REPORTING {
-    try {
-        // Attempt comprehensive reporting
-        def report = generateComprehensiveReport(versions, [], citations, methods)
-        publishCompleteReports(report)
-
-    } catch (Exception e) {
-        log.warn "Comprehensive reporting failed, falling back to components: ${e.message}"
-
-        // Fallback strategy
-        try {
-            def versionReport = generateVersionReport(versions)
-            publishVersionReport(versionReport)
-
-            def citationReport = generateCitationReport(citations)
-            publishCitationReport(citationReport)
-
-        } catch (Exception fallbackError) {
-            log.error "All reporting failed: ${fallbackError.message}"
-            publishMinimalReport()
-        }
-    }
-}
-```
-
-### 3. Performance Optimization for Large Datasets
-
-```nextflow
-// Optimize for large numbers of processes
-workflow LARGE_SCALE_REPORTING {
-    // Batch process versions efficiently
-    def versionBatches = ch_versions
-        .buffer(size: 100)
-        .toList()
-
-    // Efficient citation collection
-    def citationBatches = ch_citation_files
-        .collate(50)
-        .toList()
-
-    // Coordinated batch processing
-    def reports = []
-    versionBatches.each { batch ->
-        def batchReport = generateVersionReport(batch)
-        reports.add(batchReport)
-    }
-
-    // Merge batch reports
-    def finalReport = mergeBatchReports(reports)
-}
-```
-
-### 4. Testing Orchestrated Functions
+### 2. Testing Orchestrated Functions
 
 ```groovy
 test("Comprehensive reporting integration") {
@@ -546,8 +270,8 @@ test("Graceful degradation with missing data") {
 
     then {
         assert report.versions_yaml.contains('Workflow:')
-        assert report.tool_citations == "No citations available."
-        assert report.tool_bibliography.isEmpty()
+        assert report.tool_citations == "No tools used in the workflow."
+        assert report.tool_bibliography == "No bibliography entries found."
     }
 }
 ```
@@ -562,36 +286,7 @@ test("Graceful degradation with missing data") {
 Different utility functions produce incompatible output formats
 
 **Solution:**
-
-```nextflow
-// Use orchestrator for consistent formatting
-def report = generateComprehensiveReport(versions, [], citations, methods)
-// All components guaranteed to be compatible
-```
-
-### Issue: Memory Usage with Large Datasets
-
-**Problem:**
-Large version/citation datasets cause memory issues
-
-**Solution:**
-
-```nextflow
-// Process in chunks
-workflow MEMORY_EFFICIENT {
-    def versionChunks = ch_versions.collate(1000).toList()
-    def citationChunks = ch_citations.collate(100).toList()
-
-    def reports = []
-    versionChunks.each { chunk ->
-        def chunkReport = generateVersionReport(chunk)
-        reports.add(chunkReport)
-    }
-
-    // Merge efficiently
-    def finalReport = mergeReports(reports)
-}
-```
+Use `generateComprehensiveReport()`: all components are built from the same versions and citations.
 
 ### Issue: Missing Template Variables
 
@@ -599,20 +294,7 @@ workflow MEMORY_EFFICIENT {
 Methods description template has undefined variables
 
 **Solution:**
-
-```nextflow
-// Validate template requirements
-def validateTemplate(templatePath, report) {
-    def template = file(templatePath).text
-    def requiredVars = ['tool_citations_text', 'tool_bibliography_text']
-
-    requiredVars.each { var ->
-        if (!template.contains("\${${var}}")) {
-            log.warn "Template missing variable: ${var}"
-        }
-    }
-}
-```
+The template is rendered with these variables only: `workflow`, `manifest_map`, `doi_text`, `nodoi_text`, `tool_citations` and `tool_bibliography`. Check the template does not reference any other.
 
 ---
 
@@ -624,27 +306,5 @@ def validateTemplate(templatePath, report) {
 - **Coordinated Processing**: Optimized data flow between version and citation processing
 - **Memory Management**: Efficient handling of large datasets through coordinated processing
 - **Error Recovery**: Centralized error handling reduces redundant processing
-
-### Benchmarking Results
-
-```nextflow
-// Performance comparison
-workflow BENCHMARK_REPORTING {
-    // Individual calls approach
-    def start1 = System.currentTimeMillis()
-    def versions = processVersions(versionData)
-    def citations = processCitations(citationData)
-    def methods = generateMethods(methodsTemplate, citations)
-    def time1 = System.currentTimeMillis() - start1
-
-    // Orchestrated approach
-    def start2 = System.currentTimeMillis()
-    def report = generateComprehensiveReport(versionData, [], citationData, methodsTemplate)
-    def time2 = System.currentTimeMillis() - start2
-
-    log.info "Individual calls: ${time1}ms, Orchestrated: ${time2}ms"
-    // Typical result: 40-60% faster with orchestrated approach
-}
-```
 
 For more information on orchestrated reporting and utility coordination, see the individual utility documentation and [nf-core reporting best practices](https://nf-co.re/docs/developing/components/automated-methods-text).

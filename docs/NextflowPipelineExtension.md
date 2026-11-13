@@ -47,22 +47,20 @@ include {
     checkCondaChannels
 } from 'plugin/nf-core-utils'
 
-// Generate version string
-version_str = getWorkflowVersion(workflow.manifest.version, workflow.commitId)
-log.info "Running ${workflow.manifest.name} ${version_str}"
+params {
+    outdir: String = 'results'
+}
 
 workflow {
-    // Validate conda setup if using conda profile
+    main:
+    log.info "Running ${workflow.manifest.name} ${getWorkflowVersion()}"
+
     if (workflow.profile.contains('conda')) {
         checkCondaChannels()
     }
-}
 
-workflow.onComplete {
-    // Save parameters for reproducibility
-    if (params.outdir) {
-        dumpParametersToJSON(params.outdir, params)
-    }
+    onComplete:
+    dumpParametersToJSON(params.outdir, params)
 }
 ```
 
@@ -93,9 +91,9 @@ Let's start with a simple version string generation:
 
 include { getWorkflowVersion } from 'plugin/nf-core-utils'
 
-// Simple version without git info
-version_str = getWorkflowVersion("1.0.0", null)
-log.info "Version: ${version_str}"
+workflow {
+    log.info "Version: ${getWorkflowVersion('1.0.0')}"
+}
 ```
 
 ```console title="Output"
@@ -111,9 +109,9 @@ For better traceability, include git commit information:
 
 include { getWorkflowVersion } from 'plugin/nf-core-utils'
 
-// Version with git commit ID
-version_str = getWorkflowVersion(workflow.manifest.version, workflow.commitId)
-log.info "Full version: ${version_str}"
+workflow {
+    log.info "Full version: ${getWorkflowVersion(workflow.manifest.version, workflow.commitId)}"
+}
 ```
 
 ```console title="Output"
@@ -147,19 +145,6 @@ Always use `workflow.manifest.version` and `workflow.commitId` for automatic ver
 
 The `dumpParametersToJSON` function creates JSON documentation of your pipeline run parameters, essential for reproducibility and troubleshooting. It automatically timestamps and organizes parameter files for easy reference, serializes common Nextflow parameter types, and writes via Nextflow file handling so local and cloud-backed output paths are supported.
 
-**Understanding Parameter Documentation**
-
-Before diving into usage, let's understand why parameter documentation matters:
-
-```nextflow title="Without parameter logging"
-// Your pipeline runs successfully, but...
-// What parameters were used?
-// How can you reproduce this exact run?
-// What changed between runs?
-```
-
-Parameter documentation solves these challenges by creating a permanent record.
-
 **Basic Parameter Export**
 
 Let's implement basic parameter logging:
@@ -169,21 +154,18 @@ Let's implement basic parameter logging:
 
 include { dumpParametersToJSON } from 'plugin/nf-core-utils'
 
-params.outdir = "results"
-params.input = "samples.csv"
-params.genome = "GRCh38"
-
-workflow {
-    log.info "Processing with genome: ${params.genome}"
-
-    // Your workflow logic here
+params {
+    outdir: String = 'results'
+    input: String = 'samples.csv'
+    genome: String = 'GRCh38'
 }
 
-workflow.onComplete {
-    // Save parameters after successful completion
-    if (params.outdir) {
-        dumpParametersToJSON(params.outdir, params)
-    }
+workflow {
+    main:
+    log.info "Processing with genome: ${params.genome}"
+
+    onComplete:
+    dumpParametersToJSON(params.outdir, params)
 }
 ```
 
@@ -323,124 +305,33 @@ The function is designed to be non-blocking. If conda is not available or checki
 
 ### 4.1. Complete Pipeline Integration
 
-Here's a comprehensive example showing all functions working together in a real pipeline:
-
-```nextflow title="complete_pipeline.nf" hl_lines="7-9 15-17 27-35"
+```nextflow title="main.nf"
 #!/usr/bin/env nextflow
 
-nextflow.enable.dsl = 2
+include { getWorkflowVersion; dumpParametersToJSON; checkCondaChannels } from 'plugin/nf-core-utils'
 
-include {
-    getWorkflowVersion;
-    dumpParametersToJSON;
-    checkCondaChannels
-} from 'plugin/nf-core-utils'
-
-params.input = null
-params.outdir = "./results"
-
-// Generate version information early
-version_str = getWorkflowVersion(workflow.manifest.version, workflow.commitId)
-
-workflow {
-    log.info """
-    ========================================
-    ${workflow.manifest.name} ${version_str}
-    ========================================
-    Input: ${params.input}
-    Output: ${params.outdir}
-    Profile: ${workflow.profile}
-    ========================================
-    """
-
-    // Validate environment setup
-    if (workflow.profile.contains('conda')) {
-        if (!checkCondaChannels()) {
-            log.error "Please configure conda channels before continuing"
-            System.exit(1)
-        }
-    }
-
-    // Your pipeline processes here...
-}
-
-workflow.onComplete {
-    // Document run parameters
-    if (params.outdir) {
-        dumpParametersToJSON(params.outdir, params)
-        log.info "Parameters saved to ${params.outdir}/pipeline_info/"
-    }
-
-    log.info """
-    Pipeline completed!
-    Version: ${version_str}
-    Success: ${workflow.success}
-    Duration: ${workflow.duration}
-    """
-}
-```
-
-### 4.2. Production Pipeline Template
-
-For production pipelines, use this pattern for robust error handling:
-
-```nextflow title="production_template.nf"
-#!/usr/bin/env nextflow
-
-nextflow.enable.dsl = 2
-
-// Essential imports
-include {
-    getWorkflowVersion;
-    dumpParametersToJSON;
-    checkCondaChannels
-} from 'plugin/nf-core-utils'
-
-// Early validation
-if (!params.input) {
-    error "Input parameter is required!"
-}
-
-// Version tracking
-def version_str = getWorkflowVersion(workflow.manifest.version, workflow.commitId)
-
-// Environment validation
-if (workflow.profile.contains('conda')) {
-    if (!checkCondaChannels()) {
-        log.error """
-        Conda channels not configured correctly!
-
-        To fix, run:
-            conda config --add channels conda-forge
-            conda config --add channels bioconda
-
-        Then re-run your pipeline.
-        """
-        System.exit(1)
-    }
+params {
+    input: String
+    outdir: String = 'results'
 }
 
 workflow {
-    log.info "Starting ${workflow.manifest.name} ${version_str}"
+    main:
+    log.info "Starting ${workflow.manifest.name} ${getWorkflowVersion()}"
+
+    if (workflow.profile.contains('conda') && !checkCondaChannels()) {
+        error "Conda channels not configured correctly: run `conda config --add channels conda-forge` and `conda config --add channels bioconda`"
+    }
 
     // Pipeline logic here...
 
-    log.info "Pipeline execution complete"
-}
-
-workflow.onComplete {
-    // Always save parameters for reproducibility
-    if (params.outdir && workflow.success) {
+    onComplete:
+    if (workflow.success) {
         dumpParametersToJSON(params.outdir, params)
     }
-}
 
-workflow.onError {
-    log.error """
-    Pipeline failed!
-    Version: ${version_str}
-    Error: ${workflow.errorMessage}
-    """
+    onError:
+    log.error "Pipeline ${getWorkflowVersion()} failed: ${workflow.errorMessage}"
 }
 ```
 
@@ -460,7 +351,7 @@ workflow.onError {
 
 :::warning{title="Documentation Timing"}
 
-- Call `dumpParametersToJSON` in `workflow.onComplete` for successful runs only
+- Call `dumpParametersToJSON` in the `onComplete:` section of the entry workflow
 - Consider saving parameters on error for debugging failed runs
 - Include the timestamp to distinguish between multiple runs
 

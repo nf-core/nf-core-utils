@@ -31,63 +31,36 @@ It retrieves a specific attribute (such as `fasta`, `gtf`, or index paths) for t
 Object getGenomeAttribute(String attribute)
 ```
 
-or (static utility):
-
-```groovy
-Object ReferencesUtils.getGenomeAttribute(Map params, String attribute)
-```
-
 **Parameters**
 
-| Parameter   | Type   | Required | Description                                                        |
-| ----------- | ------ | -------- | ------------------------------------------------------------------ |
-| `attribute` | String | Yes      | The attribute name to retrieve (e.g. 'fasta', 'gtf', 'star')       |
-| `params`    | Map    | Yes      | (static) The Nextflow params map containing `genome` and `genomes` |
+| Parameter   | Type   | Required | Description                                                  |
+| ----------- | ------ | -------- | ------------------------------------------------------------ |
+| `attribute` | String | Yes      | The attribute name to retrieve (e.g. 'fasta', 'gtf', 'star') |
 
 **Return Value**
 
 Returns the value of the requested attribute for the selected genome, or `null` if not found.
 
-**Practical Example**
+**Example**
 
-```groovy
-// Example params structure
-def params = [
-    genome: 'GRCh38',
-    genomes: [
-        GRCh38: [
-            fasta: 's3://bucket/genome.fa',
-            gtf: 's3://bucket/genes.gtf',
-        ],
-        GRCh37: [
-            fasta: 's3://bucket/genome37.fa'
-            star: 's3://bucket/star_index/'
-        ]
-    ]
-]
-
-// Retrieve the FASTA file for the selected genome
-def fasta = ReferencesUtils.getGenomeAttribute(params, 'fasta')
-// Returns: 's3://bucket/genome.fa'
-
-// Retrieve the GTF file
-def gtf = ReferencesUtils.getGenomeAttribute(params, 'gtf')
-// Returns: 's3://bucket/genes.gtf'
-
-// If the attribute or genome is missing, returns null
-def missing = ReferencesUtils.getGenomeAttribute(params, 'star')
-// Returns: null
+```groovy title="nextflow.config"
+params {
+    genome = 'GRCh38'
+    genomes {
+        GRCh38 {
+            fasta = 's3://bucket/genome.fa'
+            gtf   = 's3://bucket/genes.gtf'
+        }
+    }
+}
 ```
-
-**Usage in Nextflow**
 
 ```nextflow
 include { getGenomeAttribute } from 'plugin/nf-core-utils'
 
 workflow {
-    // Example: get the FASTA file for the selected genome
-    genome_fasta = getGenomeAttribute('fasta')
-    log.info "Selected genome FASTA: ${genome_fasta}"
+    fasta = getGenomeAttribute('fasta') // 's3://bucket/genome.fa'
+    star  = getGenomeAttribute('star')  // null: GRCh38 has no 'star'
 }
 ```
 

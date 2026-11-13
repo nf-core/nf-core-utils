@@ -15,7 +15,7 @@ Generates a formatted version string for the workflow, combining version informa
 
 **Function Signature:**
 
-```nextflow
+```groovy
 String getWorkflowVersion(String version = null, String commitId = null)
 ```
 
@@ -33,27 +33,9 @@ String getWorkflowVersion(String version = null, String commitId = null)
 ```nextflow
 include { getWorkflowVersion } from 'plugin/nf-core-utils'
 
-// Basic usage - uses workflow metadata automatically
-def version = getWorkflowVersion()
-log.info "Pipeline version: ${version}"
-
-// With explicit parameters
-def customVersion = getWorkflowVersion('2.0.0', 'abc123')
-log.info "Custom version: ${customVersion}"
-```
-
-**Integration in Pipeline:**
-
-```nextflow
 workflow {
-    // Use in logging
     log.info "Starting ${workflow.manifest.name} ${getWorkflowVersion()}"
-
-    // Include in MultiQC reports
-    def version_info = [
-        'Workflow': getWorkflowVersion(),
-        'Nextflow': workflow.nextflow.version
-    ]
+    log.info "Custom version: ${getWorkflowVersion('2.0.0', 'abc123')}"
 }
 ```
 
@@ -66,7 +48,7 @@ Merges software versions from any mix of sources into one YAML string, with the 
 
 **Function Signature:**
 
-```nextflow
+```groovy
 String collectVersions(Object input, Object nextflowVersion = null)
 ```
 
@@ -136,7 +118,7 @@ Workflow:
 
 **Function Signature:**
 
-```nextflow
+```groovy
 Object softwareVersionsToYAML(Object versions, Map options = [:])
 Object softwareVersionsToYAML(softwareVersions: versions, nextflowVersion: version)
 ```
@@ -149,7 +131,7 @@ Given a channel, it collects it with `toList()` and returns a channel emitting t
 
 **Deprecated:** use [`collectVersions()`](#collectversions).
 
-```nextflow
+```groovy
 String processMixedVersionSources(List<List> topicVersions, List<String> versionsFiles)
 ```
 
@@ -162,7 +144,7 @@ Converts traditional YAML version content to the new eval syntax format for topi
 
 **Function Signature:**
 
-```nextflow
+```groovy
 List<List> convertLegacyYamlToEvalSyntax(String yamlContent, String processName = 'LEGACY')
 ```
 
@@ -180,34 +162,20 @@ List<List> convertLegacyYamlToEvalSyntax(String yamlContent, String processName 
 ```nextflow
 include { convertLegacyYamlToEvalSyntax } from 'plugin/nf-core-utils'
 
-// Convert existing YAML data to topic format
-def legacyYaml = '''
-FASTQC:
-    fastqc: 0.11.9
-MULTIQC:
-    multiqc: 1.12
-    python: 3.9.0
-'''
+workflow {
+    def legacyYaml = '''
+    FASTQC:
+        fastqc: 0.11.9
+    MULTIQC:
+        multiqc: 1.12
+        python: 3.9.0
+    '''.stripIndent()
 
-def topicData = convertLegacyYamlToEvalSyntax(legacyYaml, 'CONVERTED_LEGACY')
-// Result: [['CONVERTED_LEGACY', 'fastqc', '0.11.9'], ['CONVERTED_LEGACY', 'multiqc', '1.12'], ...]
+    def topicData = convertLegacyYamlToEvalSyntax(legacyYaml, 'CONVERTED_LEGACY')
+    // [['CONVERTED_LEGACY', 'fastqc', '0.11.9'], ['CONVERTED_LEGACY', 'multiqc', '1.12'], ...]
 
-// Use in topic channels
-channel.fromList(topicData).set { converted_versions_ch }
-```
-
-**File Migration Example:**
-
-```nextflow
-// Migrate existing versions.yml files to topic format
-def legacyVersionsFile = file("legacy_versions.yml")
-def yamlContent = legacyVersionsFile.text
-
-def migratedVersions = convertLegacyYamlToEvalSyntax(yamlContent, 'MIGRATED_PROCESS')
-
-// Emit to topic channel
-channel.fromList(migratedVersions)
-    .set { migrated_versions_ch }
+    ch_converted_versions = channel.fromList(topicData)
+}
 ```
 
 ---
@@ -219,7 +187,7 @@ Converts topic channel eval syntax data back to YAML format for reporting and Mu
 
 **Function Signature:**
 
-```nextflow
+```groovy
 String generateYamlFromEvalSyntax(List<List> evalData, boolean includeWorkflow = true)
 ```
 
@@ -238,38 +206,12 @@ String generateYamlFromEvalSyntax(List<List> evalData, boolean includeWorkflow =
 include { generateYamlFromEvalSyntax } from 'plugin/nf-core-utils'
 
 workflow {
-    // Collect topic channel versions
-    def topicVersions = [
-        ['FASTQC', 'fastqc', '0.11.9'],
-        ['MULTIQC', 'multiqc', '1.12'],
-        ['MULTIQC', 'python', '3.9.0']
-    ]
+    ch_versions_yaml = channel.topic('versions')
+        .toList()
+        .map { versions -> generateYamlFromEvalSyntax(versions) }
+        .collectFile(name: 'software_versions.yml', storeDir: "${params.outdir}/pipeline_info")
 
-    // Generate YAML for reporting
-    def versionsYaml = generateYamlFromEvalSyntax(topicVersions, true)
-
-    // Write to MultiQC-compatible file
-    file("${params.outdir}/pipeline_info/software_versions.yml").text = versionsYaml
-}
-```
-
-**MultiQC Integration:**
-
-```nextflow
-// Generate versions file for MultiQC
-workflow {
-    // Collect all topic versions
-    def allVersions = ch_versions.toList()
-
-    allVersions.map { versions ->
-        def yamlContent = generateYamlFromEvalSyntax(versions)
-        return tuple('software_versions.yml', yamlContent)
-    }.set { ch_versions_yaml }
-
-    // Use in MultiQC process
-    MULTIQC(
-        multiqc_files.mix(ch_versions_yaml).collect()
-    )
+    MULTIQC(ch_multiqc_files.mix(ch_versions_yaml).collect())
 }
 ```
 
@@ -279,7 +221,7 @@ workflow {
 
 **Deprecated:** use [`collectVersions()`](#collectversions). It returns a flat `tool: version` map, without processes.
 
-```nextflow
+```groovy
 String processVersionsFromTopic(List<List> topicData)
 ```
 
@@ -289,7 +231,7 @@ String processVersionsFromTopic(List<List> topicData)
 
 **Deprecated:** use [`collectVersions()`](#collectversions). It reads local files only: pass `versions.yml` `Path`s to `collectVersions()` instead, so remote files (`s3://`) are read too.
 
-```nextflow
+```groovy
 String processVersionsFromFile(List<String> versionsFiles)
 ```
 
@@ -302,7 +244,7 @@ Converts workflow metadata to topic channel format, enabling consistent version 
 
 **Function Signature:**
 
-```nextflow
+```groovy
 List<List> workflowVersionToChannel()
 ```
 
@@ -317,23 +259,12 @@ List<List> workflowVersionToChannel()
 **Usage Example:**
 
 ```nextflow
-include { workflowVersionToChannel } from 'plugin/nf-core-utils'
+include { workflowVersionToChannel; generateYamlFromEvalSyntax } from 'plugin/nf-core-utils'
 
 workflow {
-    // Get workflow version in topic format
-    def workflowVersions = workflowVersionToChannel()
-
-    // Combine with process versions
-    def allVersions = ch_process_versions
+    ch_versions_yaml = channel.topic('versions')
         .toList()
-        .map { processVersions ->
-            processVersions + workflowVersions
-        }
-
-    // Use in reporting
-    allVersions.map { versions ->
-        generateYamlFromEvalSyntax(versions)
-    }.set { ch_versions_yaml }
+        .map { versions -> generateYamlFromEvalSyntax(versions + workflowVersionToChannel(), false) }
 }
 ```
 
