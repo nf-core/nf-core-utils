@@ -47,7 +47,7 @@ Map generateComprehensiveReport(
   - `tool_citations` (String): Formatted citation text for methods descriptions
   - `tool_bibliography` (String): HTML bibliography for references
   - `methods_description` (String): Rendered methods description (empty without a template)
-  - `citations_map` (Map): Collected citations, keyed by tool
+  - `citations_map` (Map): Collected citations, keyed by tool; pass it to [`citationOutputs()`](NfcoreCitationUtils.md#citation-outputs-html-bibtex-and-csl-json) for BibTeX or CSL-JSON
 
 **Usage Example:**
 
@@ -138,7 +138,7 @@ Map generateCitationReport(List<String> metaFilePaths, Object mqcMethodsYaml = n
   - `tool_citations` (String): Formatted citation text for methods descriptions
   - `tool_bibliography` (String): HTML bibliography for references
   - `methods_description` (String): Methods description with citation integration (empty without a template)
-  - `citations_map` (Map): Collected citations, keyed by tool
+  - `citations_map` (Map): Collected citations, keyed by tool; pass it to [`citationOutputs()`](NfcoreCitationUtils.md#citation-outputs-html-bibtex-and-csl-json) for BibTeX or CSL-JSON
 
 **Usage Example:**
 

@@ -106,7 +106,7 @@ include {
 
 // Advanced features for comprehensive pipelines
 include {
-    citationsOnTheFly; getCitation; autoToolCitationText;
+    citationsOnTheFly; citationOutputs; getCitation; autoToolCitationText;
     generateComprehensiveReport
 } from 'plugin/nf-core-utils'
 ```

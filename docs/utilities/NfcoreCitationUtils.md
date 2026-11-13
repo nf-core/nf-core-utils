@@ -81,7 +81,7 @@ Tool names from the `versions` topic are matched against `meta.yml` tool keys **
 This is the reproducible replacement for a hand-maintained `toolReferencesMap` and a static `toolCitationText()` / `toolBibliographyText()`. Wire it into the methods-description channel:
 
 ```nextflow title="workflows/<pipeline>.nf"
-include { citationsOnTheFly; methodsDescriptionText } from 'plugin/nf-core-utils'
+include { citationsOnTheFly; citationOutputs } from 'plugin/nf-core-utils'
 
 workflow PIPELINE {
     take:
@@ -95,7 +95,7 @@ workflow PIPELINE {
         .toList()
         .map { topic_versions ->
             def citations = citationsOnTheFly(topic_versions, meta_yml_paths)
-            methodsDescriptionText(file("${projectDir}/assets/methods_description_template.yml"), citations)
+            citationOutputs(citations, ['html'], file("${projectDir}/assets/methods_description_template.yml")).methods_description
         }
         .collectFile(name: 'methods_description_mqc.yaml')
 
