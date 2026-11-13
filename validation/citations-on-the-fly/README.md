@@ -27,6 +27,9 @@ is HTML rather than plain text. Open it in a browser and copy the rendered
 text for a manuscript; pasting HTML source without formatting does not remove
 the tags. The workflow logs the output paths rather than raw HTML.
 
+It also writes `citations.bib` (BibTeX) and `citations.json` (CSL-JSON) for
+reference managers such as Zotero, or for Pandoc.
+
 ## Run
 
 ```bash

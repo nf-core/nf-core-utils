@@ -27,6 +27,8 @@ import org.yaml.snakeyaml.Yaml
 @Slf4j(category = 'nextflow.nfcore.NfcoreCitationUtils')
 class NfcoreCitationUtils {
 
+    private static final List<String> CITATION_FORMATS = ['html', 'bibtex', 'csl_json']
+
     /**
      * Generate citation for a tool from meta.yml at the module level
      * @param metaFilePath Path to the meta.yml file (String or File)
@@ -64,7 +66,8 @@ class NfcoreCitationUtils {
 
                 moduleCitations[toolName] = [
                         citation    : citation,
-                        bibliography: bibEntry
+                        bibliography: bibEntry,
+                        info        : toolInfo
                 ]
             }
         }
@@ -122,7 +125,8 @@ class NfcoreCitationUtils {
                 if (citationData instanceof Map) {
                     citations[tool] = [
                         citation: formatCitationFromData(tool, citationData),
-                        bibliography: formatBibliographyFromData(tool, citationData)
+                        bibliography: formatBibliographyFromData(tool, citationData),
+                        info: citationData
                     ]
                 } else {
                     // Handle simple string citations
@@ -248,7 +252,7 @@ class NfcoreCitationUtils {
      * @return Formatted bibliography HTML
      */
     private static String formatBibliographyFromData(String toolName, Map citationData) {
-        def pub = publicationOf(citationData)
+        def pub = NfcoreCitationFormats.publicationOf(citationData)
         def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
 
         // Publication present: academic-style reference "Author. (year). title. source. doi: link".
@@ -277,12 +281,12 @@ class NfcoreCitationUtils {
      * Generate methods description text using collected citations
      * @param mqc_methods_yaml MultiQC methods YAML file
      * @param collectedCitations Map containing all tool citations from modules (optional)
-     * @param meta Additional metadata (optional)
+     * @param meta Additional metadata (optional); copied, not modified
      * @return Formatted methods description HTML
      */
     static String methodsDescriptionText(File mqc_methods_yaml, Map collectedCitations = [:], Map meta = [:]) {
         // Convert to a named map so can be used as with familiar NXF ${workflow} variable syntax in the MultiQC YML file
-        if (!meta) meta = [:]
+        meta = meta ? new LinkedHashMap(meta) : [:]
         def session = (Session) nextflow.Nextflow.session
         if (!meta.containsKey("workflow")) {
             meta.workflow = session.getWorkflowMetadata()?.toMap() ?: [:]
@@ -570,7 +574,7 @@ class NfcoreCitationUtils {
      * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
      * @param metaFilePaths Paths to module meta.yml files
      * @param extraTools Extra tool names to cite even though they did not emit a version
-     * @return Citations map (tool -> [citation, bibliography]) for tools that ran
+     * @return Citations map (tool -> [citation, bibliography, info, version]) for tools that ran; info is the raw meta.yml tool map
      */
     static Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<String> extraTools = []) {
         def toolsUsed = (toolsFromVersionsTopic(topicVersions) + (extraTools ?: [])).unique().sort()
@@ -583,9 +587,37 @@ class NfcoreCitationUtils {
             def version = versionByLower[tool.toString().toLowerCase()]
             [(tool): [
                 citation    : formatShortCitation(tool.toString(), info as Map, version),
-                bibliography: formatBibliographyFromData(tool.toString(), info as Map)
+                bibliography: formatBibliographyFromData(tool.toString(), info as Map),
+                info        : info,
+                version     : version
             ]]
         }
+    }
+
+    /**
+     * Render a citations map in the chosen formats in one call.
+     *
+     * @param citations Citations map, e.g. from {@link #citationsOnTheFly}
+     * @param formats Any of {@code html} (MultiQC {@code tool_citations} and {@code tool_bibliography}), {@code bibtex}, {@code csl_json}
+     * @param mqcMethodsYaml MultiQC methods description template; with {@code html}, adds the rendered {@code methods_description}
+     * @return Map with the output keys of each requested format
+     */
+    static Map citationOutputs(Map citations, List<String> formats = ['html'], File mqcMethodsYaml = null) {
+        def unknown = formats - CITATION_FORMATS
+        if (unknown) {
+            throw new IllegalArgumentException("Unknown citation format(s): ${unknown.join(', ')}; expected ${CITATION_FORMATS.join(', ')}")
+        }
+        if (mqcMethodsYaml && !('html' in formats)) {
+            throw new IllegalArgumentException("A MultiQC methods template needs the 'html' citation format")
+        }
+        def outputs = [:]
+        if ('html' in formats) {
+            outputs = [tool_citations: toolCitationText(citations), tool_bibliography: toolBibliographyText(citations)]
+            if (mqcMethodsYaml) outputs.methods_description = methodsDescriptionText(mqcMethodsYaml, citations, outputs)
+        }
+        if ('bibtex' in formats) outputs.bibtex = NfcoreCitationFormats.bibtex(citations)
+        if ('csl_json' in formats) outputs.csl_json = NfcoreCitationFormats.cslJson(citations)
+        return outputs
     }
 
     /**
@@ -610,7 +642,7 @@ class NfcoreCitationUtils {
      * else "doi: ...", else the homepage url, else description.
      */
     private static String shortReference(Map info) {
-        def pub = publicationOf(info)
+        def pub = NfcoreCitationFormats.publicationOf(info)
         def author = pub.author?.toString()?.trim()
         if (author) {
             def year = pub.year ? pub.year.toString().trim() : ''
@@ -620,16 +652,6 @@ class NfcoreCitationUtils {
         if (info.doi) return "doi: ${info.doi}"
         if (info.homepage) return info.homepage.toString()
         return info.description ? info.description.toString() : ''
-    }
-
-    /**
-     * Publication fields for a tool: the nested publication object, else the
-     * pre-0.7 flat fields (author/year/title/journal) so older meta.yml still cite.
-     * Null fields are dropped so a tool without any yields an empty (falsy) map.
-     */
-    private static Map publicationOf(Map info) {
-        if (info.publication instanceof Map) return info.publication as Map
-        return [author: info.author, year: info.year, title: info.title, source: info.journal].findAll { it.value }
     }
 
     /**

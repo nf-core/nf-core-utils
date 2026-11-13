@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `citationOutputs(citations, formats, mqcMethodsYamlPath)`, which returns any of `html` (the default: `tool_citations`, `tool_bibliography`, and `methods_description` when a MultiQC methods template is given), `bibtex` and `csl_json` in one call. Citation map entries from `citationsOnTheFly()`, `processCitationsFromTopic()` and `generateModuleToolCitation()` now also carry `info`, the raw `meta.yml` tool map; `citationsOnTheFly()` entries also carry `version`.
+
 ### Changed
 
+- `methodsDescriptionText()` no longer modifies the `meta` map it is given.
 - Set `locked = true` in `mise.toml`, replacing `mise install --locked`.
 - Unset `AGENT` and `CLAUDECODE` in `mise.toml` `[env]`: they turn on Nextflow agent mode, which breaks validation snapshots.
 - Added uv 0.13.7 to `mise.toml` for the `website-docs` task.
