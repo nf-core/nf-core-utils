@@ -18,6 +18,7 @@ package nfcore.plugin.nfcore
 
 import groovy.util.logging.Slf4j
 import nextflow.Session
+import java.nio.file.Path
 import org.yaml.snakeyaml.Yaml
 
 /**
@@ -275,12 +276,12 @@ class NfcoreCitationUtils {
 
     /**
      * Generate methods description text using collected citations
-     * @param mqc_methods_yaml MultiQC methods YAML file
+     * @param mqc_methods_yaml MultiQC methods YAML file, local or remote
      * @param collectedCitations Map containing all tool citations from modules (optional)
      * @param meta Additional metadata (optional)
      * @return Formatted methods description HTML
      */
-    static String methodsDescriptionText(File mqc_methods_yaml, Map collectedCitations = [:], Map meta = [:]) {
+    static String methodsDescriptionText(Path mqc_methods_yaml, Map collectedCitations = [:], Map meta = [:]) {
         // Convert to a named map so can be used as with familiar NXF ${workflow} variable syntax in the MultiQC YML file
         if (!meta) meta = [:]
         def session = (Session) nextflow.Nextflow.session

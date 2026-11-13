@@ -118,6 +118,19 @@ class SoftwareVersionReportTest extends Specification {
         'zip'    | true
     }
 
+    def 'reads a path string with a URI scheme through its file system'() {
+        given:
+        def versionsPath = tempDir.resolve('versions.yml')
+        Files.writeString(versionsPath, 'fastqc: 0.12.1')
+        def report = new SoftwareVersionReport()
+
+        when:
+        report.addInput(versionsPath.toUri().toString())
+
+        then:
+        report.renderYaml().contains('fastqc: 0.12.1')
+    }
+
     def 'skips a missing Path'() {
         given:
         def report = new SoftwareVersionReport()

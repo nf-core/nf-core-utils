@@ -5,6 +5,7 @@ import nfcore.plugin.nextflow.NextflowPipelineUtils
 import spock.lang.Ignore
 import spock.lang.Specification
 import spock.lang.TempDir
+import spock.lang.Unroll
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -16,6 +17,19 @@ class NextflowPipelineTest extends Specification {
 
     @TempDir
     Path tempDir
+
+    @Unroll
+    def "toPath resolves #input to #expected"() {
+        expect:
+        NextflowPipelineUtils.toPath(input) == expected
+
+        where:
+        input                    | expected
+        Path.of('/data/a.yml')   | Path.of('/data/a.yml')
+        '/data/a.yml'            | Path.of('/data/a.yml')
+        null                     | null
+        ''                       | null
+    }
 
     def "dumpParametersToJSON should write parameters to file"() {
         given:

@@ -23,6 +23,7 @@ import nextflow.Session
 import nextflow.Nextflow
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
+import nfcore.plugin.nextflow.NextflowPipelineUtils
 import nfcore.plugin.nfcore.NfcoreConfigValidator
 import nfcore.plugin.nfcore.NfcoreVersionUtils
 import nfcore.plugin.nfcore.NfcoreCitationUtils
@@ -186,7 +187,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     void dumpParametersToJSON(String outdir, Map params) {
         if (outdir == null) return
         java.nio.file.Path outdirPath = Nextflow.file(outdir)
-        nfcore.plugin.nextflow.NextflowPipelineUtils.dumpParametersToJSON(outdirPath, params)
+        NextflowPipelineUtils.dumpParametersToJSON(outdirPath, params)
     }
 
     /**
@@ -195,7 +196,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     boolean checkCondaChannels() {
-        return nfcore.plugin.nextflow.NextflowPipelineUtils.checkCondaChannels()
+        return NextflowPipelineUtils.checkCondaChannels()
     }
 
     // --- Version Utilities ---
@@ -392,15 +393,14 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate methods description text using collected citations
      *
-     * @param mqcMethodsYaml MultiQC methods YAML file path
+     * @param mqcMethodsYaml MultiQC methods description template, as a Path or a path string, local or remote
      * @param collectedCitations Map containing all tool citations from modules (optional)
      * @param meta Additional metadata (optional)
      * @return Formatted methods description HTML
      */
     @Function
-    String methodsDescriptionText(String mqcMethodsYamlPath, Map collectedCitations = [:], Map meta = [:]) {
-        def mqcFile = new File(mqcMethodsYamlPath)
-        return NfcoreCitationUtils.methodsDescriptionText(mqcFile, collectedCitations, meta)
+    String methodsDescriptionText(Object mqcMethodsYaml, Map collectedCitations = [:], Map meta = [:]) {
+        return NfcoreCitationUtils.methodsDescriptionText(NextflowPipelineUtils.toPath(mqcMethodsYaml), collectedCitations, meta)
     }
 
     /**
@@ -430,7 +430,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @param topicVersions List of topic channel data [process, name, version]
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @param metaFilePaths List of paths to module meta.yml files (optional)
-     * @param mqcMethodsYamlPath Path to MultiQC methods description template (optional)
+     * @param mqcMethodsYaml MultiQC methods description template, as a Path or a path string, local or remote (optional)
      * @return Map containing versions YAML, citations, bibliography, and methods description
      */
     @Function
@@ -438,11 +438,10 @@ class NfUtilsExtension extends PluginExtensionPoint {
         List<List> topicVersions,
         List<String> legacyVersions = [],
         List<String> metaFilePaths = [],
-        String mqcMethodsYamlPath = null
+        Object mqcMethodsYaml = null
     ) {
-        def mqcFile = mqcMethodsYamlPath ? new File(mqcMethodsYamlPath) : null
         return reportingAdapter.generateComprehensiveReport(
-            topicVersions, legacyVersions, metaFilePaths, mqcFile
+            topicVersions, legacyVersions, metaFilePaths, NextflowPipelineUtils.toPath(mqcMethodsYaml)
         )
     }
 
@@ -462,13 +461,12 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * Generate citation-only report
      *
      * @param metaFilePaths List of paths to module meta.yml files
-     * @param mqcMethodsYamlPath Path to MultiQC methods description template (optional)
+     * @param mqcMethodsYaml MultiQC methods description template, as a Path or a path string, local or remote (optional)
      * @return Map containing only citation information
      */
     @Function
-    Map generateCitationReport(List<String> metaFilePaths, String mqcMethodsYamlPath = null) {
-        def mqcFile = mqcMethodsYamlPath ? new File(mqcMethodsYamlPath) : null
-        return reportingAdapter.generateCitationReport(metaFilePaths, mqcFile)
+    Map generateCitationReport(List<String> metaFilePaths, Object mqcMethodsYaml = null) {
+        return reportingAdapter.generateCitationReport(metaFilePaths, NextflowPipelineUtils.toPath(mqcMethodsYaml))
     }
 
     // --- Enhanced Citation Topic Channel Functions ---
