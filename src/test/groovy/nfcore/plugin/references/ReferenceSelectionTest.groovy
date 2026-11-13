@@ -1,5 +1,6 @@
 package nfcore.plugin.references
 
+import nfcore.plugin.NfUtilsExtension
 import spock.lang.Narrative
 import spock.lang.Issue
 import spock.lang.See
@@ -128,18 +129,60 @@ class ReferenceSelectionTest extends Specification {
 
     def 'getReferencePath prefers an explicit references path'() {
         expect:
-        ReferenceSelection.getReferencePath(references: 'my.yml', genome: null, igenomesIgnore: false, datasheetPath: null) == 'my.yml'
+        ReferenceSelection.getReferencePath(references: 'my.yml', genome: null, useReferenceDatasheet: false, datasheetPath: null) == 'my.yml'
     }
 
     def 'getReferencePath builds the catalogue path'() {
         expect:
-        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: 'https://host/') == 'https://host/Ensembl/GRCh38.yml'
-        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: 's3://bucket/refs//') == 's3://bucket/refs/Ensembl/GRCh38.yml'
+        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', useReferenceDatasheet: true, datasheetPath: 'https://host/') == 'https://host/Ensembl/GRCh38.yml'
+        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', useReferenceDatasheet: true, datasheetPath: 's3://bucket/refs//') == 's3://bucket/refs/Ensembl/GRCh38.yml'
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/94")
+    def 'getReferencePath selects the datasheet only when useReferenceDatasheet is explicitly true: #value'() {
+        expect:
+        new NfUtilsExtension().getReferencePath(genome: 'Ensembl/GRCh38', useReferenceDatasheet: value,
+            datasheetPath: 'https://host/') == expected
+        ReferenceSelection.getReferencePath(references: 'custom.yml', useReferenceDatasheet: value) == 'custom.yml'
+        ReferenceSelection.getReferencePath(useReferenceDatasheet: value, datasheetPath: 'https://host/') == null
+
+        where:
+        value       || expected
+        true        || 'https://host/Ensembl/GRCh38.yml'
+        'true'      || 'https://host/Ensembl/GRCh38.yml'
+        'TrUe'      || 'https://host/Ensembl/GRCh38.yml'
+        ' true '    || 'https://host/Ensembl/GRCh38.yml'
+        false       || null
+        'false'     || null
+        'FaLsE'     || null
+        ' false '   || null
+        null        || null
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/94")
+    def 'getReferencePath rejects invalid useReferenceDatasheet rather than choosing a source: #value'() {
+        when:
+        ReferenceSelection.getReferencePath(genome: 'GRCh38', useReferenceDatasheet: value, datasheetPath: 'https://host/')
+
+        then:
+        def error = thrown(IllegalArgumentException)
+        error.message.contains('useReferenceDatasheet')
+        error.message.contains('true or false')
+
+        when:
+        ReferenceSelection.getReferencePath(references: 'custom.yml', useReferenceDatasheet: value)
+
+        then:
+        def explicitError = thrown(IllegalArgumentException)
+        explicitError.message.contains('useReferenceDatasheet')
+
+        where:
+        value << ['yes', '', 'null', 0, 1, [], [:]]
     }
 
     def 'getReferencePath requires a datasheet base path'() {
         when:
-        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: '')
+        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', useReferenceDatasheet: true, datasheetPath: '')
 
         then:
         thrown(IllegalArgumentException)
@@ -147,13 +190,13 @@ class ReferenceSelectionTest extends Specification {
 
     def 'getReferencePath returns null without a source'() {
         expect:
-        ReferenceSelection.getReferencePath(references: null, genome: 'GRCh38', igenomesIgnore: false, datasheetPath: null) == null
-        ReferenceSelection.getReferencePath(references: null, genome: 'null', igenomesIgnore: true, datasheetPath: 'x') == null
+        ReferenceSelection.getReferencePath(references: null, genome: 'GRCh38', useReferenceDatasheet: false, datasheetPath: null) == null
+        ReferenceSelection.getReferencePath(references: null, genome: 'null', useReferenceDatasheet: true, datasheetPath: 'x') == null
     }
 
     def 'getReferencePath rejects references and genome together'() {
         when:
-        ReferenceSelection.getReferencePath(references: 'my.yml', genome: 'GRCh38', igenomesIgnore: false, datasheetPath: null)
+        ReferenceSelection.getReferencePath(references: 'my.yml', genome: 'GRCh38', useReferenceDatasheet: false, datasheetPath: null)
 
         then:
         thrown(IllegalArgumentException)
@@ -208,13 +251,31 @@ class ReferenceSelectionTest extends Specification {
         ReferenceSelection.getReferenceAttribute(param: 'gtf', genomeMap: GENOMES, genomeKey: 'GRCh38') == 's3://bucket/genes.gtf'
     }
 
-    def 'reference functions reject unknown named arguments'() {
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/94")
+    def 'getReferencePath explains how to migrate the removed argument for value #value'() {
         when:
-        ReferenceSelection.getReferencePath(references: null, igenomeIgnore: true)
+        new NfUtilsExtension().getReferencePath(igenomesIgnore: value)
 
         then:
         def e = thrown(IllegalArgumentException)
-        e.message.contains('igenomeIgnore')
+        e.message == "getReferencePath no longer accepts 'igenomesIgnore'. Rename it to 'useReferenceDatasheet' (true selects a genome datasheet)."
+
+        where:
+        value << [true, false, 'false', null]
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/94")
+    def 'reference functions reject misspelled named argument #argument'() {
+        when:
+        new NfUtilsExtension().getReferencePath([(argument): true])
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains(argument)
+        e.message.contains('useReferenceDatasheet')
+
+        where:
+        argument << ['useReferenceDatashet']
     }
 
     def 'reference functions require param and rows'() {

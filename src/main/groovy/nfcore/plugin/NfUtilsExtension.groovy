@@ -86,7 +86,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Determine which reference path to use: explicit --references or built from genome.
      * Accepts named arguments (Groovy style).
-     * @param args Named arguments: references, genome, igenomesIgnore, datasheetPath
+     * @param args Named arguments: references, genome, useReferenceDatasheet, datasheetPath
      * @return The datasheet path to load, or null if neither references nor genome is provided
      */
     @Function

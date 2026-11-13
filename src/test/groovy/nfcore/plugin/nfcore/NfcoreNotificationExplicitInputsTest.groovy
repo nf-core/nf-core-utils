@@ -365,7 +365,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         'plaintext failure only'  | false   | null                   | 'fail@example.invalid' | true
     }
 
-    @Issue("https://github.com/nf-core/nf-core-utils/pull/81")
+    @Issue(["https://github.com/nf-core/nf-core-utils/pull/81", "https://github.com/nf-core/nf-core-utils/issues/94"])
     @See("https://docs.seqera.io/platform-cloud/launch/advanced#environment-variables")
     @ConfineMetaClassChanges(Nextflow)
     def 'completionEmail preserves reports and applies Platform delivery policy for #scenario'() {
@@ -375,8 +375,8 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         assets.resolve('email_template.txt').text = 'Plain summary'
         assets.resolve('email_template.html').text = '<p>HTML summary</p>'
         def session = stubSession(success, '1 MB')
-        // Parser v2 keeps CLI strings in config but resolves typed values in the script binding.
-        session.config.params.putAll(options.collectEntries { key, value -> [key, value.toString()] })
+        // The binding may hold Booleans or untyped CLI strings; config alone must not decide delivery.
+        session.config.params.putAll(options.collectEntries { key, value -> [key, value?.toString()] })
         session.params.putAll(options)
         session.config.tower = [enabled: monitored]
         def fs = FileSystems.newFileSystem(zipWithReport('<html>report</html>'))
@@ -390,6 +390,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
             sent << [to: mail.to, report: mail.attachments.first().file.text]
         }
         def appender = captureLogsFor(NfcoreNotificationUtils)
+        def booleanAppender = captureLogsFor(BooleanParam)
 
         when:
         NfcoreNotificationUtils.completionEmail([:], email, emailOnFail, false,
@@ -400,26 +401,43 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         tempDir.resolve('results/pipeline_info/pipeline_report.html').text == '<p>HTML summary</p>'
         tempDir.resolve('results/pipeline_info/pipeline_report.txt').text == 'Plain summary'
         !appender.list.any { it.level == Level.WARN || it.level == Level.ERROR }
+        booleanAppender.list.findAll { it.level == Level.WARN }.collect { it.formattedMessage } ==
+            (warning ? [warning] : [])
         logMessages(appender).any { it.contains('Skipping summary e-mail') && it.contains('force_completion_email') } == muted
 
         cleanup:
         detachAppender(appender)
+        ((Logger) LoggerFactory.getLogger('nextflow.nfcore.BooleanParam')).detachAppender(booleanAppender)
+        booleanAppender.stop()
         fs?.close()
         SysEnv.pop()
 
         where:
-        scenario                    | environment                          | options                         | monitored | success | email                  | emailOnFail            || shouldSend | muted
-        'Platform success'          | [TOWER_WORKFLOW_ID: 'wf-123']         | [:]                             | true      | true    | 'test@example.invalid' | null                   || false      | true
-        'Platform failure only'     | [TOWER_WORKFLOW_ID: 'wf-123']         | [:]                             | true      | false   | null                   | 'fail@example.invalid' || false      | true
-        'explicit false'            | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: false] | true      | true    | 'test@example.invalid' | null                   || false      | true
-        'string false'              | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: 'false'] | true    | true    | 'test@example.invalid' | null                   || false      | true
-        'forced Platform success'   | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: true]  | true      | true    | 'test@example.invalid' | null                   || true       | false
-        'forced Platform failure'   | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: true]  | true      | false   | null                   | 'fail@example.invalid' || true       | false
-        'forced without recipient'  | [TOWER_WORKFLOW_ID: 'wf-123']         | [force_completion_email: true]  | true      | true    | null                   | 'fail@example.invalid' || false      | false
-        'CLI monitoring'            | [TOWER_ACCESS_TOKEN: 'test-token']    | [:]                             | true      | true    | 'test@example.invalid' | null                   || true       | false
-        'CLI failure monitoring'    | [TOWER_ACCESS_TOKEN: 'test-token']    | [:]                             | true      | false   | null                   | 'fail@example.invalid' || true       | false
-        'empty Platform identifier' | [TOWER_WORKFLOW_ID: '']               | [:]                             | true      | true    | 'test@example.invalid' | null                   || true       | false
-        'ordinary CLI'              | [:]                                  | [:]                             | false     | true    | 'test@example.invalid' | null                   || true       | false
+        scenario                          | environment                        | options                             | monitored | success | email                  | emailOnFail            || shouldSend | muted | warning
+        'Platform success'                | [TOWER_WORKFLOW_ID: 'wf-123']      | [:]                                 | true      | true    | 'test@example.invalid' | null                   || false      | true  | null
+        'Platform failure only'           | [TOWER_WORKFLOW_ID: 'wf-123']      | [:]                                 | true      | false   | null                   | 'fail@example.invalid' || false      | true  | null
+        'explicit false'                  | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: false]     | true      | true    | 'test@example.invalid' | null                   || false      | true  | null
+        'string false'                    | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: 'false']   | true      | true    | 'test@example.invalid' | null                   || false      | true  | null
+        'forced Platform success'         | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: true]      | true      | true    | 'test@example.invalid' | null                   || true       | false | null
+        'forced Platform failure'         | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: true]      | true      | false   | null                   | 'fail@example.invalid' || true       | false | null
+        'forced without recipient'        | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: true]      | true      | true    | null                   | 'fail@example.invalid' || false      | false | null
+        'CLI monitoring'                  | [TOWER_ACCESS_TOKEN: 'test-token'] | [:]                                 | true      | true    | 'test@example.invalid' | null                   || true       | false | null
+        'CLI failure monitoring'          | [TOWER_ACCESS_TOKEN: 'test-token'] | [:]                                 | true      | false   | null                   | 'fail@example.invalid' || true       | false | null
+        'empty Platform identifier'       | [TOWER_WORKFLOW_ID: '']            | [:]                                 | true      | true    | 'test@example.invalid' | null                   || true       | false | null
+        'ordinary CLI'                    | [:]                                | [:]                                 | false     | true    | 'test@example.invalid' | null                   || true       | false | null
+        'string true'                     | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: 'true']    | true      | true    | 'test@example.invalid' | null                   || true       | false | null
+        'mixed-case true'                 | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: 'TrUe']    | true      | true    | 'test@example.invalid' | null                   || true       | false | null
+        'string forced failure'           | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: 'true']    | true      | false   | null                   | 'fail@example.invalid' || true       | false | null
+        'string forced without recipient' | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: 'true']    | true      | true    | null                   | 'fail@example.invalid' || false      | false | null
+        'invalid CLI override'            | [:]                                | [force_completion_email: 'yes']     | false     | true    | 'test@example.invalid' | null                   || true       | false | null
+        'invalid without recipient'       | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: 'yes']     | true      | true    | null                   | 'fail@example.invalid' || false      | false | null
+        'trimmed true'                    | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: ' true ']  | true      | true    | 'test@example.invalid' | null                   || true       | false | null
+        'mixed-case false'                | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: 'FaLsE']   | true      | true    | 'test@example.invalid' | null                   || false      | true  | null
+        'trimmed false'                   | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: ' false '] | true      | true    | 'test@example.invalid' | null                   || false      | true  | null
+        'null override'                   | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: null]      | true      | true    | 'test@example.invalid' | null                   || false      | true  | null
+        'invalid string'                  | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: 'yes']     | true      | true    | 'test@example.invalid' | null                   || false      | true  | 'Expected params.force_completion_email to be true or false, got: yes (String); using false'
+        'invalid number'                  | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: 1]         | true      | true    | 'test@example.invalid' | null                   || false      | true  | 'Expected params.force_completion_email to be true or false, got: 1 (Integer); using false'
+        'empty string'                    | [TOWER_WORKFLOW_ID: 'wf-123']      | [force_completion_email: '']        | true      | true    | 'test@example.invalid' | null                   || false      | true  | 'Expected params.force_completion_email to be true or false, got:  (String); using false'
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/pull/71")

@@ -16,6 +16,8 @@
 
 package nfcore.plugin.references
 
+import nfcore.plugin.nfcore.BooleanParam
+
 /**
  * Concentrates reference-shape knowledge: genome lookup, attribute extraction,
  * basepath substitution, and null handling in a single deep module.
@@ -86,15 +88,20 @@ class ReferenceSelection {
     /**
      * Determine which reference path to use: explicit --references or built from genome.
      *
-     * @param args Named arguments: references, genome, igenomesIgnore, datasheetPath (all default null)
+     * useReferenceDatasheet accepts Booleans or true/false strings; null defaults to false.
+     *
+     * @param args Named arguments: references, genome, useReferenceDatasheet, datasheetPath (all default null)
      * @return The datasheet path to load, or null if neither references nor genome is provided
-     * @throws IllegalArgumentException if both references and genome are provided
+     * @throws IllegalArgumentException if useReferenceDatasheet is invalid or both references and genome are provided
      */
     static String getReferencePath(Map args) {
-        args = checkArgs(args, 'getReferencePath', ['references', 'genome', 'igenomesIgnore', 'datasheetPath'])
+        if (args?.containsKey('igenomesIgnore')) {
+            throw new IllegalArgumentException("getReferencePath no longer accepts 'igenomesIgnore'. Rename it to 'useReferenceDatasheet' (true selects a genome datasheet).")
+        }
+        args = checkArgs(args, 'getReferencePath', ['references', 'genome', 'useReferenceDatasheet', 'datasheetPath'])
         String references = args.references
         String genome = args.genome
-        Boolean igenomesIgnore = args.igenomesIgnore
+        boolean useReferenceDatasheet = BooleanParam.coerce(args.useReferenceDatasheet, false, 'useReferenceDatasheet')
         String datasheetPath = args.datasheetPath
         genome = genome in [null, 'null'] ? null : genome
 
@@ -104,7 +111,7 @@ class ReferenceSelection {
         if (references) {
             return references
         }
-        if (genome && igenomesIgnore) {
+        if (genome && useReferenceDatasheet) {
             return referenceDatasheet(genome, datasheetPath)
         }
         return null

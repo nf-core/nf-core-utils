@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Compatibility and migration
+
+- `getReferencePath()` replaces the named argument `igenomesIgnore` with `useReferenceDatasheet`. Update calls to `useReferenceDatasheet: params.use_reference_datasheet` and rename any corresponding pipeline parameter. The old argument is rejected rather than retained as an alias. Set the new option to true to resolve a genome datasheet, or false to leave reference lookup to the genome configuration.
+
+### Fixed
+
+- `getReferencePath(useReferenceDatasheet: ...)` and `params.force_completion_email` accept Boolean values and case-insensitive, whitespace-trimmed `"true"` / `"false"` strings, with missing/null defaulting to false. String `"false"` no longer selects a reference datasheet; string `"true"` can force Platform completion email. Invalid reference settings fail early; invalid Platform email overrides warn and default to false ([#94](https://github.com/nf-core/nf-core-utils/issues/94)).
+
 ### Changed
 
 - Set `locked = true` in `mise.toml`, replacing `mise install --locked`.

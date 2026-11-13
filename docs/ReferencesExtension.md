@@ -99,7 +99,7 @@ A [references datasheet](https://github.com/nf-core/references-datasheets) descr
 
 ```groovy
 String getReferencePath(Map args)
-// args: references, genome, igenomesIgnore, datasheetPath
+// args: references, genome, useReferenceDatasheet, datasheetPath
 
 Map getReferenceMetadata(Map args)
 // args: rows (required)
@@ -110,13 +110,17 @@ Object getReferenceAttribute(Map args)
 
 Missing arguments default to `null`. An unknown argument name throws an `IllegalArgumentException`.
 
+`useReferenceDatasheet` replaces the former `igenomesIgnore` argument. The old name is not an alias. Passing it throws an error that names the replacement and explains what true selects. Pipeline integrations that expose this option use `params.use_reference_datasheet` instead of `params.igenomes_ignore`.
+
 `getReferencePath()` returns the datasheet to load:
 
-| Input                                 | Result                         |
-| ------------------------------------- | ------------------------------ |
-| `references` set                      | `references`                   |
-| `genome` set and `igenomesIgnore` set | `<datasheetPath>/<genome>.yml` |
-| otherwise                             | `null`                         |
+| Input                                          | Result                       |
+| ---------------------------------------------- | ---------------------------- |
+| `references` set                               | `references`                 |
+| `genome` set and `useReferenceDatasheet` is true | `<datasheetPath>/<genome>.yml` |
+| otherwise                                      | `null`                       |
+
+`useReferenceDatasheet` accepts Booleans and the strings `"true"` / `"false"` (case-insensitive, with surrounding whitespace ignored). Missing or `null` means `false`, so `"false"` does not select a datasheet. Other values (including `""`, `"yes"`, and numbers) throw an `IllegalArgumentException` naming `useReferenceDatasheet`, even when an explicit `references` path is supplied.
 
 It throws if `references` and `genome` are both set, or if it needs `datasheetPath` and none is given. A `genome` of `null`, `''` or `'null'` counts as unset, so `--genome null` turns off a default genome.
 
@@ -134,7 +138,7 @@ workflow {
     reference_path = getReferencePath(
         references: params.references,
         genome: params.genome,
-        igenomesIgnore: params.igenomes_ignore,
+        useReferenceDatasheet: params.use_reference_datasheet,
         datasheetPath: params.references_datasheets_path,
     )
     datasheet = reference_path
