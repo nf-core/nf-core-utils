@@ -14,7 +14,7 @@ versions reporting modules already do.
 ## Key validations
 
 - `citationsOnTheFly(topicVersions, metaFilePaths)` cites exactly the tools that ran.
-- `toolCitationText()` / `toolBibliographyText()` render the selected citations.
+- `citationOutputs()` renders them as MultiQC HTML, BibTeX and CSL-JSON.
 - A tool with a `meta.yml` that **did not run** (`STAR_ALIGN`, gated off by
   `params.run_optional = false`) is **not** cited — proving citations track
   execution, not the module inventory.

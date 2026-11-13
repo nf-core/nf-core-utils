@@ -19,8 +19,8 @@ package nfcore.plugin.nfcore
 import groovy.json.JsonOutput
 
 /**
- * Citation file formats (BibTeX, CSL-JSON) rendered from a citations map whose
- * entries carry {@code info} (the raw meta.yml tool map) and optionally {@code version}.
+ * Reference fields of citations-map entries ({@code info}, the raw meta.yml tool map,
+ * and {@code version}), and the BibTeX and CSL-JSON files built from them.
  */
 class NfcoreCitationFormats {
 
@@ -32,7 +32,7 @@ class NfcoreCitationFormats {
         return citations.collect { tool, entry ->
             def ref = referenceOf(tool.toString(), entry as Map)
             def fields = [
-                // shortcut: double braces keep meta.yml author strings verbatim instead of parsing names; split into "and" lists if styles need initials
+                // shortcut: double braces keep the meta.yml author string verbatim; split it into an "and" list if styles need initials
                 author : ref.author ? "{${ref.author}}" : null,
                 title  : ref.title,
                 journal: ref.source,

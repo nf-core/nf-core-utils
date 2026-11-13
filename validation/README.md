@@ -79,7 +79,7 @@ Tests `citationsOnTheFly()` — citations built from the tools that actually ran
 **Key validations:**
 
 - `citationsOnTheFly(topicVersions, metaFilePaths)` cites only the tools that ran
-- `toolCitationText()` / `toolBibliographyText()` render the selected citations
+- `citationOutputs()` renders them as MultiQC HTML, BibTeX and CSL-JSON
 - A tool with a `meta.yml` that did not run (`STAR_ALIGN`, gated off) is not cited
 
 ### 🚧 Future Validation Tests

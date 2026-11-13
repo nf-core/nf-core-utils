@@ -574,7 +574,7 @@ class NfcoreCitationUtils {
      * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
      * @param metaFilePaths Paths to module meta.yml files
      * @param extraTools Extra tool names to cite even though they did not emit a version
-     * @return Citations map (tool -> [citation, bibliography, info, version]) for tools that ran; info is the raw meta.yml tool map
+     * @return Citations map (tool -> [citation, bibliography, info, version]) for tools that ran
      */
     static Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<String> extraTools = []) {
         def toolsUsed = (toolsFromVersionsTopic(topicVersions) + (extraTools ?: [])).unique().sort()
@@ -595,11 +595,11 @@ class NfcoreCitationUtils {
     }
 
     /**
-     * Render a citations map in the chosen formats in one call.
+     * Render a citations map in the chosen formats.
      *
      * @param citations Citations map, e.g. from {@link #citationsOnTheFly}
      * @param formats Any of {@code html} (MultiQC {@code tool_citations} and {@code tool_bibliography}), {@code bibtex}, {@code csl_json}
-     * @param mqcMethodsYaml MultiQC methods description template; with {@code html}, adds the rendered {@code methods_description}
+     * @param mqcMethodsYaml MultiQC methods description template; adds {@code methods_description} to {@code html}
      * @return Map with the output keys of each requested format
      */
     static Map citationOutputs(Map citations, List<String> formats = ['html'], File mqcMethodsYaml = null) {

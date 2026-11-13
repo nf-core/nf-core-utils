@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added `citationOutputs(citations, formats, mqcMethodsYamlPath)`, which returns any of `html` (the default: `tool_citations`, `tool_bibliography`, and `methods_description` when a MultiQC methods template is given), `bibtex` and `csl_json` in one call. Citation map entries from `citationsOnTheFly()`, `processCitationsFromTopic()` and `generateModuleToolCitation()` now also carry `info`, the raw `meta.yml` tool map; `citationsOnTheFly()` entries also carry `version`.
+- Added `citationOutputs(citations, formats, mqcMethodsYamlPath)`, which returns any of `html` (default: `tool_citations`, `tool_bibliography`, and `methods_description` with a MultiQC methods template), `bibtex` and `csl_json`.
+- Citation map entries from `citationsOnTheFly()`, `processCitationsFromTopic()` and `generateModuleToolCitation()` carry `info`, the raw `meta.yml` tool map; `citationsOnTheFly()` entries also carry `version`.
 
 ### Changed
 

@@ -592,11 +592,11 @@ class NfUtilsExtension extends PluginExtensionPoint {
     }
 
     /**
-     * Render citations in the chosen formats in one call
+     * Render citations in the chosen formats
      *
      * @param citations Citations map, e.g. from {@link #citationsOnTheFly}
      * @param formats Any of html, bibtex, csl_json (default: html)
-     * @param mqcMethodsYamlPath MultiQC methods description template; with html, adds methods_description (optional)
+     * @param mqcMethodsYamlPath MultiQC methods description template; adds methods_description to html (optional)
      * @return Map with tool_citations, tool_bibliography and methods_description (html), bibtex, csl_json
      */
     @Function
