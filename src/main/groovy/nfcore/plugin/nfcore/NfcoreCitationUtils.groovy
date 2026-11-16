@@ -53,15 +53,8 @@ class NfcoreCitationUtils {
                 def citation = toolName
                 def bibEntry = null
 
-                // Generate citation text
                 if (toolInfo instanceof Map) {
-                    if (toolInfo.doi) {
-                        citation += " (DOI: ${toolInfo.doi})"
-                    } else if (toolInfo.description) {
-                        citation += " (${toolInfo.description})"
-                    }
-
-                    // Generate bibliography entry using shared formatter
+                    citation = formatCitationFromData(toolName, toolInfo as Map)
                     bibEntry = formatBibliographyFromData(toolName, toolInfo as Map)
                 }
 
@@ -237,8 +230,9 @@ class NfcoreCitationUtils {
      */
     private static String formatCitationFromData(String toolName, Map citationData) {
         def citation = toolName
-        if (citationData.doi) {
-            citation += " (DOI: ${citationData.doi})"
+        def doi = NfcoreCitationFormats.referenceOf(toolName, citationData).doi
+        if (doi) {
+            citation += " (DOI: ${doi})"
         } else if (citationData.description) {
             citation += " (${citationData.description})"
         }
@@ -254,7 +248,8 @@ class NfcoreCitationUtils {
      */
     private static String formatBibliographyFromData(String toolName, Map citationData) {
         def pub = NfcoreCitationFormats.publicationOf(citationData)
-        def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
+        def ref = NfcoreCitationFormats.referenceOf(toolName, citationData)
+        def link = ref.doi ? "doi: <a href='https://doi.org/${ref.doi}'>${ref.doi}</a>" : ref.url ? "<a href='${ref.url}'>${ref.url}</a>" : null
 
         // Publication present: academic-style reference "Author. (year). title. source. doi: link".
         // The meta-schema treats publication as all-or-nothing; field guards keep entries clean
@@ -266,15 +261,13 @@ class NfcoreCitationUtils {
             if (pub.year) parts << "(${pub.year})"
             if (pub.title) parts << pub.title
             if (pub.source) parts << pub.source
-            if (doi) parts << doi
-            else if (citationData.homepage) parts << "<a href='${citationData.homepage}'>${citationData.homepage}</a>"
+            if (link) parts << link
             return "<li>${parts.join('. ')}.</li>"
         }
 
         // No publication object: identify by tool name, linking out via DOI or homepage.
         def parts = [toolName]
-        if (doi) parts << doi
-        else if (citationData.homepage) parts << "<a href='${citationData.homepage}'>${citationData.homepage}</a>"
+        if (link) parts << link
         return "<li>${parts.join('. ')}.</li>"
     }
 
@@ -544,16 +537,10 @@ class NfcoreCitationUtils {
     static String formatShortCitation(String tool, Map info, String version = null) {
         def parts = []
         if (version) parts << version
-        def ref = shortReference(info ?: [:])
-        if (ref) {
-            // Link to DOI if available, else link to homepage
-            if (info?.doi) {
-                ref = "<a href='https://doi.org/${info.doi}'>${ref}</a>"
-            } else if (info?.homepage) {
-                ref = "<a href='${info.homepage}'>${ref}</a>"
-            }
-            parts << ref
-        }
+        def ref = NfcoreCitationFormats.referenceOf(tool, info)
+        def text = shortReference(ref, info?.description)
+        def href = ref.doi ? "https://doi.org/${ref.doi}" : ref.url
+        if (text) parts << (href ? "<a href='${href}'>${text}</a>" : text)
         return parts ? "${tool} (${parts.join(', ')})" : tool.toString()
     }
 
@@ -642,17 +629,13 @@ class NfcoreCitationUtils {
      * "Surname (year)" or "Surname et al. (year)" when an author is known,
      * else "doi: ...", else the homepage url, else description.
      */
-    private static String shortReference(Map info) {
-        def pub = NfcoreCitationFormats.publicationOf(info)
-        def author = pub.author?.toString()?.trim()
-        if (author) {
-            def year = pub.year ? pub.year.toString().trim() : ''
-            def sa = shortAuthor(author)
-            return year ? "${sa} (${year})" : sa
+    private static String shortReference(Map ref, Object description) {
+        if (ref.author) {
+            def sa = shortAuthor(ref.author as String)
+            return ref.year ? "${sa} (${ref.year})" : sa
         }
-        if (info.doi) return "doi: ${info.doi}"
-        if (info.homepage) return info.homepage.toString()
-        return info.description ? info.description.toString() : ''
+        if (ref.doi) return "doi: ${ref.doi}"
+        return ref.url ?: description?.toString() ?: ''
     }
 
     /**

@@ -54,7 +54,7 @@ For example, `Andrews, S.` renders as `Andrews (2010)`, while `van der Walt, S.`
 | `doi` only                                          | `multiqc (1.21, doi: 10.1093/bioinformatics/btw354)` |
 | `homepage` only                                     | `seqtk (1.4, https://github.com/lh3/seqtk)`          |
 
-The full `bibliography` entry includes author, year, title and source when available, followed by a DOI link or, when no DOI is supplied, the homepage link. This applies to both nested publication metadata and legacy flat fields.
+The full `bibliography` entry includes author, year, title and source when available, followed by a DOI link or, when `doi` is empty or not a bare DOI (logged as a warning), the homepage link. This applies to both nested publication metadata and legacy flat fields.
 
 **Function Signature:**
 

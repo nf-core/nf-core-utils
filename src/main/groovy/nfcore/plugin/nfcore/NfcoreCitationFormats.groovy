@@ -17,12 +17,17 @@
 package nfcore.plugin.nfcore
 
 import groovy.json.JsonOutput
+import groovy.util.logging.Slf4j
 
 /**
  * Reference fields of citations-map entries ({@code info}, the raw meta.yml tool map,
  * and {@code version}), and the BibTeX and CSL-JSON files built from them.
  */
+@Slf4j(category = 'nextflow.nfcore.NfcoreCitationFormats')
 class NfcoreCitationFormats {
+
+    // Same pattern as the doi field of the nf-core/modules meta-schema.json
+    private static final String DOI_PATTERN = /10\.\d{4,9}\/[^,\s]+/
 
     /**
      * BibTeX: an {@code @article} when the publication has a title and source,
@@ -30,7 +35,7 @@ class NfcoreCitationFormats {
      */
     static String bibtex(Map citations) {
         return citations.collect { tool, entry ->
-            def ref = referenceOf(tool.toString(), entry as Map)
+            def ref = referenceOf(tool.toString(), entry.info, entry.version)
             def fields = [
                 // shortcut: double braces keep the meta.yml author string verbatim; split it into an "and" list if styles need initials
                 author : ref.author ? "{${ref.author}}" : null,
@@ -49,7 +54,7 @@ class NfcoreCitationFormats {
     /** CSL-JSON array, readable by Zotero, Pandoc and citeproc. */
     static String cslJson(Map citations) {
         def items = citations.collect { tool, entry ->
-            def ref = referenceOf(tool.toString(), entry as Map)
+            def ref = referenceOf(tool.toString(), entry.info, entry.version)
             [
                 id               : tool.toString(),
                 type             : ref.article ? 'article-journal' : 'software',
@@ -76,22 +81,29 @@ class NfcoreCitationFormats {
     }
 
     /**
-     * Reference fields of one citations-map entry: trimmed strings, null when
-     * absent, title falling back to the tool name.
+     * Reference fields of a tool's raw meta.yml info: trimmed strings, null when
+     * absent, title falling back to the tool name. A {@code doi} that is not a
+     * bare DOI, such as the old placeholder "no DOI available", is dropped with
+     * a warning.
      */
-    private static Map referenceOf(String tool, Map entry) {
-        def info = entry.info instanceof Map ? entry.info as Map : [:]
-        def pub = publicationOf(info)
+    static Map referenceOf(String tool, Object info, Object version = null) {
+        def toolInfo = info instanceof Map ? info as Map : [:]
+        def pub = publicationOf(toolInfo)
         def str = { it?.toString()?.trim() ?: null }
+        def doi = str(toolInfo.doi)
+        if (doi && !(doi ==~ DOI_PATTERN)) {
+            log.warn1("Ignoring doi '${doi}' of tool '${tool}': not a bare DOI such as 10.1093/bioinformatics/btw354")
+            doi = null
+        }
         return [
             article: pub.title && pub.source,
             author : str(pub.author),
             title  : str(pub.title) ?: tool,
             source : str(pub.source),
             year   : str(pub.year),
-            doi    : str(info.doi),
-            url    : str(info.homepage),
-            version: str(entry.version)
+            doi    : doi,
+            url    : str(toolInfo.homepage),
+            version: str(version)
         ]
     }
 }
