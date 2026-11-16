@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `citationOutputs()`: citations as MultiQC HTML, BibTeX or CSL-JSON ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Citation map entries carry `info` (raw `meta.yml` tool map) and `version` ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 
+- Bundled default HTML and text email templates for `completionEmail()`; pipeline `assets/email_template.*` still override them per format, and the "Default email content" placeholder is gone ([#118](https://github.com/nf-core/nf-core-utils/issues/118)).
+
 ### Changed
 
 - Release approval now comes from the `plugin-release` environment's required reviewers: the workflow no longer checks team membership or needs `RELEASE_MEMBERS_READ_TOKEN`, and relies on that environment's settings ([ADR-0002](docs/adr/0002-release-approval-through-environment-reviewers.md)).

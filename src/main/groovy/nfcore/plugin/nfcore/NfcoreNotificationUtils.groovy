@@ -288,30 +288,13 @@ class NfcoreNotificationUtils {
             email_address = email_on_fail
         }
 
-        // Render the TXT template
-        def email_txt = "Default email content"
-        def email_html = "<html><body>Default email content</body></html>"
-
-        try {
-            def tf = new File("${wf?.projectDir}/assets/email_template.txt")
-            if (tf.exists()) {
-                def txt_template = TEMPLATE_ENGINE.createTemplate(tf).make(email_fields)
-                email_txt = txt_template.toString()
-            } else {
-                log.warn("Email template not found: ${tf.absolutePath}")
-            }
-
-            // Render the HTML template
-            def hf = new File("${wf?.projectDir}/assets/email_template.html")
-            if (hf.exists()) {
-                def html_template = TEMPLATE_ENGINE.createTemplate(hf).make(email_fields)
-                email_html = html_template.toString()
-            } else {
-                log.warn("HTML email template not found: ${hf.absolutePath}")
-            }
-        } catch (Exception e) {
-            log.warn("Failed to render email templates: ${e.message}")
-        }
+        // The bundled defaults additionally see the pipeline name and whether a logo is attached
+        def default_fields = email_fields + [
+            pipelineName: workflowName,
+            hasLogo     : pipelineLogo(wf?.projectDir, workflowName) != null,
+        ]
+        def email_txt = renderEmail(wf?.projectDir, 'txt', email_fields, default_fields)
+        def email_html = renderEmail(wf?.projectDir, 'html', email_fields, default_fields)
 
         // Persist the reports before attempting external mail delivery.
         if (outdir != null) {
@@ -419,6 +402,23 @@ class NfcoreNotificationUtils {
             log.warn("Failed to parse max_multiqc_email_size: ${e.message}")
             return 0
         }
+    }
+
+    /**
+     * Render one e-mail format: the pipeline's assets/email_template.<ext> (read through its own file system) if
+     * present, else the bundled default. An override that cannot be read or rendered falls back to the default.
+     */
+    private static String renderEmail(Path projectDir, String ext, Map fields, Map defaultFields) {
+        def override = projectDir?.resolve("assets/email_template.${ext}")
+        if (override != null && Files.exists(override)) {
+            try {
+                return Files.newBufferedReader(override).withCloseable { TEMPLATE_ENGINE.createTemplate(it).make(fields).toString() }
+            } catch (Exception e) {
+                log.warn("Failed to render ${override}, using the bundled default instead: ${e.message}")
+            }
+        }
+        def stream = NfcoreNotificationUtils.getResourceAsStream("/nfcore/plugin/nfcore/email_template.${ext}")
+        return stream.withReader('UTF-8') { TEMPLATE_ENGINE.createTemplate(it).make(defaultFields).toString() }
     }
 
     /** The logo the HTML e-mail template shows as `cid:nfcorepipelinelogo`, null when the pipeline has none. */

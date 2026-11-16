@@ -577,6 +577,92 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         fs.close()
     }
 
+    // --- bundled default e-mail templates (#118) ---
+
+    @Issue("https://github.com/nf-core/nf-core-utils/issues/118")
+    @ConfineMetaClassChanges(Nextflow)
+    def 'completionEmail without pipeline templates writes real #outcome reports'() {
+        given:
+        stubSession(success, '1 MB')
+        def outdir = tempDir.resolve('out')
+
+        when:
+        NfcoreNotificationUtils.completionEmail([Group: [input: 'samples.csv']], null, null, false, outdir.toString())
+        def html = Files.readString(outdir.resolve('pipeline_info/pipeline_report.html'))
+        def txt = Files.readString(outdir.resolve('pipeline_info/pipeline_report.txt'))
+
+        then:
+        [html, txt].every {
+            it.contains('nf-core/review') && it.contains('happy_run') &&
+                it.contains('nextflow run nf-core/review -profile test') && it.contains('samples.csv') &&
+                !it.contains('Default email content') && !it.contains('$') && !it.contains('<%') && !it.contains('{{')
+        }
+        [html, txt].every { it.contains('boom in PROCESS_X') == !success && it.contains('137') == !success }
+        txt.contains(success ? 'execution completed successfully!' : 'execution completed unsuccessfully!')
+        !html.contains('cid:nfcorepipelinelogo')
+
+        where:
+        success << [true, false]
+        outcome = success ? 'success' : 'failure'
+    }
+
+    @ConfineMetaClassChanges(Nextflow)
+    def 'completionEmail default HTML shows the logo only when the pipeline has one'() {
+        given:
+        stubSession(true, '1 MB')
+        Files.createDirectories(tempDir.resolve('assets')).resolve('nf-core-review_logo_light.png').bytes = [1] as byte[]
+
+        when:
+        NfcoreNotificationUtils.completionEmail([:], null, null, false, tempDir.resolve('out').toString())
+
+        then:
+        Files.readString(tempDir.resolve('out/pipeline_info/pipeline_report.html')).contains('<img src="cid:nfcorepipelinelogo">')
+    }
+
+    @ConfineMetaClassChanges(Nextflow)
+    def 'completionEmail uses a pipeline override per format and the bundled default for the other (txt=#txt, html=#html)'() {
+        given:
+        stubSession(true, '1 MB')
+        def assets = Files.createDirectories(tempDir.resolve('assets'))
+        if (txt) { assets.resolve('email_template.txt').text = 'custom txt $runName $version' }
+        if (html) { assets.resolve('email_template.html').text = '<b>custom html $runName</b>' }
+        def outdir = tempDir.resolve('out')
+
+        when:
+        NfcoreNotificationUtils.completionEmail([:], null, null, false, outdir.toString())
+        def txtOut = Files.readString(outdir.resolve('pipeline_info/pipeline_report.txt'))
+        def htmlOut = Files.readString(outdir.resolve('pipeline_info/pipeline_report.html'))
+
+        then:
+        txt ? txtOut == 'custom txt happy_run v1.0' : txtOut.contains('Pipeline Configuration:')
+        html ? htmlOut == '<b>custom html happy_run</b>' : htmlOut.contains('<h3>Pipeline Configuration:</h3>')
+
+        where:
+        txt   | html
+        true  | false
+        false | true
+        true  | true
+    }
+
+    @ConfineMetaClassChanges(Nextflow)
+    def 'completionEmail falls back to the bundled default when an override cannot be rendered'() {
+        given:
+        stubSession(true, '1 MB')
+        Files.createDirectories(tempDir.resolve('assets')).resolve('email_template.txt').text = '<% throw new Exception("bad") %>'
+        def outdir = tempDir.resolve('out')
+        def appender = captureLogsFor(NfcoreNotificationUtils)
+
+        when:
+        NfcoreNotificationUtils.completionEmail([:], null, null, false, outdir.toString())
+
+        then:
+        Files.readString(outdir.resolve('pipeline_info/pipeline_report.txt')).contains('execution completed successfully!')
+        logMessages(appender).any { it.contains('email_template.txt') && it.contains('bundled default') }
+
+        cleanup:
+        detachAppender(appender)
+    }
+
     private Path zipWithReport(String content, String name = 'multiqc_report.html') {
         def zip = java.nio.file.Files.createTempFile('work', '.zip')
         new java.util.zip.ZipOutputStream(java.nio.file.Files.newOutputStream(zip)).withCloseable { out ->
@@ -596,6 +682,9 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
             getProjectDir() >> tempDir
             getRunName() >> 'happy_run'
             getSuccess() >> success
+            getExitStatus() >> (success ? 0 : 137)
+            getErrorReport() >> (success ? null : 'boom in PROCESS_X')
+            getCommandLine() >> 'nextflow run nf-core/review -profile test'
         }
         def session = Stub(Session) {
             getManifest() >> Stub(Manifest) { getName() >> 'nf-core/review'; getVersion() >> '1.0' }

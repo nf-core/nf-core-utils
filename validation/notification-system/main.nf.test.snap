@@ -26,9 +26,7 @@
                 "\u2705 completionEmail() - Email notification functionality tested",
                 "\u2705 imNotification() - Instant messenger integration tested",
                 "Notification system functions tested successfully! \ud83d\ude80",
-                "WARN: Cannot send IM notification - hook URL is null or empty",
-                "WARN: Email template not found: [PATH]/notification-system/assets/email_template.txt",
-                "WARN: HTML email template not found: [PATH]/notification-system/assets/email_template.html"
+                "WARN: Cannot send IM notification - hook URL is null or empty"
             ]
         ],
         "meta": {
