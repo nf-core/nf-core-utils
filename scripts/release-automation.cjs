@@ -16,9 +16,7 @@ module.exports = async function dispatchRelease({ github, context }) {
     source?.path !== ".github/workflows/validation.yml" ||
     !/^[a-f0-9]{40}$/.test(source?.head_sha)
   ) {
-    throw new Error(
-      "Expected successful main-push validation in nf-core/nf-core-utils",
-    );
+    throw new Error("Expected successful main-push validation in nf-core/nf-core-utils");
   }
   const sha = source.head_sha;
   async function requireCurrentMain() {
@@ -68,12 +66,9 @@ module.exports = async function dispatchRelease({ github, context }) {
   const versions = [
     ...Buffer.from(build.content, "base64")
       .toString("utf8")
-      .matchAll(
-        /^version = '((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))'$/gm,
-      ),
+      .matchAll(/^version = '((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))'$/gm),
   ];
-  if (versions.length !== 1)
-    throw new Error("Expected one stable release version in build.gradle");
+  if (versions.length !== 1) throw new Error("Expected one stable release version in build.gradle");
   const version = versions[0][1];
 
   const previous = await github.paginate(github.rest.actions.listWorkflowRuns, {
