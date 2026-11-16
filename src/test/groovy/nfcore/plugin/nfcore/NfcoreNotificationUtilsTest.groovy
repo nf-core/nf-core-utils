@@ -29,6 +29,19 @@ class NfcoreNotificationUtilsTest extends Specification {
         colors['red'] == ''
     }
 
+    def "logColours has the same keys in both modes, all empty when monochrome and all escape codes otherwise"() {
+        when:
+        def mono = NfcoreNotificationUtils.logColours(true)
+        def colour = NfcoreNotificationUtils.logColours(false)
+
+        then:
+        mono.keySet() == colour.keySet()
+        mono.keySet().containsAll(['reset', 'bold', 'dim', 'red', 'bred', 'ured', 'ired', 'bired', 'biwhite'])
+        mono.values().every { it == '' }
+        colour.values().every { it.startsWith('\033[') }
+        colour['bired'] == "\033[1;91m"
+    }
+
 
     def "processSummaryParams processes nested maps correctly"() {
         given:

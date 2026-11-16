@@ -625,4 +625,14 @@ class NfUtilsExtension extends PluginExtensionPoint {
         return nfcore.plugin.nfcore.NfcoreReportingUtils.paramsSummaryMultiqc(summaryParams)
     }
 
+    /**
+     * ANSI colour codes for terminal logging, same keys as the pipeline template's logColours().
+     * @param monochromeLogs When true every code is an empty string (default: true)
+     * @return Map of colour name to escape code
+     */
+    @Function
+    Map logColours(boolean monochromeLogs = true) {
+        return nfcore.plugin.nfcore.NfcoreNotificationUtils.logColours(monochromeLogs)
+    }
+
 }

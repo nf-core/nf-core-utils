@@ -24,6 +24,10 @@ Structured reporting solves these challenges by consolidating information into s
 
 ## Available Functions
 
+:::note
+Only `paramsSummaryMultiqc()` is callable from a pipeline through `plugin/nf-core-utils`. `workflowSummaryMQC()` and `sectionLogs()` are internal Groovy helpers: they are documented here for reference but cannot be imported.
+:::
+
 ### `paramsSummaryMultiqc()`
 
 **Description:**  
@@ -127,8 +131,6 @@ static Map workflowSummaryMQC(Map summary, List<String> nfMetadataList, Map resu
 **Usage Example:**
 
 ```nextflow
-include { workflowSummaryMQC } from 'plugin/nf-core-utils'
-
 workflow {
     // Define summary parameters
     def summary = [
@@ -243,8 +245,6 @@ static Map<String, String> sectionLogs(Map sections, boolean monochrome = false)
 **Usage Example:**
 
 ```nextflow
-include { sectionLogs } from 'plugin/nf-core-utils'
-
 workflow {
     // Define section information
     def pipeline_sections = [
@@ -421,11 +421,7 @@ process MULTIQC {
 ```nextflow
 #!/usr/bin/env nextflow
 
-include {
-    paramsSummaryMultiqc;
-    workflowSummaryMQC;
-    sectionLogs
-} from 'plugin/nf-core-utils'
+include { paramsSummaryMultiqc } from 'plugin/nf-core-utils'
 
 workflow {
     // Initialize section tracking

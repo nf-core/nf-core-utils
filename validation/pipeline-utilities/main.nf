@@ -7,12 +7,14 @@
  * - getWorkflowVersion(): Generate workflow version strings
  * - dumpParametersToJSON(): Save pipeline parameters to JSON file
  * - genomeExistsError(): Pass when params.genome is unset
+ * - logColours(): ANSI colour codes for both monochrome modes
  */
 
 // Import plugin functions for pipeline utilities
 include { getWorkflowVersion   } from 'plugin/nf-core-utils'
 include { dumpParametersToJSON } from 'plugin/nf-core-utils'
 include { genomeExistsError    } from 'plugin/nf-core-utils'
+include { logColours           } from 'plugin/nf-core-utils'
 
 workflow {
 
@@ -73,6 +75,11 @@ workflow {
     // Test 3: genomeExistsError() passes when params.genome is null
     genomeExistsError()
     log.info("✅ genomeExistsError() passed with no genome set")
+
+    // Test 4: logColours() in both modes
+    assert logColours(true).red == ''
+    assert logColours(false).red == '\033[0;31m'
+    log.info("✅ logColours() returned codes for both modes")
 
     // Validate outputs
     log.info("=== Validating outputs ===")
