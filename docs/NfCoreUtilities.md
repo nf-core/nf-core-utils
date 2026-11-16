@@ -567,3 +567,4 @@ Explore specialized utilities for specific use cases:
 - **[NfcoreReportingUtils](utilities/NfcoreReportingUtils.md)**: Advanced MultiQC integration patterns
 - **[NextflowPipelineExtension](NextflowPipelineExtension.md)**: Core pipeline utilities for version and parameter management
 - **[ReferencesExtension](ReferencesExtension.md)**: Handle genome references and igenomes integration
+- **[Migrating to 1.0](migration.md)**: Move from 0.7.0 or from template-local utilities to the plugin

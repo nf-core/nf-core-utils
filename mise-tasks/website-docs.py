@@ -21,7 +21,7 @@ import yaml
 
 DOCS = Path(__file__).resolve().parent.parent / "docs"
 # The user docs, the other files in docs/ are for the developers of the plugin
-USER_DOCS = ["NfCoreUtilities.md", "NextflowPipelineExtension.md", "ReferencesExtension.md", "utilities/*.md"]
+USER_DOCS = ["NfCoreUtilities.md", "NextflowPipelineExtension.md", "ReferencesExtension.md", "migration.md", "utilities/*.md"]
 
 
 def main():

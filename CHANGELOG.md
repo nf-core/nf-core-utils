@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added the [migration guide](docs/migration.md) for moving from 0.7.0 and from template-local utilities to 1.0 (draft; items awaiting maintainer decisions are marked).
 - Added `citationOutputs()`: citations as MultiQC HTML, BibTeX or CSL-JSON ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Citation map entries carry `info` (raw `meta.yml` tool map) and `version` ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 
