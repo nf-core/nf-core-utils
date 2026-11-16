@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Bibliography lists render a publication once when several tools share it.
 - `methodsDescriptionText()` no longer modifies the `meta` map it is given ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Set `locked = true` in `mise.toml`, replacing `mise install --locked`.
 - Unset `AGENT` and `CLAUDECODE` in `mise.toml` `[env]`: they turn on Nextflow agent mode, which breaks validation snapshots.
