@@ -38,6 +38,21 @@ class NfcoreCitationFormatsTest extends Specification {
 '''
     }
 
+    def "the meta-schema placeholder 'no DOI available' never renders as a DOI"() {
+        given:
+        def info = [doi: 'no DOI available', homepage: 'https://github.com/lh3/gfatools']
+        def entry = NfcoreCitationUtils.processCitationsFromTopic([['GFATOOLS_STAT', 'gfatools', info]]).gfatools
+        def citations = [gfatools: entry]
+
+        expect:
+        NfcoreCitationFormats.doiOf(info) == null
+        entry.citation == 'gfatools'
+        entry.bibliography == "<li>gfatools. <a href='https://github.com/lh3/gfatools'>https://github.com/lh3/gfatools</a>.</li>"
+        NfcoreCitationUtils.formatShortCitation('gfatools', info, '0.5') == "gfatools (0.5, <a href='https://github.com/lh3/gfatools'>https://github.com/lh3/gfatools</a>)"
+        !NfcoreCitationFormats.bibtex(citations).contains('doi')
+        !NfcoreCitationFormats.cslJson(citations).contains('DOI')
+    }
+
     def "cslJson writes CSL items with literal authors and year date-parts"() {
         given:
         def citations = [

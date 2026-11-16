@@ -76,6 +76,15 @@ class NfcoreCitationFormats {
     }
 
     /**
+     * The tool's DOI, trimmed; null when absent or not a DOI, such as the
+     * meta-schema placeholder "no DOI available".
+     */
+    static String doiOf(Map info) {
+        def doi = info?.doi?.toString()?.trim()
+        return doi ==~ /10\.\d{4,9}\/[^,\s]+/ ? doi : null
+    }
+
+    /**
      * Reference fields of one citations-map entry: trimmed strings, null when
      * absent, title falling back to the tool name.
      */
@@ -89,7 +98,7 @@ class NfcoreCitationFormats {
             title  : str(pub.title) ?: tool,
             source : str(pub.source),
             year   : str(pub.year),
-            doi    : str(info.doi),
+            doi    : doiOf(info),
             url    : str(info.homepage),
             version: str(entry.version)
         ]

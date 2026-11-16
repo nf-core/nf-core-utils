@@ -55,8 +55,9 @@ class NfcoreCitationUtils {
 
                 // Generate citation text
                 if (toolInfo instanceof Map) {
-                    if (toolInfo.doi) {
-                        citation += " (DOI: ${toolInfo.doi})"
+                    def doi = NfcoreCitationFormats.doiOf(toolInfo as Map)
+                    if (doi) {
+                        citation += " (DOI: ${doi})"
                     } else if (toolInfo.description) {
                         citation += " (${toolInfo.description})"
                     }
@@ -237,8 +238,9 @@ class NfcoreCitationUtils {
      */
     private static String formatCitationFromData(String toolName, Map citationData) {
         def citation = toolName
-        if (citationData.doi) {
-            citation += " (DOI: ${citationData.doi})"
+        def doi = NfcoreCitationFormats.doiOf(citationData)
+        if (doi) {
+            citation += " (DOI: ${doi})"
         } else if (citationData.description) {
             citation += " (${citationData.description})"
         }
@@ -254,7 +256,8 @@ class NfcoreCitationUtils {
      */
     private static String formatBibliographyFromData(String toolName, Map citationData) {
         def pub = NfcoreCitationFormats.publicationOf(citationData)
-        def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
+        def doiId = NfcoreCitationFormats.doiOf(citationData)
+        def doi = doiId ? "doi: <a href='https://doi.org/${doiId}'>${doiId}</a>" : ""
 
         // Publication present: academic-style reference "Author. (year). title. source. doi: link".
         // The meta-schema treats publication as all-or-nothing; field guards keep entries clean
@@ -547,8 +550,9 @@ class NfcoreCitationUtils {
         def ref = shortReference(info ?: [:])
         if (ref) {
             // Link to DOI if available, else link to homepage
-            if (info?.doi) {
-                ref = "<a href='https://doi.org/${info.doi}'>${ref}</a>"
+            def doi = NfcoreCitationFormats.doiOf(info)
+            if (doi) {
+                ref = "<a href='https://doi.org/${doi}'>${ref}</a>"
             } else if (info?.homepage) {
                 ref = "<a href='${info.homepage}'>${ref}</a>"
             }
@@ -650,7 +654,8 @@ class NfcoreCitationUtils {
             def sa = shortAuthor(author)
             return year ? "${sa} (${year})" : sa
         }
-        if (info.doi) return "doi: ${info.doi}"
+        def doi = NfcoreCitationFormats.doiOf(info)
+        if (doi) return "doi: ${doi}"
         if (info.homepage) return info.homepage.toString()
         return info.description ? info.description.toString() : ''
     }
