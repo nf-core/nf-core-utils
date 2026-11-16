@@ -4,38 +4,34 @@ This is a review-only proposal against main commit
 `56cf21131cfb283beb05d6bfe326df4becaab4e2`, not a release or an enablement request.
 The template is outside `.github/workflows`, has a `.disabled` suffix, and has
 an unconditional `if: ${{ false }}` job gate. The helper never runs on import.
-No secrets, environments, permissions, team access, rulesets, or releases were
+No secrets, environments, permissions, rulesets, or releases were
 changed by this proposal. [0.7.0 is already released](https://github.com/nf-core/nf-core-utils/releases/tag/0.7.0)
 and must not be republished to test automation.
 
 ## Policy and activation blockers
 
 [nf-core/ops#239](https://github.com/nf-core/ops/issues/239) tracks the policy.
-The intended teams are [nf-core/core](https://github.com/orgs/nf-core/teams/core)
-and [nf-core/infrastructure](https://github.com/orgs/nf-core/teams/infrastructure).
-Their verified numeric IDs are 2649377 and 8796434. Publication requires approval
-by a different eligible member of either team, with self-approval prevented.
-Existing initiation permissions stay unchanged. The guard uses verified active
-direct membership; inherited-member expansion requires a separate policy decision.
+Publication requires approval by a required reviewer of the `plugin-release`
+environment other than the dispatcher; see [release access control](../release-access-control.md).
+Existing initiation permissions stay unchanged. The receiver does not check team membership.
 
 The dispatch principal and machine-identity policy remain unapproved, and runtime
 credential/native approval enforcement still need verification. No live permission
 or credential configuration is established by this draft. Do not substitute
-admin, write, org membership, tag push or bot status for release authorization.
+admin, write, tag push or bot status for the environment's reviewer approval.
 
 GitHub's [environment documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
-supports required team reviewers for public repositories on current plans;
+supports required reviewers for public repositories on current plans;
 there is no demonstrated need for a paid-tier upgrade for this public repo.
 Legacy plans and any future private/internal visibility require reassessment.
-GitHub requires only **one** approval across the configured reviewers, not one
-from each team. If approval from both teams is intended, a single reviewer list
-cannot express that policy. Disabling runtime admin bypass does not stop an
+GitHub requires only **one** approval across the configured reviewers.
+Disabling runtime admin bypass does not stop an
 administrator from reconfiguring the environment or workflow.
 
 ## Proposed entry point
 
 After successful main-push `Plugin Validation`, the proposed workflow waits for
-an actual-team approval through a separately configured protected environment.
+a reviewer approval through a separately configured protected environment.
 Only then does it access a dedicated dispatch credential and:
 
 1. Reject forks, PR events, other branches, failed/skipped validation, and stale
@@ -77,37 +73,33 @@ It does not poll, schedule retries, or bypass the protected approval on purpose.
 
 Choose one before activation:
 
-- **Team-member initiation (current authorization design):** retain
-  direct manual dispatch by a verified actual-team human under the receiver's
-  fail-closed membership check. Keep this automation dormant. If an unattended
+- **Manual initiation (current authorization design):** retain
+  direct manual dispatch, with approval by the `plugin-release` reviewers.
+  Keep this automation dormant. If an unattended
   dispatch credential is proposed for a human identity, explicitly approve that
   security/attribution tradeoff rather than treating token ownership as a human
   actively requesting each release.
-- **Automated proposal + team approval:** allow a specifically approved machine
-  principal to request publication only after protected approval by a verified
-  actual-team human. This requires an explicit downstream policy change by the
-  release maintainers if the principal cannot satisfy team-member initiation. Do not
-  pretend a bot is a human team member or accept an `approved=true` input. The
+- **Automated proposal + reviewer approval:** allow a specifically approved machine
+  principal to request publication only after protected approval by a human
+  reviewer. Do not accept an `approved=true` input. The
   receiver must enforce a verifiable protected approval, not just trust this
   entry point to have run. Direct dispatch must not bypass that approval.
 
-In both cases, authoritative numeric team IDs and membership semantics (direct
-vs inherited, active membership, initiating actor and rerun actor) must be agreed
-and verified with an org-authorized read-only Members credential, separate from
-publisher and dispatch credentials. Unknown/403/empty policy must deny access.
+In both cases the receiver's environment check must deny on unknown or missing
+evidence.
 No implicit `GITHUB_TOKEN`, website bot, app, or user allowlist is proposed.
 
 ## Activation dependencies — require separate approval
 
-- Approve the policy above, authoritative teams, principal, and least-privilege
+- Approve the policy above, principal, and least-privilege
   credential type/scope. A fine-grained dispatch credential needs Actions write
   and Contents read for this repository, not registry or organization write.
   Do not use a personal token as an unreviewed bot-policy workaround.
 - Land and verify the authorization guard and exact-SHA receiver contract.
-  Prove nonmembers, bots without approved policy, and stale SHAs cannot reach
+  Prove an unprotected environment and stale SHAs cannot reach
   publisher credentials, including direct dispatch and reruns.
 - Create/verify the proposed `release-automation-approval` environment with
-  approved **actual teams** only, self-review prevention, no admin bypass, and
+  approved reviewers only, self-review prevention, no admin bypass, and
   main-branch-only deployments (no tags). Scope `RELEASE_DISPATCH_TOKEN` to that
   protected environment; no repository-level fallback. The environment name
   here is a proposal, not an existing protected resource. Referencing a nonexistent
@@ -138,4 +130,4 @@ untrusted events, stale commits (including movement during checks), each require
 CI workflow and newest failures, version parsing, prior partial releases, API
 denials, ambiguous dispatch failure without retries, and the template's inert
 state. They make no network calls and use no credentials. These are local contract
-tests, not evidence of live team authorization or a successful release.
+tests, not evidence of live reviewer approval or a successful release.
