@@ -8,13 +8,14 @@ ordering question that is still open.
 
 Maintainer decisions of 2026-11-16 are folded in below. Release approval comes from the
 required reviewers of the `plugin-release` environment, and the team-membership check and
-members token are removed (#124). RCs are published as `1.0.0-rc.N` through the release
-workflow (#125); small stable releases may ship before then. Candidate evidence comes
+members token are removed (#124, merged). There is no release-candidate version: #125,
+which added `1.0.0-rc.N`, was closed. Candidates are small stable releases such as 0.8.0,
+which the release workflow already supports. Candidate evidence comes
 from the generated template, nf-core/rnaseq and nf-core/createpanelrefs. Template
 migration is carried by nf-core/tools#3870; nf-core/tools#3790 was closed. Proposed
 approvers are Edmund Miller, the infrastructure team, Matthias, and probably Maxime;
 that list is not confirmed. Still open: a verified before/after run against an installed
-candidate, and whether the registry accepts pre-release versions.
+candidate.
 
 Evidence for the current state was gathered on 2026-11-16 against `main` at `f58032f`.
 The `release.yml` and settings facts come from the audit and were not all re-checked
@@ -28,12 +29,12 @@ here. `build.gradle` and every validation pin are at 0.7.0.
    publisher only. Nothing covers caller pin-back or a known-good plugin and template
    combination.
 3. `release.yml` enforces version, pin and changelog agreement only at dispatch time.
-4. `.github/release-access.json` has `approved=false`, so every dispatch fails in
-   `authorize`. The guarded path has never run to completion. #124 replaces this
-   approval model with the environment's required reviewers; it is not merged.
-5. On `main` the release path cannot publish a release candidate: the version regex
-   accepts only stable `X.Y.Z`, the release is hardcoded `--latest`, and the website
-   docs dispatch is unconditional. #125 adds the `1.0.0-rc.N` path; it is not merged.
+4. The guarded path has never run to completion. Until #124 merged on 2026-11-16,
+   `.github/release-access.json` had `approved=false` and every dispatch failed in
+   `authorize`. Approval now comes from the environment's required reviewers.
+5. The release path publishes only stable `X.Y.Z` versions, always as `--latest` and
+   always with a website docs dispatch. That is accepted: candidates are small stable
+   releases (#125, the `1.0.0-rc.N` path, was closed).
 
 ## 2. Gate checklist (DRAFT)
 
@@ -81,8 +82,8 @@ In order:
 3. Grant or verify the `plugin-release` environment's required reviewers (add the `core`
    team, which is missing today) and move `NPR_API_KEY` into the environment. The
    members token (`RELEASE_MEMBERS_READ_TOKEN`) is no longer needed (#124).
-4. Publish a `1.0.0-rc.N` candidate through the guarded workflow (#125), after native
-   test evidence. Whether the registry accepts pre-release versions is not yet checked.
+4. Publish a small stable release (for example 0.8.0) through the guarded workflow as
+   the candidate, after native test evidence.
 5. A core or infrastructure member dispatches `release.yml` with `version=1.0.0` and
    `expected_sha`.
 6. A different eligible core or infrastructure member approves the `plugin-release`
