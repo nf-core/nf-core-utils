@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Release approval now comes from the `plugin-release` environment's required reviewers: the workflow no longer checks team membership or needs `RELEASE_MEMBERS_READ_TOKEN`, and relies on that environment's settings ([ADR-0002](docs/adr/0002-release-approval-through-environment-reviewers.md)).
+- Replaced prettier with oxfmt in the pre-commit hooks.
 - `methodsDescriptionText()` no longer modifies the `meta` map it is given ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Set `locked = true` in `mise.toml`, replacing `mise install --locked`.
 - Unset `AGENT` and `CLAUDECODE` in `mise.toml` `[env]`: they turn on Nextflow agent mode, which breaks validation snapshots.
