@@ -40,17 +40,18 @@ here. `build.gradle` and every validation pin are at 0.7.0.
 Every gate needs a linked artifact (run URL, command output or PR) at the final SHA.
 A skipped or no-op check does not count.
 
-| Gate                | Requirement                                                                                                                                                                                                                                                                                                                       |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| G1 Scope            | The extraction inventory (#55) shows every generic template utility mapped to an existing export. The generated template runs success and failure paths against the candidate zip (#119, #60).                                                                                                                                    |
-| G2 Build            | Fresh `mise run assemble`, `mise run test` and `mise run validate` on the final SHA, with test counts shown and no skipped suite. CI Plugin Validation is green on all four pins (25.10.4, 25.10.8, 26.04.7, 26.10.2) at that SHA. Patch pins are refreshed deliberately before release.                                          |
-| G3 Reports          | The completion report persists without recipients and on delivery failure. Failure-only mail works. Attachments and remote paths work. Platform suppression works. MultiQC integration does not write MultiQC into the versions topic (#89 documented as a known limit). No live external sends.                                  |
-| G4 Docs             | Every public example calls a real export with real values, is executed and not only linted, and states its runtime and parser requirements (#61).                                                                                                                                                                                 |
-| G5 Candidate        | The exact RC consumers, reviewers and promotion approver are named in #60, with the sha512 of the candidate zip they ran. Evidence comes from the generated template, nf-core/rnaseq and nf-core/createpanelrefs.                                                                                                                 |
-| G6 Release controls | Read-back of the `plugin-release` environment: core and infrastructure reviewers, no self-review, no admin bypass, `main` only. `NPR_API_KEY` is environment-scoped. The native dry-run matrix is recorded. Approval comes from the environment's required reviewers, with no team-membership check or members token (#124, #59). |
-| G7 Consistency      | `build.gradle` version, the five validation pins and a dated CHANGELOG section with 1.0 migration notes agree, and the `release.yml` prerequisites pass. The selected SHA has green CI.                                                                                                                                           |
-| G8 Post-publish     | Registry status is `PUBLISHED` and sha512 equals the built zip. A fresh-cache nf-test passes. The GitHub release and tag point at the tested SHA. The release-evidence artifact is kept. The website-docs run is green and the website PR is opened and merged (#61).                                                             |
-| G9 Pin-back         | A known-good combination is documented and tested: plugin 0.7.0 with the template pinned to it, and the template commit that uses 1.0.0.                                                                                                                                                                                          |
+| Gate                | Requirement                                                                                                                                                                                                                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| G1 Scope            | The extraction inventory (#55) shows every generic template utility mapped to an existing export. The generated template runs success and failure paths against the candidate zip (#119, #60).                                                                                                                                        |
+| G2 Build            | Fresh `mise run assemble`, `mise run test` and `mise run validate` on the final SHA, with test counts shown and no skipped suite. CI Plugin Validation is green on all four pins (25.10.4, 25.10.8, 26.04.7, 26.10.2) at that SHA. Patch pins are refreshed deliberately before release.                                              |
+| G3 Reports          | The completion report persists without recipients and on delivery failure. Failure-only mail works. Attachments and remote paths work. Platform suppression works. MultiQC integration does not write MultiQC into the versions topic (#89 documented as a known limit). No live external sends.                                      |
+| G4 Docs             | Every public example calls a real export with real values, is executed and not only linted, and states its runtime and parser requirements (#61).                                                                                                                                                                                     |
+| G5 Candidate        | The exact RC consumers, reviewers and promotion approver are named in #60, with the sha512 of the candidate zip they ran. Evidence comes from the generated template, nf-core/rnaseq and nf-core/createpanelrefs.                                                                                                                     |
+| G6 Release controls | Read-back of the `plugin-release` environment: core and infrastructure reviewers, no self-review, no admin bypass, `main` only. `NPR_API_KEY` is environment-scoped. The native dry-run matrix is recorded. Approval comes from the environment's required reviewers, with no team-membership check or members token (#124, #59).     |
+| G7 Consistency      | `build.gradle` version, the five validation pins and a dated CHANGELOG section with 1.0 migration notes agree, and the `release.yml` prerequisites pass. The selected SHA has green CI.                                                                                                                                               |
+| G8 Post-publish     | Registry status is `PUBLISHED` and sha512 equals the built zip. A fresh-cache nf-test passes. The GitHub release and tag point at the tested SHA. The release-evidence artifact is kept. The website-docs run is green and the website PR is opened and merged (#61).                                                                 |
+| G9 Pin-back         | A known-good combination is documented and tested: plugin 0.7.0 with the template pinned to it, and the template commit that uses 1.0.0.                                                                                                                                                                                              |
+| G10 Review bypass   | The repository admin role is off the bypass list of the `main: required checks` ruleset, and the tag ruleset that blocks creating `1.0.0` (id 27414195) is deleted, in that order, before `release.yml` is dispatched with `version=1.0.0` (#135). The bypass was turned on on 2026-11-16 to merge the 1.0 preparation pull requests. |
 
 Review notes from the audit, not yet adopted: make G6 (live dry-run matrix) a hard
 blocker, and require a second human as co-approver on the `plugin-release` environment,
@@ -74,7 +75,8 @@ since `prevent_self_review` is on.
 In order:
 
 1. Merge the release-prep PR. The `main` ruleset needs one independent approving review
-   and passing CI, build and prek checks.
+   and passing CI, build and prek checks. Since 2026-11-16 a repository administrator
+   can bypass it; G10 turns that off before 1.0.0.
 2. Record the exact RC consumers, reviewers and the promotion approver in #60.
 3. Grant or verify the `plugin-release` environment's required reviewers (add the `core`
    team, which is missing today) and move `NPR_API_KEY` into the environment. The
@@ -88,8 +90,9 @@ In order:
 7. Monitor the run and, if needed, perform recovery under section 3.
 8. nf-core/website maintainers merge the docs PR created by `add-nf-core-utils-docs.yml`
    (#61), and the nf-core/tools template PR that consumes 1.0.0 (#119, #64).
-9. Optional: an org owner enables immutable releases and a tag ruleset. Neither exists
-   today (immutable releases `enabled=false`; no tag rules).
+9. Optional: an org owner enables immutable releases and a lasting tag ruleset. Immutable
+   releases are off (`enabled=false`). The only tag rule is the temporary `1.0.0` block
+   in G10.
 
 ## 5. Unresolved: validation pin ordering
 
