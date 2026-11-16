@@ -1,9 +1,9 @@
 # Migrating to nf-core-utils 1.0
 
-This guide covers two moves: upgrading a pipeline that already loads nf-core-utils 0.7.0, and replacing the utility code that nf-core pipelines copy from the pipeline template and the `utils_nextflow_pipeline` / `utils_nfcore_pipeline` subworkflows with imports from the plugin. Version 1.0 keeps every exported function name, signature and default, so a 0.7.0 pipeline needs no code change. Pipelines that migrate from template-local helpers change a few call sites and see a few behavior differences, which this page lists.
+This guide covers two moves: upgrading a pipeline that already loads nf-core-utils 0.7.0, and replacing the utility code that nf-core pipelines copy from the pipeline template and the `utils_nextflow_pipeline` / `utils_nfcore_pipeline` subworkflows with imports from the plugin. Version 1.0 keeps every exported function name and default and renames nothing, so a 0.7.0 pipeline needs no code change. Pipelines that migrate from template-local helpers change a few call sites and see a few behavior differences, which this page lists.
 
-:::warning{title="Draft"}
-**TODO (pending decision):** this page is a draft. Items marked "TODO (pending decision)" await a maintainer decision or a verified run of the 1.0 candidate. Do not treat them as final.
+:::warning{title="Pending a verified run"}
+The maintainer decisions behind this guide were made on 2026-11-16. The one open item is a verified before and after run against an installed 1.0 candidate (section 5, nf-core/nf-core-utils#119). Until it lands, the examples are syntax-checked only. Items marked "In 1.0 (PR ...)" describe changes delivered by pull requests that merge before the release.
 :::
 
 ## 1. Who this is for and the supported runtime
@@ -21,8 +21,8 @@ plugins {
 }
 ```
 
-:::note{title="No API changes in 1.0"}
-1.0 adds no breaking renames. The functions already marked `@Deprecated` still work and still delegate to `collectVersions()`. Their removal, and any other breaking change, belongs to the 2.0 migration (nf-core/nf-core-utils#123).
+:::note{title="No renames in 1.0"}
+1.0 adds no breaking renames. The functions already marked `@Deprecated` still work and still delegate to `collectVersions()`. Their removal, the wider boolean-flag redesign (nf-core/nf-core-utils#113, #114 and #121) and any other breaking change belong to the 2.0 migration (nf-core/nf-core-utils#123). Two functions are added (section 3.9) and three accept text flags (section 3.8).
 :::
 
 ## 2. Removals and behavior changes from earlier releases
@@ -49,6 +49,10 @@ Nothing is removed and nothing new is deprecated. Additions and fixes:
 - `methodsDescriptionText()` no longer modifies the `meta` map you pass.
 - Remote paths (`s3://`, and so on) work for versions files and methods templates.
 - A `doi` that is not a bare DOI is ignored with a warning.
+- `genomeExistsError()` and `logColours()` are exported (PR #128).
+- `completionEmail()`, `completionSummary()` and `checkProfileProvided()` accept `"true"` and `"false"` (PR #127).
+- Default email templates are bundled (PR #126).
+- Versions such as `1.20` keep their text when read from a legacy `versions.yml` (PR #129).
 
 ### 2.2. Current deprecations
 
@@ -183,8 +187,10 @@ channel.topic('versions')
 The result is **one merged YAML string**, not a channel of per-process strings. Name and store the file in the pipeline (the template's `collectFile` name and `storeDir` stay pipeline-owned). The `Workflow` block comes last, and the Nextflow version resolves from `nextflow.version` in config, then `NXF_VER`, then the running version.
 :::
 
-:::warning{title="TODO (pending decision): version quoting"}
-`collectVersions()` writes YAML with SnakeYAML, which quotes numeric-looking versions (`fastqc: '2.0'`, `ten: '1.10'`). The template writes topic versions bare. Migrated pipelines will see a one-time change in the versions file and in nf-test snapshots. Whether quoting is kept as-is is pending a maintainer decision. Legacy `versions.yml` input also still parses scalars such as `1.20` as numbers (nf-core/tools#4500); that fix is pending.
+:::warning{title="Version quoting"}
+`collectVersions()` writes YAML with SnakeYAML, which quotes numeric-looking versions and keeps doing so in 1.0 (`fastqc: '2.0'`, `ten: '1.10'`). The template writes topic versions bare. Migrated pipelines will see a one-time change in the versions file and in nf-test snapshots.
+
+In 1.0 (PR #129), versions read from a legacy `versions.yml` keep their text: `1.20` stays `1.20` instead of becoming `1.2` (nf-core/tools#4500). Those values render unquoted, as before.
 :::
 
 ### 3.6. MultiQC parameter summary
@@ -233,7 +239,7 @@ completionEmail(summary_params, email, email_on_fail, plaintext_email, outdir, m
 completionSummary(monochrome_logs)
 ```
 
-After, the same calls with the plugin signatures `completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports)` and `completionSummary(boolean monochromeLogs)`:
+After, the same calls with the plugin signatures `completionEmail(Map summaryParams, String email, String emailOnFail, Object plaintextEmail, String outdir, Object monochromeLogs, List multiqcReports)` and `completionSummary(Object monochromeLogs)`. In 1.0 (PR #127) the flag arguments accept a Boolean or the text `true` or `false` (any case), so values set on the command line work. Any other value logs a warning and uses the default. `checkProfileProvided(List args, Object monochromeLogs = true)` accepts the same values. Nothing is renamed:
 
 ```nextflow
 workflow.onComplete {
@@ -251,11 +257,11 @@ workflow.onComplete {
 - **`plaintext_email` is honored.** The template built an exception and never threw it, so it always sent HTML. The plugin sends plain text when asked.
 - **Mail is suppressed on Seqera Platform launches** (non-empty `TOWER_WORKFLOW_ID`), unless `params.force_completion_email = true`. Reports are still written.
 - Delivery goes through `sendMail()` with a 30-second limit and a delivery failure is a warning, not a failure.
-- The plugin reads `assets/email_template.{txt,html}` from `projectDir` and falls back to placeholder content when they are missing. Keep these assets in the pipeline for now.
+- Without a pipeline copy of `assets/email_template.{txt,html}`, the plugin falls back to placeholder content.
   :::
 
-:::warning{title="TODO (pending decision): packaged email templates"}
-Whether the plugin ships default email templates, and so whether the assets can be deleted, is tracked in nf-core/nf-core-utils#118. Until it lands, keep `assets/email_template.html` and `assets/email_template.txt`. `assets/sendmail_template.txt` can be deleted.
+:::note{title="Bundled email templates"}
+In 1.0 (PR #126, nf-core/nf-core-utils#118) the plugin bundles default HTML and text email templates, adapted from the pipeline template. A pipeline can delete its generic `assets/email_template.html`, `assets/email_template.txt` and `assets/sendmail_template.txt`. To customize, keep either file in `assets/`: each format uses the pipeline file when present and the bundled default otherwise. The bundled HTML shows the logo only when the pipeline has one. Slack and Teams JSON templates are not bundled yet.
 :::
 
 ### 3.9. Genome attributes and references
@@ -285,12 +291,13 @@ The plugin reads `params` from the session config and needs `genome` to be a str
 
 For reference datasheets, the named-argument functions `getReferencePath(Map args)`, `getReferenceMetadata(Map args)` and `getReferenceAttribute(Map args)` replace the removed `getReferencesFile()` and `getReferencesValue()`.
 
-:::warning{title="TODO (pending decision): genomeExistsError"}
-The template's `genomeExistsError()` has no plugin equivalent. Whether 1.0 adds it is undecided. Until then, keep your local copy.
-:::
+:::note{title="genomeExistsError and logColours"}
+In 1.0 (PR #128) the plugin adds two exports:
 
-:::warning{title="TODO (pending decision): logColours"}
-`logColours()` is not an exported function, although earlier docs listed it. Whether it is exported in 1.0 is undecided. Until then, keep a local copy if you call it.
+- `genomeExistsError()` takes no arguments, reads `params` from the session and throws an `AbortOperationException` with the template's message when `params.genome` is not a key of `params.genomes`. A null genome or an empty `genomes` map passes. Replace the local copy with `genomeExistsError()`.
+- `logColours(boolean monochromeLogs = true)` returns the template's map of colour names to escape codes (all empty when `monochromeLogs` is true). Replace `logColours(params.monochrome_logs)` with the same call imported from the plugin.
+
+`sectionLogs`, `workflowSummaryMQC` and `getSingleReport` stay internal. Keep local copies if you use them.
 :::
 
 ### 3.10. Citations
@@ -314,12 +321,12 @@ Once your pipeline calls the plugin, delete the local copies, the `utils_nextflo
 
 ## 5. Boolean flags and verified runs
 
-:::warning{title="TODO (pending decision): boolean flags"}
-How the migrated wiring treats boolean parameters such as `plaintext_email`, `monochrome_logs` and `force_completion_email` (type strictness, string values from the command line) is not decided. Pass real booleans until this is settled.
-:::
+From 1.0 (PR #127), `completionEmail`, `completionSummary` and `checkProfileProvided` accept the text values `true` and `false` for their flag arguments, as well as Booleans. Nothing is renamed. The wider redesign of flag handling (nf-core/nf-core-utils#113, #114 and #121) is part of 2.0. `params.force_completion_email` is still read as a Boolean.
 
-:::warning{title="TODO (pending decision): verified before and after run"}
-The before and after examples above have been syntax-checked only. They have not been run against an installed 1.0 candidate with a migrated template (nf-core/nf-core-utils#119). Verified run evidence (candidate commit, Nextflow version, observable outputs) will replace this note.
+The template migration is carried by nf-core/tools#3870. Candidate evidence will come from the generated template, nf-core/rnaseq and nf-core/createpanelrefs.
+
+:::warning{title="TODO: verified before and after run"}
+Not done. The before and after examples above have been syntax-checked only. They have not been run against an installed 1.0 candidate with a migrated template (nf-core/nf-core-utils#119). It is also not yet confirmed that the plugin registry accepts pre-release versions such as `1.0.0-rc.1`. Verified run evidence (candidate commit, Nextflow version, observable outputs) will replace this note.
 :::
 
 ## 6. Pinning back
