@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version already committed on main, without a v prefix"
+        description: "Version already committed on main, without a v prefix (X.Y.Z or X.Y.Z-rc.N)"
         required: true
         type: string
       expected_sha:
@@ -81,12 +81,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check release prerequisites
+        id: prerequisites
         env:
           NPR_API_KEY: ${{ secrets.NPR_API_KEY }}
         run: |
           set -euo pipefail
           [[ "$GITHUB_REF" == refs/heads/main ]] || { echo '::error::Run releases from main'; exit 1; }
-          [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || { echo '::error::Expected a stable version such as 0.7.0'; exit 1; }
+          # Accepts X.Y.Z or X.Y.Z-rc.N; writes prerelease=true|false for later steps.
+          python3 scripts/release/release_version.py "$VERSION" >> "$GITHUB_OUTPUT"
           [[ -n "$NPR_API_KEY" ]] || { echo '::error::Configure the NPR_API_KEY Actions secret'; exit 1; }
           grep -Fxq "version = '$VERSION'" build.gradle || { echo '::error::Version does not match build.gradle'; exit 1; }
           for config in validation/nextflow.config validation/nf-test.config validation/citations-on-the-fly/nextflow.config validation/topic-channel-citations/nextflow.config validation/config-validation/startup-checks.sh; do
@@ -166,12 +168,18 @@ jobs:
         run: mise exec -- nf-test test --verbose
 
       - name: Create GitHub release and tag
+        env:
+          PRERELEASE: ${{ steps.prerequisites.outputs.prerelease }}
         run: |
+          # A release candidate must never become GitHub's "latest" release.
+          if [[ "$PRERELEASE" == true ]]; then channel=--prerelease; else channel=--latest; fi
           gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" --title "$VERSION" \
-            --notes-file "$RUNNER_TEMP/release-notes.md" --latest
+            --notes-file "$RUNNER_TEMP/release-notes.md" "$channel"
 
       - name: Dispatch documentation update
+        # Release candidates do not update the website docs.
+        if: steps.prerequisites.outputs.prerelease != 'true'
         # GITHUB_TOKEN-created releases do not trigger release-event workflows.
         run: |
           gh workflow run website-docs.yml --repo "$GITHUB_REPOSITORY" \

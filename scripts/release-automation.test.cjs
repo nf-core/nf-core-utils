@@ -181,6 +181,7 @@ test("never retries an earlier release attempt, even one that failed", async () 
 test("requires exactly one stable version from candidate content", async () => {
   for (const build of [
     "version = '1.2.3-edge'",
+    "version = '1.2.3-rc.1'", // candidates are dispatched by hand, never automatically
     "version = '01.2.3'",
     "",
     "version = '1.2.3'\nversion = '2.0.0'\n",

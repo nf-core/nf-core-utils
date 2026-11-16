@@ -43,8 +43,8 @@ a local upload or recreate their release-note extraction.
    not only an older PR head.
 
 3. Compare main with the latest published tag to choose a minor version for new
-   public functions or a patch for compatible fixes. Confirm the prepared stable
-   `X.Y.Z` version in `build.gradle`, every explicit validation pin, and a dated
+   public functions or a patch for compatible fixes. Confirm the prepared `X.Y.Z`
+   (or candidate `X.Y.Z-rc.N`) version in `build.gradle`, every explicit validation pin, and a dated
    changelog section with release notes. Keep earlier release entries intact.
 4. Inspect existing remote tags, GitHub releases, and the exact registry version.
    A transport/authentication error is not evidence that a version is absent.
@@ -69,6 +69,21 @@ dispatches documentation. A successful upload alone is not a completed release.
 Track the exact release run, its selected commit, and its `release-evidence`
 artifact. Check the separate `website-docs.yml` run too. Docs dispatch requests a
 website update; it does not prove the website pull request has merged.
+
+## Release candidates
+
+A candidate (`X.Y.Z-rc.N`, for example `1.0.0-rc.1`) goes through the same workflow,
+authorization and approvals as a stable release; the workflow rejects any other
+suffix. Prepare it the same way (`build.gradle`, validation pins, a dated changelog
+section titled with the candidate version) and see the README's "Release a candidate".
+The workflow publishes it as a GitHub pre-release, never `--latest`, and skips the
+website docs dispatch. Do not dispatch the docs workflow for a candidate by hand.
+
+Before publishing a candidate, tell the maintainer that unpinned users resolve the
+highest semantic version in the registry, so the candidate becomes their default
+until the final release exists. Get explicit authorization for that specific
+candidate; a published registry version cannot be replaced. Use the next `rc.N`
+for any fix.
 
 ## Recover a partial release
 

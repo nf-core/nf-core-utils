@@ -166,11 +166,25 @@ The workflow rejects existing tags, GitHub releases, and registry versions. It t
 - Publishes to the Nextflow Plugin Registry and checks the package's SHA-512 checksum.
 - Downloads the published plugin into a fresh cache and reruns end-to-end validation against that download.
 - Creates the GitHub release and tag at the tested commit, using the changelog as release notes.
-- Dispatches `website-docs.yml` to request the documentation update on nf-co.re.
+- Dispatches `website-docs.yml` to request the documentation update on nf-co.re (not for release candidates).
 
 Check both the release run and the separate documentation workflow before reporting their status.
 A successful docs dispatch requests a website update; it does not prove that the resulting website pull request has merged.
 The release run retains its package, test evidence, registry metadata, and release notes as the `release-evidence` artifact.
+
+### Release a candidate
+
+Release candidates use the same workflow, checks and approvals as stable releases.
+Enter a version such as `1.0.0-rc.1` (`X.Y.Z-rc.N`, `N` starting at 1, no `v` prefix); any other suffix is rejected.
+Prepare it exactly like a stable release: set `version` in `build.gradle`, update the `nf-core-utils@<version>` pins in `validation/`, and add a dated changelog section titled with the candidate version.
+Release preparation can pass pull-request CI before the version exists in the registry, because `mise run validate` installs the local build into the plugins directory and Nextflow uses an installed version without contacting the registry.
+
+For a candidate the workflow creates a GitHub **pre-release** (never "latest") and does not dispatch the website documentation update.
+Use `rc.N+1` for each further candidate; the final `1.0.0` is an ordinary stable release and its changelog section is separate.
+
+> **Warning:** Nextflow resolves an unpinned `nf-core-utils` (or `nf-core-utils@*`) to the highest version in the registry, ordered by semantic versioning.
+> Once published, `1.0.0-rc.1` sorts above `0.8.0`, so it becomes the default for every user who does not pin a version until `1.0.0` is published.
+> A published version cannot be replaced, so publish a candidate only when that is acceptable.
 
 ### Recover a partial release
 
