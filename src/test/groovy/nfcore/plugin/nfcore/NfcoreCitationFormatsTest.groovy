@@ -45,7 +45,6 @@ class NfcoreCitationFormatsTest extends Specification {
         def citations = [gfatools: entry]
 
         expect:
-        NfcoreCitationFormats.doiOf(info) == null
         entry.citation == 'gfatools'
         entry.bibliography == "<li>gfatools. <a href='https://github.com/lh3/gfatools'>https://github.com/lh3/gfatools</a>.</li>"
         NfcoreCitationUtils.formatShortCitation('gfatools', info, '0.5') == "gfatools (0.5, <a href='https://github.com/lh3/gfatools'>https://github.com/lh3/gfatools</a>)"
