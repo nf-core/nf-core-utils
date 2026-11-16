@@ -249,7 +249,7 @@ class NfcoreCitationUtils {
     private static String formatBibliographyFromData(String toolName, Map citationData) {
         def pub = NfcoreCitationFormats.publicationOf(citationData)
         def ref = NfcoreCitationFormats.referenceOf(toolName, citationData)
-        def link = ref.doi ? "doi: <a href='${ref.link}'>${ref.doi}</a>" : ref.url ? "<a href='${ref.url}'>${ref.url}</a>" : null
+        def link = ref.doi ? "doi: <a href='https://doi.org/${ref.doi}'>${ref.doi}</a>" : ref.url ? "<a href='${ref.url}'>${ref.url}</a>" : null
 
         // Publication present: academic-style reference "Author. (year). title. source. doi: link".
         // The meta-schema treats publication as all-or-nothing; field guards keep entries clean
@@ -539,7 +539,8 @@ class NfcoreCitationUtils {
         if (version) parts << version
         def ref = NfcoreCitationFormats.referenceOf(tool, info)
         def text = shortReference(ref, info?.description)
-        if (text) parts << (ref.link ? "<a href='${ref.link}'>${text}</a>" : text)
+        def href = ref.doi ? "https://doi.org/${ref.doi}" : ref.url
+        if (text) parts << (href ? "<a href='${href}'>${text}</a>" : text)
         return parts ? "${tool} (${parts.join(', ')})" : tool.toString()
     }
 

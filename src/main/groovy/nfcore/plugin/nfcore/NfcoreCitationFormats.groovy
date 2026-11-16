@@ -82,9 +82,9 @@ class NfcoreCitationFormats {
 
     /**
      * Reference fields of a tool's raw meta.yml info: trimmed strings, null when
-     * absent, title falling back to the tool name, and {@code link} to the DOI,
-     * else the homepage. A {@code doi} that is not a bare DOI, such as the old
-     * placeholder "no DOI available", is dropped with a warning.
+     * absent, title falling back to the tool name. A {@code doi} that is not a
+     * bare DOI, such as the old placeholder "no DOI available", is dropped with
+     * a warning.
      */
     static Map referenceOf(String tool, Object info, Object version = null) {
         def toolInfo = info instanceof Map ? info as Map : [:]
@@ -95,7 +95,6 @@ class NfcoreCitationFormats {
             log.warn1("Ignoring doi '${doi}' of tool '${tool}': not a bare DOI such as 10.1093/bioinformatics/btw354")
             doi = null
         }
-        def url = str(toolInfo.homepage)
         return [
             article: pub.title && pub.source,
             author : str(pub.author),
@@ -103,8 +102,7 @@ class NfcoreCitationFormats {
             source : str(pub.source),
             year   : str(pub.year),
             doi    : doi,
-            url    : url,
-            link   : doi ? "https://doi.org/${doi}" : url,
+            url    : str(toolInfo.homepage),
             version: str(version)
         ]
     }
