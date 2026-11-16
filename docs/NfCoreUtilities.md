@@ -165,19 +165,19 @@ workflow {
 
 These functions provide metadata and can be called anywhere in your pipeline:
 
-| Function                            | Purpose                                     | Example                                         |
-| ----------------------------------- | ------------------------------------------- | ----------------------------------------------- |
-| `getWorkflowVersion()`              | Get git-aware version string                | `getWorkflowVersion()`                          |
-| `collectVersions(versions)`         | Combine versions from mixed sources to YAML | `collectVersions(versions)`                     |
-| `logColours(monochrome_logs)`       | Get color codes for terminal output         | `logColours(params.monochrome_logs)`            |
+| Function                      | Purpose                                     | Example                              |
+| ----------------------------- | ------------------------------------------- | ------------------------------------ |
+| `getWorkflowVersion()`        | Get git-aware version string                | `getWorkflowVersion()`               |
+| `collectVersions(versions)`   | Combine versions from mixed sources to YAML | `collectVersions(versions)`          |
+| `logColours(monochrome_logs)` | Get color codes for terminal output         | `logColours(params.monochrome_logs)` |
 
 ### 3.3. MultiQC Integration Functions
 
 These functions help integrate with MultiQC reporting:
 
-| Function                                         | Purpose                               | Usage Context            |
-| ------------------------------------------------ | ------------------------------------- | ------------------------ |
-| `paramsSummaryMultiqc(summary_params)`           | Generate MultiQC YAML summary         | Process or main workflow |
+| Function                               | Purpose                       | Usage Context            |
+| -------------------------------------- | ----------------------------- | ------------------------ |
+| `paramsSummaryMultiqc(summary_params)` | Generate MultiQC YAML summary | Process or main workflow |
 
 ### 3.4. Completion Handler Functions
 
