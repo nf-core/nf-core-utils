@@ -112,9 +112,8 @@ It publishes the commit selected when the workflow starts, not a later main-bran
 The [release access controls](docs/release-access-control.md) document
 the approval model and its limits. Anyone who can run workflows may dispatch;
 a required reviewer of the `plugin-release` environment, other than the person
-who dispatched, must approve before publishing. The `authorize` job fails
-the run if that environment is missing, has no required reviewers, allows self-review
-or admin bypass, or can deploy from anything but `main`.
+who dispatched, must approve before publishing. The workflow relies on that
+environment's settings and does not read them back.
 The `expected_sha` input optionally binds a manual dispatch to a
 full commit SHA; automation must supply the main commit it checked. It is not an
 authorization override. Existing publication and partial-release checks still apply.
@@ -134,7 +133,7 @@ The existing `nf_core_bot_auth_token` must also be available to the documentatio
 ### Test controls without publishing
 
 Select `dry_run` when dispatching `release.yml`. The version input is ignored
-in this mode; the environment check and independent environment approval still apply.
+in this mode; independent environment approval still applies.
 The publisher job is unconditionally excluded by the dry-run input, and the
 replacement job uses a read-only token and never references publisher secrets.
 It cannot upload a package, create a tag/release or dispatch documentation.
@@ -145,9 +144,8 @@ gh workflow run release.yml --repo nf-core/nf-core-utils --ref main \
   -f version=0.7.0 -F dry_run=true
 ```
 
-If the environment is missing or unprotected, a dry run fails in the `authorize`
-job before approval or publisher execution. A successful dry run, approved by a
-reviewer other than the dispatcher, shows the controls work end to end.
+A dry run that waits for approval, and passes once a reviewer other than the
+dispatcher approves it, shows the controls work end to end.
 
 ### Release a prepared version
 

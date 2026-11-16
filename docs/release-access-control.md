@@ -2,15 +2,8 @@
 
 Release approval comes from the required reviewers of the GitHub environment
 `plugin-release`. The repository does not check team membership and holds no
-organization credential.
-
-**Decision (2026-11-16, maintainer):** "just rely on the GitHub environment
-settings of who is the actual release reviewer. I don't know why we need to read
-the teams." The reviewer list stays where it is for now: the environment's
-current required reviewers are the `infrastructure` team and `maxulysse`. This
-replaces the earlier design (verified core/infrastructure team IDs, direct-member
-checks on the dispatching actors, an `approved` activation flag and a separate
-`RELEASE_MEMBERS_READ_TOKEN`), which never ran because that token was never created.
+organization credential. [ADR-0002](adr/0002-release-approval-through-environment-reviewers.md)
+records why.
 
 ## Who can publish
 
@@ -24,19 +17,14 @@ The workflow never names the reviewers.
 
 ## What the workflow enforces
 
-`release.yml` runs `scripts/release/check_release_access.py` in the `authorize` job
-before any write-capable job. It uses only the workflow's own token (`contents: read`,
-`actions: read`) and fails closed unless:
+The `authorize` job in `release.yml` runs before any write-capable job, with no
+token permissions. It runs only when the workflow is dispatched on `main` of
+`nf-core/nf-core-utils`, and fails if the optional `expected_sha` is not the commit
+being released.
 
-1. The run is `release.yml` dispatched on `main` of `nf-core/nf-core-utils`.
-2. The optional `expected_sha` is the full commit being released.
-3. The `plugin-release` environment exists and has a required-reviewers rule with
-   at least one reviewer, `prevent_self_review: true` and `can_admins_bypass: false`.
-4. The environment deploys only from the selected branch `main`, not tags.
-
-Checks 3 and 4 exist because GitHub silently creates an unprotected environment when
-a job names one that does not exist; removing the reviewers must not turn publishing
-into an unreviewed action. Any API error or missing field denies.
+The workflow does not read the environment's settings: GitHub enforces them. Keep
+`plugin-release` configured with at least one required reviewer, self-review
+prevention, no admin bypass and deployments from `main` only.
 
 The `release` and `dry_run` jobs run in `plugin-release`, so GitHub holds them for
 approval. They run only if `authorize` succeeded in the **current run attempt**:
@@ -48,21 +36,16 @@ same approval and publishes nothing.
 Store `NPR_API_KEY` only as a `plugin-release` environment secret, so it is released
 to a job only after approval.
 
-## Protections removed
-
-- Dispatching and rerunning actors no longer need to be direct members of the core
-  or infrastructure teams; bot actors are no longer rejected.
-- The environment may list any reviewers (users or teams, one or many); it no longer
-  has to be exactly the two teams, and child teams are not inspected.
-- No activation flag: the release path is live as soon as the environment is
-  protected.
-
 ## Remaining limits
 
+- The workflow trusts the environment's settings. If an administrator removes the
+  required reviewers, or deletes the environment so that GitHub recreates it
+  unprotected, the next release runs without approval. A recreated environment has
+  no `NPR_API_KEY`, so that case stops at the prerequisite check.
 - Environment approval is job-level, not tied to one workflow file. A workflow
   change on `main` could request the same environment, so reviewers should read the
   selected commit before approving.
-- Repository administrators can edit the environment, its secrets and the workflow.
+- Repository administrators can also edit the environment's secrets and the workflow.
   Disabling runtime admin bypass does not stop reconfiguration.
 - GitHub requires one approval among the reviewers, not one from each.
 - Anyone with write access can still create GitHub releases and tags by other means

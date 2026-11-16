@@ -30,25 +30,20 @@ jobs:
     if: github.repository == 'nf-core/nf-core-utils' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions:
-      contents: read
-      actions: read
+    permissions: {}
     outputs:
       attempt: ${{ steps.access.outputs.attempt }}
     steps:
-      - name: Checkout release check
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Require a protected release environment
+      - name: Check the selected commit
         id: access
         env:
-          GH_TOKEN: ${{ github.token }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          python3 scripts/release/check_release_access.py
+          if [[ -n "$EXPECTED_SHA" && "${EXPECTED_SHA,,}" != "$GITHUB_SHA" ]]; then
+            echo '::error::expected_sha must be the full selected release commit'
+            exit 1
+          fi
           echo "attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
 
   dry_run:

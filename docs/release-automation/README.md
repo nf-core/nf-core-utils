@@ -85,8 +85,6 @@ Choose one before activation:
   receiver must enforce a verifiable protected approval, not just trust this
   entry point to have run. Direct dispatch must not bypass that approval.
 
-In both cases the receiver's environment check must deny on unknown or missing
-evidence.
 No implicit `GITHUB_TOKEN`, website bot, app, or user allowlist is proposed.
 
 ## Activation dependencies — require separate approval
@@ -95,8 +93,8 @@ No implicit `GITHUB_TOKEN`, website bot, app, or user allowlist is proposed.
   credential type/scope. A fine-grained dispatch credential needs Actions write
   and Contents read for this repository, not registry or organization write.
   Do not use a personal token as an unreviewed bot-policy workaround.
-- Land and verify the authorization guard and exact-SHA receiver contract.
-  Prove an unprotected environment and stale SHAs cannot reach
+- Land and verify the exact-SHA receiver contract.
+  Prove stale SHAs cannot reach
   publisher credentials, including direct dispatch and reruns.
 - Create/verify the proposed `release-automation-approval` environment with
   approved reviewers only, self-review prevention, no admin bypass, and
