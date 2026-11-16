@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `collectVersions()` dropping a single versions `Path`, local or remote ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
 - Fixed `methodsDescriptionText()` and the report helpers failing on remote methods templates ([#110](https://github.com/nf-core/nf-core-utils/pull/110)).
 - Fixed `collectVersions()` parsing remote path strings (`s3://`) as YAML ([#110](https://github.com/nf-core/nf-core-utils/pull/110)).
-- Citations no longer render the `meta.yml` placeholder `no DOI available` as a DOI.
+- Citations no longer render the `meta.yml` placeholder `no DOI available` as a DOI ([#116](https://github.com/nf-core/nf-core-utils/pull/116)).
 
 ## [0.7.0] - 2026-10-30
 
