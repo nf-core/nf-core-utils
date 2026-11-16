@@ -179,7 +179,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
     }
 
     def 'collectVersions handles topic tuples'() {
@@ -213,7 +213,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
 
         cleanup:
         tempFile.delete()
@@ -233,7 +233,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
 
         cleanup:
         tempFile.delete()
@@ -335,7 +335,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
         !result.contains('tool:fastqc')
         !result.contains('tool:samtools')
     }
@@ -445,7 +445,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
         result.contains('NFCORE_FASTQC:')
         result.contains('NFCORE_SAMTOOLS:')
     }
@@ -526,7 +526,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
         result.contains('Workflow:')
         result.contains('testpipeline: v1.0.0')
     }
@@ -706,8 +706,8 @@ class NfcoreVersionUtilsTest extends Specification {
         def result = NfcoreVersionUtils.processVersionsFromTopicChannels([], legacyVersions, session)
 
         then:
-        result.contains('samtools: 1.17')
-        result.contains('bcftools: 1.16')
+        result.contains('samtools: \'1.17\'')
+        result.contains('bcftools: \'1.16\'')
         result.contains('testpipeline: v1.0.0')
         result.contains('Nextflow: 23.04.1')
     }
@@ -727,7 +727,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
 
         cleanup:
         tempFile.delete()
@@ -768,7 +768,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
         result.contains('testpipeline: v1.0.0')
 
         cleanup:
@@ -949,7 +949,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
         result.contains('Workflow:')
         result.contains('testpipeline: v1.0.0')
     }
@@ -1003,7 +1003,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
 
         cleanup:
         tempFile.delete()
@@ -1032,7 +1032,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
 
         cleanup:
         tempFile.delete()
@@ -1135,7 +1135,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
         result.contains('NFCORE_FASTQC:')
         result.contains('NFCORE_SAMTOOLS:')
     }
@@ -1159,7 +1159,7 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result.contains('fastqc: 0.12.1')
-        result.contains('samtools: 1.17')
+        result.contains('samtools: \'1.17\'')
         !result.contains('tool:fastqc')
         !result.contains('tool:samtools')
     }

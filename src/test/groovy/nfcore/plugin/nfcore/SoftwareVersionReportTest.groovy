@@ -44,7 +44,7 @@ class SoftwareVersionReportTest extends Specification {
         then:
         def yaml = report.renderYaml()
         yaml.contains('fastqc: 0.12.1')
-        yaml.contains('samtools: 1.17')
+        yaml.contains('samtools: \'1.17\'')
     }
 
     def 'collects topic tuples'() {
@@ -267,5 +267,31 @@ class SoftwareVersionReportTest extends Specification {
         def yaml = report.renderYaml()
         yaml.contains('NFCORE_FASTQC:')
         yaml.contains('NFCORE_SAMTOOLS:')
+    }
+
+    @Issue("https://github.com/nf-core/tools/issues/4500")
+    def 'legacy versions.yml keeps the written text of float-looking versions'() {
+        given:
+        def report = new SoftwareVersionReport()
+        def legacy = '''\
+            "NFCORE:PIPELINE:SAMTOOLS_SORT":
+                samtools: 1.20
+                sed: 4.10
+                bwa: "0.7.17"
+                fastqc: v0.12.1
+            '''.stripIndent()
+
+        when:
+        report.addInput(legacy)
+        def parsed = new Yaml().load(report.renderYaml()) as Map
+
+        then:
+        parsed['SAMTOOLS_SORT'] == [samtools: '1.20', sed: '4.10', bwa: '0.7.17', fastqc: 'v0.12.1']
+    }
+
+    def 'flattenYamlKeys keeps the written text of float-looking versions in flat input'() {
+        expect:
+        (new Yaml().load(SoftwareVersionReport.flattenYamlKeys('tool:samtools: 1.20\nsed: 4.10')) as Map) ==
+            [samtools: '1.20', sed: '4.10']
     }
 }

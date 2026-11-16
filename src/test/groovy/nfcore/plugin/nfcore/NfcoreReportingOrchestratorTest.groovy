@@ -56,7 +56,7 @@ class NfcoreReportingOrchestratorTest extends Specification {
 
         result.versions_yaml.contains('fastqc: 0.12.1')
         result.versions_yaml.contains("multiqc: '1.15'") || result.versions_yaml.contains('multiqc: 1.15')
-        result.versions_yaml.contains('samtools: 1.17')
+        result.versions_yaml.contains('samtools: \'1.17\'')
         result.versions_yaml.contains('testpipeline: v1.0.0')
     }
 
@@ -173,7 +173,7 @@ class NfcoreReportingOrchestratorTest extends Specification {
 
         result.versions_yaml.contains('fastqc: 0.12.1')
         result.versions_yaml.contains("multiqc: '1.15'") || result.versions_yaml.contains('multiqc: 1.15')
-        result.versions_yaml.contains('samtools: 1.17')
+        result.versions_yaml.contains('samtools: \'1.17\'')
         result.versions_yaml.contains('testpipeline: v1.0.0')
     }
 

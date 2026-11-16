@@ -126,7 +126,7 @@ class NfcoreReportingOrchestratorDeepTest extends Specification {
 
         then:
         result.versions_yaml.contains('fastqc: 0.12.1')
-        result.versions_yaml.contains('samtools: 1.17')
+        result.versions_yaml.contains('samtools: \'1.17\'')
         result.versions_yaml.contains('pipe:')
     }
 }

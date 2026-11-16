@@ -19,7 +19,13 @@ package nfcore.plugin.nfcore
 import groovy.transform.PackageScope
 import groovy.util.logging.Slf4j
 import nfcore.plugin.nextflow.NextflowPipelineUtils
+import org.yaml.snakeyaml.LoaderOptions
 import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.constructor.AbstractConstruct
+import org.yaml.snakeyaml.constructor.SafeConstructor
+import org.yaml.snakeyaml.nodes.Node
+import org.yaml.snakeyaml.nodes.ScalarNode
+import org.yaml.snakeyaml.nodes.Tag
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -179,7 +185,10 @@ class SoftwareVersionReport {
     /** Flatten colon-prefixed keys: "tool:foo: 1.0" -> "foo: 1.0" */
     @PackageScope
     static String flattenYamlKeys(String yamlContent) {
-        def yaml = new Yaml()
+        // Keep float-looking versions as written (1.20, not 1.2): nf-core/tools#4500
+        def constructor = new SafeConstructor(new LoaderOptions())
+        constructor.yamlConstructors.put(Tag.FLOAT, { Node n -> ((ScalarNode) n).value } as AbstractConstruct)
+        def yaml = new Yaml(constructor)
         def loaded = yaml.load(yamlContent)
         if (!(loaded instanceof Map)) return ''
         def versions = ((Map) loaded).collectEntries { k, v ->
