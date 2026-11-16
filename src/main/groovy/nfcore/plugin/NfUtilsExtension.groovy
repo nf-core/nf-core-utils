@@ -68,9 +68,26 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     Object getGenomeAttribute(String attribute) {
+        return ReferencesUtils.getGenomeAttribute(genomeParams(), attribute)
+    }
+
+    /**
+     * Abort the pipeline if params.genome is not a key of params.genomes.
+     * Reads params from the session config (falling back to session.params),
+     * the same source as getGenomeAttribute(). Does nothing when genome is
+     * unset or genomes is missing or empty.
+     *
+     * @throws nextflow.exception.AbortOperationException listing the available genome keys
+     */
+    @Function
+    void genomeExistsError() {
+        ReferencesUtils.genomeExistsError(genomeParams())
+    }
+
+    private Map genomeParams() {
         Map params = session?.getConfig()?.get('params') as Map
         if (!params) params = session?.params as Map
-        return ReferencesUtils.getGenomeAttribute(params, attribute)
+        return params
     }
 
     /**

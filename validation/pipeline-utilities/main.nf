@@ -6,11 +6,13 @@
  * This test validates the core pipeline utility functions:
  * - getWorkflowVersion(): Generate workflow version strings
  * - dumpParametersToJSON(): Save pipeline parameters to JSON file
+ * - genomeExistsError(): Pass when params.genome is unset
  */
 
 // Import plugin functions for pipeline utilities
 include { getWorkflowVersion   } from 'plugin/nf-core-utils'
 include { dumpParametersToJSON } from 'plugin/nf-core-utils'
+include { genomeExistsError    } from 'plugin/nf-core-utils'
 
 workflow {
 
@@ -67,6 +69,10 @@ workflow {
     // Test with null output directory
     dumpParametersToJSON(null, test_params)
     log.info("✅ Null output directory handled correctly")
+
+    // Test 3: genomeExistsError() passes when params.genome is null
+    genomeExistsError()
+    log.info("✅ genomeExistsError() passed with no genome set")
 
     // Validate outputs
     log.info("=== Validating outputs ===")
