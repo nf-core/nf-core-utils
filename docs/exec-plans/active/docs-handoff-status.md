@@ -45,6 +45,10 @@ do not fire release-event workflows.
 
 ## 4. Open questions
 
+The release approval model changed after this status was recorded: approval comes from
+the `plugin-release` environment's required reviewers (#124), and RCs publish as
+`1.0.0-rc.N` (#125). Neither changes the three-stage status above.
+
 1. Should 1.0 be held until the website PR merges and the live page is verified, or
    tagged first with live verification as a post-release gate? The audit suggested
    tagging first and merging website#4490 before the 1.0 dispatch. This is not decided.
