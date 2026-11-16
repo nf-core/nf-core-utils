@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pinned GitHub Actions by commit SHA at their latest releases, and mise 2026.11.5 in CI.
 - Added a `CI pass` job to `validation.yml`, the single required check.
 - Added Renovate with the nf-core preset. It does not update Nextflow, which is bumped by hand.
+- Refreshed the Nextflow pins to the newest stable patches: 25.10.9, 26.04.9 and 26.10.6 in the CI matrix, 26.10.6 for development.
 - Deprecated version helpers delegate to `collectVersions()`; missing versions files log a warning ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
 
 ### Fixed
