@@ -69,9 +69,26 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     Object getGenomeAttribute(String attribute) {
+        return ReferencesUtils.getGenomeAttribute(genomeParams(), attribute)
+    }
+
+    /**
+     * Abort the pipeline if params.genome is not a key of params.genomes.
+     * Reads params from the session config (falling back to session.params),
+     * the same source as getGenomeAttribute(). Does nothing when genome is
+     * unset or genomes is missing or empty.
+     *
+     * @throws nextflow.exception.AbortOperationException listing the available genome keys
+     */
+    @Function
+    void genomeExistsError() {
+        ReferencesUtils.genomeExistsError(genomeParams())
+    }
+
+    private Map genomeParams() {
         Map params = session?.getConfig()?.get('params') as Map
         if (!params) params = session?.params as Map
-        return ReferencesUtils.getGenomeAttribute(params, attribute)
+        return params
     }
 
     /**
@@ -609,6 +626,16 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     String paramsSummaryMultiqc(Map summaryParams) {
         return nfcore.plugin.nfcore.NfcoreReportingUtils.paramsSummaryMultiqc(summaryParams)
+    }
+
+    /**
+     * ANSI colour codes for terminal logging, same keys as the pipeline template's logColours().
+     * @param monochromeLogs When true every code is an empty string (default: true)
+     * @return Map of colour name to escape code
+     */
+    @Function
+    Map logColours(Object monochromeLogs = true) {
+        return nfcore.plugin.nfcore.NfcoreNotificationUtils.logColours(BooleanParam.coerce(monochromeLogs, true, 'monochromeLogs'))
     }
 
 }
