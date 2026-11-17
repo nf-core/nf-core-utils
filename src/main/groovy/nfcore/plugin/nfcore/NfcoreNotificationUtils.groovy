@@ -293,21 +293,20 @@ class NfcoreNotificationUtils {
         def email_html = "<html><body>Default email content</body></html>"
 
         try {
-            def tf = new File("${wf?.projectDir}/assets/email_template.txt")
-            if (tf.exists()) {
-                def txt_template = TEMPLATE_ENGINE.createTemplate(tf).make(email_fields)
-                email_txt = txt_template.toString()
+            // Read through the Path: the project directory may be on a remote file system
+            Path tf = wf?.projectDir?.resolve('assets/email_template.txt')
+            if (tf != null && Files.exists(tf)) {
+                email_txt = Files.newBufferedReader(tf).withCloseable { TEMPLATE_ENGINE.createTemplate(it).make(email_fields).toString() }
             } else {
-                log.warn("Email template not found: ${tf.absolutePath}")
+                log.warn("Email template not found: ${tf}")
             }
 
             // Render the HTML template
-            def hf = new File("${wf?.projectDir}/assets/email_template.html")
-            if (hf.exists()) {
-                def html_template = TEMPLATE_ENGINE.createTemplate(hf).make(email_fields)
-                email_html = html_template.toString()
+            Path hf = wf?.projectDir?.resolve('assets/email_template.html')
+            if (hf != null && Files.exists(hf)) {
+                email_html = Files.newBufferedReader(hf).withCloseable { TEMPLATE_ENGINE.createTemplate(it).make(email_fields).toString() }
             } else {
-                log.warn("HTML email template not found: ${hf.absolutePath}")
+                log.warn("HTML email template not found: ${hf}")
             }
         } catch (Exception e) {
             log.warn("Failed to render email templates: ${e.message}")
