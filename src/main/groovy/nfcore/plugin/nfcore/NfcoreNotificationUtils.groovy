@@ -288,13 +288,11 @@ class NfcoreNotificationUtils {
             email_address = email_on_fail
         }
 
-        // The bundled defaults additionally see the pipeline name and whether a logo is attached
-        def default_fields = email_fields + [
-            pipelineName: workflowName,
-            hasLogo     : pipelineLogo(wf?.projectDir, workflowName) != null,
-        ]
-        def email_txt = renderEmail(wf?.projectDir, 'txt', email_fields, default_fields)
-        def email_html = renderEmail(wf?.projectDir, 'html', email_fields, default_fields)
+        def logo = pipelineLogo(wf?.projectDir, workflowName)
+        email_fields['pipelineName'] = workflowName
+        email_fields['hasLogo'] = logo != null
+        def email_txt = renderEmail(wf?.projectDir, 'txt', email_fields)
+        def email_html = renderEmail(wf?.projectDir, 'html', email_fields)
 
         // Persist the reports before attempting external mail delivery.
         if (outdir != null) {
@@ -341,11 +339,9 @@ class NfcoreNotificationUtils {
             Path mqc_report = null
             Path mqc_file = null
             try {
-                Path logo = null
                 if (!plaintext_email) {
                     mqc_report = getSingleReport(multiqc_report, workflowName)
                     mqc_file = localReport(mqc_report, maxMultiqcEmailSize(config))
-                    logo = pipelineLogo(wf?.projectDir, workflowName)
                 }
                 Nextflow.sendMail { Mail mail ->
                     mail.to(email_address)
@@ -408,7 +404,7 @@ class NfcoreNotificationUtils {
      * Render one e-mail format: the pipeline's assets/email_template.<ext> (read through its own file system) if
      * present, else the bundled default. An override that cannot be read or rendered falls back to the default.
      */
-    private static String renderEmail(Path projectDir, String ext, Map fields, Map defaultFields) {
+    private static String renderEmail(Path projectDir, String ext, Map fields) {
         def override = projectDir?.resolve("assets/email_template.${ext}")
         if (override != null && Files.exists(override)) {
             try {
@@ -418,7 +414,7 @@ class NfcoreNotificationUtils {
             }
         }
         def stream = NfcoreNotificationUtils.getResourceAsStream("/nfcore/plugin/nfcore/email_template.${ext}")
-        return stream.withReader('UTF-8') { TEMPLATE_ENGINE.createTemplate(it).make(defaultFields).toString() }
+        return stream.withReader('UTF-8') { TEMPLATE_ENGINE.createTemplate(it).make(fields).toString() }
     }
 
     /** The logo the HTML e-mail template shows as `cid:nfcorepipelinelogo`, null when the pipeline has none. */

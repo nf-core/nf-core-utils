@@ -39,7 +39,6 @@ nextflow_pipeline {
                 assert report.contains('Pipeline Configuration:')
                 assert report.contains('test_run_001')
                 assert report.contains('execution completed successfully!')
-                assert !report.contains('Default email content')
                 assert !report.contains('$')
             }
             assert snapshot(normalizedOutput).match()

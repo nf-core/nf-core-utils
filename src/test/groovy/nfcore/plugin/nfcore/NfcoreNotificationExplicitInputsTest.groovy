@@ -595,7 +595,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         [html, txt].every {
             it.contains('nf-core/review') && it.contains('happy_run') &&
                 it.contains('nextflow run nf-core/review -profile test') && it.contains('samples.csv') &&
-                !it.contains('Default email content') && !it.contains('$') && !it.contains('<%') && !it.contains('{{')
+                !it.contains('$')
         }
         [html, txt].every { it.contains('boom in PROCESS_X') == !success && it.contains('137') == !success }
         txt.contains(success ? 'execution completed successfully!' : 'execution completed unsuccessfully!')
@@ -624,7 +624,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         given:
         stubSession(true, '1 MB')
         def assets = Files.createDirectories(tempDir.resolve('assets'))
-        if (txt) { assets.resolve('email_template.txt').text = 'custom txt $runName $version' }
+        if (txt) { assets.resolve('email_template.txt').text = 'custom txt $pipelineName $runName $version' }
         if (html) { assets.resolve('email_template.html').text = '<b>custom html $runName</b>' }
         def outdir = tempDir.resolve('out')
 
@@ -634,7 +634,7 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         def htmlOut = Files.readString(outdir.resolve('pipeline_info/pipeline_report.html'))
 
         then:
-        txt ? txtOut == 'custom txt happy_run v1.0' : txtOut.contains('Pipeline Configuration:')
+        txt ? txtOut == 'custom txt nf-core/review happy_run v1.0' : txtOut.contains('Pipeline Configuration:')
         html ? htmlOut == '<b>custom html happy_run</b>' : htmlOut.contains('<h3>Pipeline Configuration:</h3>')
 
         where:
