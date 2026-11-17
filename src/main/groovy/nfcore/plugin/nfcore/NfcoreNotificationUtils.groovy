@@ -526,13 +526,13 @@ class NfcoreNotificationUtils {
             // Different JSON depending on the service provider
             // Defaults to "Adaptive Cards" (https://adaptivecards.io), except Slack which has its own format
             def json_path = hook_url.contains("hooks.slack.com") ? "slackreport.json" : "adaptivecard.json"
-            def hf = new File("${wf?.projectDir}/assets/${json_path}")
+            // Read through the Path: the project directory may be on a remote file system
+            Path hf = wf?.projectDir?.resolve("assets/${json_path}")
 
-            if (hf.exists()) {
-                def json_template = TEMPLATE_ENGINE.createTemplate(hf).make(msg_fields)
-                json_message = json_template.toString()
+            if (hf != null && Files.exists(hf)) {
+                json_message = Files.newBufferedReader(hf).withCloseable { TEMPLATE_ENGINE.createTemplate(it).make(msg_fields).toString() }
             } else {
-                log.warn("IM notification template not found: ${hf.absolutePath}")
+                log.warn("IM notification template not found: ${hf}")
                 // Create a basic JSON message as fallback
                 json_message = groovy.json.JsonOutput.toJson([
                     text: "Pipeline ${msg_fields.runName ?: 'unknown'} ${msg_fields.success ? 'completed successfully' : 'failed'}"

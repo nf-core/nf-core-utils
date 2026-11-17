@@ -484,6 +484,31 @@ class NfcoreNotificationExplicitInputsTest extends Specification {
         fs?.close()
     }
 
+    @ConfineMetaClassChanges(Nextflow)
+    def 'imNotification renders the template of a pipeline on a remote file system'() {
+        given:
+        def posted = new AtomicReference<String>()
+        def server = HttpServer.create(new InetSocketAddress('127.0.0.1', 0), 0)
+        server.createContext('/') { exchange ->
+            posted.set(exchange.requestBody.getText('UTF-8'))
+            exchange.sendResponseHeaders(200, -1)
+            exchange.close()
+        }
+        server.start()
+        def fs = FileSystems.newFileSystem(zipWithReport('{"text":"Remote $runName"}', 'assets/adaptivecard.json'))
+        stubSession(true, '1 MB', fs.getPath('/'))
+
+        when:
+        NfcoreNotificationUtils.imNotification([:], "http://127.0.0.1:${server.address.port}/hook")
+
+        then:
+        posted.get() == '{"text":"Remote happy_run"}'
+
+        cleanup:
+        server?.stop(0)
+        fs?.close()
+    }
+
     @Issue("https://github.com/nf-core/nf-core-utils/pull/71")
     def 'a failed remote report download leaves no temporary copy'() {
         given:

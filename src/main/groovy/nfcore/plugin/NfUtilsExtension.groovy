@@ -381,7 +381,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate citation for a tool from meta.yml at the module level
      *
-     * @param metaFilePath Path to the meta.yml file (String or File)
+     * @param metaFilePath Path to the meta.yml file (String, File or Path)
      * @return Map containing tool citations for the module
      */
     @Function

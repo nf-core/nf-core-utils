@@ -367,7 +367,7 @@ Map generateModuleToolCitation(Object metaFilePath)
 
 **Parameters:**
 
-- `metaFilePath` (String|File): Path to the meta.yml file
+- `metaFilePath` (String|File|Path): Path to the meta.yml file, local or remote
 
 **Returns:**
 

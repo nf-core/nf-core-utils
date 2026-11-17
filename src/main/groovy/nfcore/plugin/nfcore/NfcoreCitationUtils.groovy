@@ -19,6 +19,8 @@ package nfcore.plugin.nfcore
 import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.script.types.Record
+import nfcore.plugin.nextflow.NextflowPipelineUtils
+import java.nio.file.Files
 import java.nio.file.Path
 import org.yaml.snakeyaml.Yaml
 
@@ -33,13 +35,14 @@ class NfcoreCitationUtils {
 
     /**
      * Generate citation for a tool from meta.yml at the module level
-     * @param metaFilePath Path to the meta.yml file (String or File)
+     * @param metaFilePath Path to the meta.yml file (String, File or Path)
      * @return Map containing tool citations for the module
      */
     static Map generateModuleToolCitation(Object metaFilePath) {
-        File file = metaFilePath instanceof File ? metaFilePath : new File(metaFilePath.toString())
-        if (!file.exists()) {
-            throw new IllegalArgumentException("meta.yml file not found at: ${file.getAbsolutePath()}")
+        // Read through the Path: new File() loses the file system of a remote path
+        Path file = metaFilePath instanceof File ? metaFilePath.toPath() : NextflowPipelineUtils.toPath(metaFilePath)
+        if (file == null || !Files.exists(file)) {
+            throw new IllegalArgumentException("meta.yml file not found at: ${file?.toAbsolutePath()}")
         }
         def yaml = new Yaml()
         Map meta
@@ -191,13 +194,13 @@ class NfcoreCitationUtils {
      */
     static List<List> convertMetaYamlToTopicFormat(String metaFilePath, String moduleName = null) {
         try {
-            def file = new File(metaFilePath)
-            if (!file.exists()) {
+            Path file = NextflowPipelineUtils.toPath(metaFilePath)
+            if (file == null || !Files.exists(file)) {
                 return []
             }
 
             if (!moduleName) {
-                moduleName = file.getParentFile()?.getName() ?: 'unknown'
+                moduleName = file.parent?.fileName?.toString() ?: 'unknown'
             }
 
             def yaml = new Yaml()
@@ -322,8 +325,8 @@ class NfcoreCitationUtils {
      */
     static List getCitation(String metaYmlPath) {
         try {
-            File metaFile = new File(metaYmlPath)
-            if (!metaFile.exists()) {
+            Path metaFile = NextflowPipelineUtils.toPath(metaYmlPath)
+            if (metaFile == null || !Files.exists(metaFile)) {
                 log.warn("meta.yml not found at ${metaYmlPath}")
                 return []
             }
