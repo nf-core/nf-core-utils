@@ -282,13 +282,13 @@ Converts topic channel eval syntax data back to YAML format for reporting and Mu
 **Function Signature:**
 
 ```nextflow
-String generateYamlFromEvalSyntax(List<List> evalData, boolean includeWorkflow = true)
+String generateYamlFromEvalSyntax(List<List> evalData, Object includeWorkflow = true)
 ```
 
 **Parameters:**
 
 - `evalData` (List\<List\>): Topic channel data in `[process, name, version]` format
-- `includeWorkflow` (boolean, optional): Include workflow version information (defaults to true)
+- `includeWorkflow` (Boolean or `true`/`false` text, optional): Include workflow version information (defaults to true)
 
 **Returns:**
 
