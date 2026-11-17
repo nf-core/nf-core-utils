@@ -84,6 +84,7 @@ String collectVersions(Object input, Object nextflowVersion = null)
 
 - `input` (Object): one entry, or a list of entries of any of these types:
   - Topic tuples: `[process, tool, version]`
+  - Topic records from typed processes: `record(process: ..., tool: ..., version: ...)`. Plain maps are read as `versions.yml` content, not as records
   - `versions.yml` files, as `Path`, `File`, or a local path string. A remote `Path`, such as S3, is read through its filesystem
   - YAML strings
   - Maps of `tool -> version`, or of `process -> [tool -> version]`
@@ -99,7 +100,7 @@ String collectVersions(Object input, Object nextflowVersion = null)
 include { collectVersions } from 'plugin/nf-core-utils'
 
 workflow {
-    // Modules emit tuples, or versions.yml files, on the versions topic
+    // Modules emit tuples, records, or versions.yml files, on the versions topic
     channel.topic('versions')
         .toList()
         .map { versions -> collectVersions(versions) }

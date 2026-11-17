@@ -1,0 +1,29 @@
+nextflow_pipeline {
+
+    name "Test collectVersions() with versions records from typed processes"
+    script "./main.nf"
+    config "./nextflow.config"
+
+    test("Versions topic with records, tuples and a versions.yml") {
+
+        // Typed processes and records need Nextflow 26.04 or later
+        def nxfVer = System.getenv('NXF_VER')
+        if (nxfVer && nxfVer.tokenize('.')[0].toInteger() < 26) {
+            skip()
+        }
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+        }
+
+        then {
+            assert workflow.success
+            def lines = path("${params.outdir}/versions.yml").text.readLines().collect { line ->
+                line.replaceAll(/^(\s*Nextflow: )\S+$/, '$1[VERSION]')
+            }
+            assert snapshot(lines).match()
+        }
+    }
+}

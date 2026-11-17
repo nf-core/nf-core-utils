@@ -68,6 +68,7 @@ class NfcoreVersionUtils {
      *   <li><b>String</b>: YAML content or file path (auto-detected)</li>
      *   <li><b>File/Path</b>: Reads YAML content from file</li>
      *   <li><b>List&lt;List&gt;</b>: Topic channel tuples [[process, tool, version], ...]</li>
+     *   <li><b>Record</b>: Topic channel records record(process, tool, version) from typed processes</li>
      *   <li><b>List&lt;String&gt;</b>: File paths to versions.yml files</li>
      *   <li><b>Map</b>: Direct version data (tool->version or nested process blocks)</li>
      *   <li><b>Mixed List</b>: Any combination of the above types</li>
