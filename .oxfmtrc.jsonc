@@ -1,0 +1,4 @@
+{
+  // Groovy templates: a formatter would reflow the embedded scriptlets
+  "ignorePatterns": ["src/main/resources/nfcore/plugin/nfcore/email_template.html"],
+}

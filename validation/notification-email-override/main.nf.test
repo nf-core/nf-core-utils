@@ -1,0 +1,19 @@
+nextflow_pipeline {
+
+    name "Test completionEmail pipeline template overrides"
+    script "./main.nf"
+
+    test("Pipeline email templates override the bundled defaults") {
+
+        then {
+            assert workflow.success
+            def reportDir = "${launchDir}/results/pipeline_info"
+            def txt = new File("${reportDir}/pipeline_report.txt").text
+            def html = new File("${reportDir}/pipeline_report.html").text
+            assert txt.startsWith('PIPELINE-OVERRIDE-TXT run=')
+            assert html.startsWith('<p>PIPELINE-OVERRIDE-HTML run=')
+            assert !txt.contains('Pipeline Configuration:')
+            assert !html.contains('Pipeline Configuration:')
+        }
+    }
+}
