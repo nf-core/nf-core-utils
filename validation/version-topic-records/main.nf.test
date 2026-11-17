@@ -8,7 +8,8 @@ nextflow_pipeline {
 
         // Typed processes and records need Nextflow 26.04 or later
         def nxfVer = System.getenv('NXF_VER')
-        if (nxfVer && nxfVer.tokenize('.')[0].toInteger() < 26) {
+        def nxfRelease = nxfVer?.tokenize('.')?.take(2)?.collect { it.toInteger() }
+        if (nxfRelease && (nxfRelease[0] < 26 || (nxfRelease[0] == 26 && nxfRelease[1] < 4))) {
             skip()
         }
 

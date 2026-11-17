@@ -347,6 +347,6 @@ class SoftwareVersionReportTest extends Specification {
         return record
     }
 
-    /** Stands in for nextflow.util.RecordMap, which Nextflow 26.04+ defines as exactly this shape. */
+    /** A mutable stand-in for nextflow.util.RecordMap (a LinkedHashMap implementing Record). */
     static class TestRecord extends LinkedHashMap<String, Object> implements Record {}
 }

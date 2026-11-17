@@ -5,6 +5,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import nextflow.Session
 import nextflow.config.Manifest
+import nextflow.script.types.Record
 import nfcore.plugin.nfcore.NfcoreCitationUtils
 import org.slf4j.LoggerFactory
 import spock.lang.Issue
@@ -951,6 +952,42 @@ ${tool_bibliography}
         detachAppender(appender)
     }
 
+    def "toolsFromVersionsTopic reads records from typed processes alongside tuples"() {
+        given:
+        def appender = captureLogsFor(NfcoreCitationUtils)
+        def topicVersions = [
+            versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0'),
+            ['NFCORE:FASTQC', 'fastqc', '0.12.1']
+        ]
+
+        when:
+        def result = NfcoreCitationUtils.toolsFromVersionsTopic(topicVersions)
+
+        then:
+        result == ['fastqc', 'preseq']
+        logMessages(appender).every { !it.contains('flat: false') }
+
+        cleanup:
+        detachAppender(appender)
+    }
+
+    def "toolsFromVersionsTopic reads a topic made only of records"() {
+        expect:
+        NfcoreCitationUtils.toolsFromVersionsTopic([versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0')]) == ['preseq']
+    }
+
+    def "toolsFromVersionsTopic ignores plain maps and records without versions fields"() {
+        given:
+        def incomplete = new SoftwareVersionReportTest.TestRecord()
+        incomplete.putAll(id: 'sample1')
+
+        expect:
+        NfcoreCitationUtils.toolsFromVersionsTopic([
+            [process: 'NFCORE:FASTQC', tool: 'fastqc', version: '0.12.1'],
+            incomplete
+        ]) == []
+    }
+
     def "filterCitationsByTools keeps only tools that ran, matching case-insensitively"() {
         given:
         def allCitations = [
@@ -1030,6 +1067,36 @@ ${tool_bibliography}
 
         expect:
         NfcoreCitationUtils.toolVersionsFromTopic(topicVersions) == ['fastqc': '0.12.1', 'multiqc': '1.21']
+    }
+
+    def "toolVersionsFromTopic maps versions from records and tuples"() {
+        given:
+        def topicVersions = [
+            versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0'),
+            ['NFCORE:MULTIQC', 'multiqc', '1.21']
+        ]
+
+        expect:
+        NfcoreCitationUtils.toolVersionsFromTopic(topicVersions) == ['preseq': '3.2.0', 'multiqc': '1.21']
+    }
+
+    def "citationsOnTheFly cites tools that reported versions as records"() {
+        given:
+        def preseqMeta = new File(tempDir.toFile(), 'preseq_meta.yml')
+        preseqMeta << '''
+        name: preseq_lcextrap
+        tools:
+          - preseq:
+              doi: "10.1038/nmeth.2375"
+        '''.stripIndent()
+
+        when:
+        def result = NfcoreCitationUtils.citationsOnTheFly(
+            [versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0')], [preseqMeta.absolutePath])
+
+        then:
+        result.keySet() == ['preseq'] as Set
+        result.preseq.version == '3.2.0'
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
@@ -1287,5 +1354,11 @@ ${tool_bibliography}
 
         then:
         meta == [workflow: [:], manifest_map: [:], tool_citations: 'seqtk']
+    }
+
+    private static Record versionRecord(String process, String tool, String version) {
+        def record = new SoftwareVersionReportTest.TestRecord()
+        record.putAll(process: process, tool: tool, version: version)
+        return record
     }
 }
