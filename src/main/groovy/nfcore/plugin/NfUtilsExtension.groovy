@@ -634,8 +634,8 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @return Map of colour name to escape code
      */
     @Function
-    Map logColours(boolean monochromeLogs = true) {
-        return nfcore.plugin.nfcore.NfcoreNotificationUtils.logColours(monochromeLogs)
+    Map logColours(Object monochromeLogs = true) {
+        return nfcore.plugin.nfcore.NfcoreNotificationUtils.logColours(BooleanParam.coerce(monochromeLogs, true, 'monochromeLogs'))
     }
 
 }
