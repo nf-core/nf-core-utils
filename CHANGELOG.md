@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a `CI pass` job to `validation.yml`, the single required check.
 - Added Renovate with the nf-core preset. It does not update Nextflow, which is bumped by hand.
 - Deprecated version helpers delegate to `collectVersions()`; missing versions files log a warning ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
+- The `NfcoreReportingUtils` reference page no longer documents `workflowSummaryMQC()` and `sectionLogs()`: they are internal helpers that a pipeline cannot import.
 
 ### Fixed
 
