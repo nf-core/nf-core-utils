@@ -1,0 +1,7 @@
+name: preseq_lcextrap
+tools:
+  - preseq:
+      description: "Software for predicting library complexity and genome coverage in high-throughput sequencing"
+      homepage: "https://smithlabresearch.org/software/preseq/"
+      doi: "10.1038/nmeth.2375"
+      licence: "GPL"

@@ -47,6 +47,8 @@ import java.nio.file.Path
 @Slf4j(category = 'nextflow.nfcore.SoftwareVersionReport')
 class SoftwareVersionReport {
 
+    private static final List<String> VERSION_RECORD_FIELDS = ['process', 'tool', 'version']
+
     private final Map<String, Map<String, Object>> merged = [:].withDefault { [:] as Map<String, Object> }
     private String workflowYaml = null
 
@@ -114,7 +116,7 @@ class SoftwareVersionReport {
             } else if (entry instanceof Path) {
                 processPathEntry(entry)
             } else if (entry instanceof Record) {
-                processRecordEntry(entry as Map)
+                processRecordEntry((Record) entry)
             } else if (entry instanceof Map) {
                 mergeParsedYaml(entry as Map)
             } else if (entry instanceof List || entry.getClass().isArray()) {
@@ -162,12 +164,22 @@ class SoftwareVersionReport {
         }
     }
 
-    private void processRecordEntry(Map record) {
-        if (!['process', 'tool', 'version'].every { record.containsKey(it) }) {
+    private void processRecordEntry(Record record) {
+        def tuple = versionRecordTuple(record)
+        if (!tuple) {
             log.warn("Skipping versions record without process, tool and version fields: ${record}")
             return
         }
-        mergeTopicEntry(record.get('process'), record.get('tool'), record.get('version'))
+        mergeTopicEntry(tuple[0], tuple[1], tuple[2])
+    }
+
+    /** The [process, tool, version] tuple of a versions topic record, or null when a field is missing. */
+    @PackageScope
+    static List versionRecordTuple(Record record) {
+        if (!(record instanceof Map)) return null
+        def fields = (Map) record
+        if (!VERSION_RECORD_FIELDS.every { fields.containsKey(it) }) return null
+        return VERSION_RECORD_FIELDS.collect { fields.get(it) }
     }
 
     private void mergeTopicEntry(Object process, Object tool, Object version) {

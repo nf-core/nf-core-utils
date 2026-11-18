@@ -466,9 +466,15 @@ class NfcoreCitationUtils {
      */
     static List<String> toolsFromVersionsTopic(List topicVersions) {
         if (!topicVersions) return []
+        def incompleteRecords = topicVersions.count { it instanceof Record && !SoftwareVersionReport.versionRecordTuple((Record) it) }
+        if (incompleteRecords) {
+            log.warn("toolsFromVersionsTopic skipped ${incompleteRecords} versions record(s) without process, tool and version fields")
+        }
         def tuples = versionTuples(topicVersions).findAll { it instanceof List && it.size() >= 2 }
         if (tuples.isEmpty()) {
-            log.warn("toolsFromVersionsTopic received ${topicVersions.size()} item(s) but no [process, tool, version] tuples — collect the versions topic with .collect(flat: false) to preserve tuples")
+            if (topicVersions.size() > incompleteRecords) {
+                log.warn("toolsFromVersionsTopic received ${topicVersions.size()} item(s) but no [process, tool, version] tuples — collect the versions topic with .collect(flat: false) to preserve tuples")
+            }
             return []
         }
         return tuples.collect { it[1]?.toString()?.trim() }.findAll { it }.unique().sort()
@@ -496,13 +502,7 @@ class NfcoreCitationUtils {
 
     private static List versionTuples(List topicVersions) {
         return (topicVersions ?: []).collect { entry ->
-            if (entry instanceof Record) {
-                def record = entry as Map
-                if (['process', 'tool', 'version'].every { record.containsKey(it) }) {
-                    return [record.get('process'), record.get('tool'), record.get('version')]
-                }
-            }
-            return entry
+            entry instanceof Record ? SoftwareVersionReport.versionRecordTuple((Record) entry) : entry
         }
     }
 

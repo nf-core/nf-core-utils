@@ -1,12 +1,13 @@
 #!/usr/bin/env nextflow
 
 /*
- * collectVersions() on a versions topic fed by a typed process (records), an untyped
- * process (tuples) and a legacy versions.yml.
+ * collectVersions() and citationsOnTheFly() on a versions topic fed by a typed process
+ * (records), an untyped process (tuples) and a legacy versions.yml.
  */
 
-include { collectVersions } from 'plugin/nf-core-utils'
-include { RECORD_TOOL     } from './modules/record_tool'
+include { collectVersions   } from 'plugin/nf-core-utils'
+include { citationsOnTheFly } from 'plugin/nf-core-utils'
+include { RECORD_TOOL       } from './modules/record_tool'
 
 workflow {
 
@@ -16,10 +17,21 @@ workflow {
     TUPLE_TOOL('fastqc', '0.12.1')
     LEGACY_TOOL('sample')
 
-    channel.topic('versions')
-        .toList()
-        .map { versions -> collectVersions(versions) }
+    def versions = channel.topic('versions').toList()
+
+    versions
+        .map { v -> collectVersions(v) }
         .subscribe { yaml -> file("${params.outdir}/versions.yml").text = yaml }
+
+    def meta_yml_paths = files("${projectDir}/meta/*.yml").collect { it.toString() }
+    versions
+        .map { v -> citationsOnTheFly(v, meta_yml_paths) }
+        .subscribe { citations ->
+            file("${params.outdir}/citations.txt").text = citations
+                .collect { tool, c -> "${tool} ${c.version}" }
+                .sort()
+                .join('\n')
+        }
 }
 
 process TUPLE_TOOL {

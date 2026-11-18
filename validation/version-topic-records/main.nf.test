@@ -24,7 +24,8 @@ nextflow_pipeline {
             def lines = path("${params.outdir}/versions.yml").text.readLines().collect { line ->
                 line.replaceAll(/^(\s*Nextflow: )\S+$/, '$1[VERSION]')
             }
-            assert snapshot(lines).match()
+            def citations = path("${params.outdir}/citations.txt").text.readLines()
+            assert snapshot(lines, citations).match()
         }
     }
 }

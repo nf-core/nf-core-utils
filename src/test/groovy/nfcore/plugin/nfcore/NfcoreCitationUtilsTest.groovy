@@ -976,16 +976,45 @@ ${tool_bibliography}
         NfcoreCitationUtils.toolsFromVersionsTopic([versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0')]) == ['preseq']
     }
 
-    def "toolsFromVersionsTopic ignores plain maps and records without versions fields"() {
+    def "toolsFromVersionsTopic ignores plain maps with versions keys"() {
+        expect:
+        NfcoreCitationUtils.toolsFromVersionsTopic([
+            [process: 'NFCORE:FASTQC', tool: 'fastqc', version: '0.12.1']
+        ]) == []
+    }
+
+    def "toolsFromVersionsTopic warns about records without versions fields, not about flattening"() {
+        given:
+        def appender = captureLogsFor(NfcoreCitationUtils)
+        def incomplete = new SoftwareVersionReportTest.TestRecord()
+        incomplete.putAll(id: 'sample1')
+
+        when:
+        def result = NfcoreCitationUtils.toolsFromVersionsTopic([incomplete])
+
+        then:
+        result == []
+        logMessages(appender).any { it.contains('skipped 1 versions record(s)') }
+        logMessages(appender).every { !it.contains('flat: false') }
+
+        cleanup:
+        detachAppender(appender)
+    }
+
+    def "toolsFromVersionsTopic skips incomplete records and keeps complete ones"() {
         given:
         def incomplete = new SoftwareVersionReportTest.TestRecord()
         incomplete.putAll(id: 'sample1')
 
         expect:
         NfcoreCitationUtils.toolsFromVersionsTopic([
-            [process: 'NFCORE:FASTQC', tool: 'fastqc', version: '0.12.1'],
-            incomplete
-        ]) == []
+            incomplete,
+            versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0')
+        ]) == ['preseq']
+        NfcoreCitationUtils.toolVersionsFromTopic([
+            incomplete,
+            versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0')
+        ]) == [preseq: '3.2.0']
     }
 
     def "filterCitationsByTools keeps only tools that ran, matching case-insensitively"() {
