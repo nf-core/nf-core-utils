@@ -18,6 +18,7 @@ package nfcore.plugin.nfcore
 
 import groovy.util.logging.Slf4j
 import nextflow.Session
+import nextflow.script.types.Record
 import java.nio.file.Path
 import org.yaml.snakeyaml.Yaml
 
@@ -457,17 +458,22 @@ class NfcoreCitationUtils {
      * no per-module changes — the basis for citations that match what ran.
      *
      * Expects each entry to be a [process, tool, version] tuple, i.e. the topic
-     * collected with {@code .collect(flat: false)}.
+     * collected with {@code .collect(flat: false)}, or a record(process, tool, version)
+     * as emitted by typed processes.
      *
-     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples or records)
      * @return Sorted, de-duplicated list of tool names (never null)
      */
     static List<String> toolsFromVersionsTopic(List topicVersions) {
         if (!topicVersions) return []
-        def tuples = topicVersions.findAll { it instanceof List && it.size() >= 2 }
-        if (tuples.isEmpty()) {
+        def converted = versionTuples(topicVersions)
+        def incompleteRecords = [topicVersions, converted].transpose().count { entry, tuple -> entry instanceof Record && tuple == null }
+        if (incompleteRecords) {
+            log.warn("toolsFromVersionsTopic skipped ${incompleteRecords} versions record(s) without process, tool and version fields")
+        }
+        def tuples = converted.findAll { it instanceof List && it.size() >= 2 }
+        if (tuples.isEmpty() && topicVersions.size() > incompleteRecords) {
             log.warn("toolsFromVersionsTopic received ${topicVersions.size()} item(s) but no [process, tool, version] tuples — collect the versions topic with .collect(flat: false) to preserve tuples")
-            return []
         }
         return tuples.collect { it[1]?.toString()?.trim() }.findAll { it }.unique().sort()
     }
@@ -477,12 +483,12 @@ class NfcoreCitationUtils {
      *
      * Keeps the first version seen per tool (tool names preserved as emitted).
      *
-     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples or records)
      * @return Map of tool name -> version (never null)
      */
     static Map toolVersionsFromTopic(List topicVersions) {
         def versions = [:]
-        topicVersions?.each { entry ->
+        versionTuples(topicVersions).each { entry ->
             if (entry instanceof List && entry.size() >= 3 && entry[1] != null) {
                 def tool = entry[1].toString().trim()
                 def ver = entry[2]?.toString()?.trim()
@@ -490,6 +496,12 @@ class NfcoreCitationUtils {
             }
         }
         return versions
+    }
+
+    private static List versionTuples(List topicVersions) {
+        return (topicVersions ?: []).collect { entry ->
+            entry instanceof Record ? SoftwareVersionReport.versionRecordTuple((Record) entry) : entry
+        }
     }
 
     /**
@@ -559,7 +571,7 @@ class NfcoreCitationUtils {
      * (e.g. a MultiQC plugin like {@code multiqcsav}); they are resolved from
      * meta.yml just like the rest, with no version segment.
      *
-     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples or records)
      * @param metaFilePaths Paths to module meta.yml files
      * @param extraTools Extra tool names to cite even though they did not emit a version
      * @return Citations map (tool -> [citation, bibliography, info, version]) for tools that ran

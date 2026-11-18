@@ -19,6 +19,7 @@ package nfcore.plugin.nfcore
 import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.Const
+import nextflow.script.types.Record
 import org.yaml.snakeyaml.Yaml
 
 /**
@@ -68,6 +69,7 @@ class NfcoreVersionUtils {
      *   <li><b>String</b>: YAML content or file path (auto-detected)</li>
      *   <li><b>File/Path</b>: Reads YAML content from file</li>
      *   <li><b>List&lt;List&gt;</b>: Topic channel tuples [[process, tool, version], ...]</li>
+     *   <li><b>Record</b>: Topic channel records record(process, tool, version) from typed processes</li>
      *   <li><b>List&lt;String&gt;</b>: File paths to versions.yml files</li>
      *   <li><b>Map</b>: Direct version data (tool->version or nested process blocks)</li>
      *   <li><b>Mixed List</b>: Any combination of the above types</li>
@@ -184,17 +186,18 @@ class NfcoreVersionUtils {
      * Process version information from topic channel format
      * Handles the new eval syntax: [process, name, version]
      *
-     * @param topicData List containing [process, name, version] tuples
+     * @param topicData List containing [process, name, version] tuples or record(process, tool, version)
      * @return YAML string with processed versions
      * @deprecated Use {@link #collectVersions(Object, Session, Object)} instead.
      */
     @Deprecated
-    static String processVersionsFromTopic(List<List> topicData) {
+    static String processVersionsFromTopic(List topicData) {
         log.debug("processVersionsFromTopic() is deprecated. Use collectVersions() instead.")
         // Maintain flat tool->version map for compatibility
         Map<String, Object> versions = [:]
-        topicData.each { tuple ->
-            if (tuple.size() >= 3) {
+        topicData.each { entry ->
+            def tuple = entry instanceof Record ? SoftwareVersionReport.versionRecordTuple((Record) entry) : entry
+            if (tuple instanceof List && tuple.size() >= 3) {
                 def tool = tuple[1]?.toString()
                 def version = tuple[2]
                 if (tool) versions[tool] = (version instanceof CharSequence) ? version.toString() : version

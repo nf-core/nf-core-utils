@@ -40,6 +40,12 @@ nextflow run validation/version-topic-channels/ -plugins nf-core-utils@0.4.0
 mise run validate version-topic-channels/main.nf.test
 ```
 
+### version-topic-records/
+
+`collectVersions()` and `citationsOnTheFly()` on a versions topic fed by a typed process (`record(process, tool, version)`),
+an untyped process (tuples) and a legacy `versions.yml`. Skipped when `NXF_VER` selects a Nextflow
+release older than 26.04, which has no typed processes.
+
 ### ⚙️ config-validation/
 
 **Configuration Validation Functions**

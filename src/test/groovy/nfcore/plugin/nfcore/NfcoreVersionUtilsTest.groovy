@@ -3,6 +3,7 @@ package nfcore.plugin.nfcore
 import nextflow.Session
 import nextflow.config.Manifest
 import nextflow.script.WorkflowMetadata
+import org.yaml.snakeyaml.Yaml
 import spock.lang.Issue
 import spock.lang.Specification
 import spock.lang.TempDir
@@ -485,6 +486,19 @@ class NfcoreVersionUtilsTest extends Specification {
         then:
         result.contains('fastqc: 0.12.1')
         result.contains("multiqc: '1.15'") || result.contains('multiqc: 1.15')
+    }
+
+    def 'processVersionsFromTopic reads records alongside tuples and skips incomplete records'() {
+        given:
+        def topicData = [
+            new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0'),
+            new TestRecord(id: 'sample1'),
+            ['NFCORE_FASTQC', 'fastqc', '0.12.1']
+        ]
+
+        expect:
+        new Yaml().load(NfcoreVersionUtils.processVersionsFromTopic(topicData)) ==
+            [preseq: '3.2.0', fastqc: '0.12.1']
     }
 
     @Issue("https://github.com/nf-core/proposals/issues/46")

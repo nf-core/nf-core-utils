@@ -18,6 +18,7 @@ package nfcore.plugin.nfcore
 
 import groovy.transform.PackageScope
 import groovy.util.logging.Slf4j
+import nextflow.script.types.Record
 import nfcore.plugin.nextflow.NextflowPipelineUtils
 import org.yaml.snakeyaml.Yaml
 
@@ -36,6 +37,7 @@ import java.nio.file.Path
  *   <li>YAML strings (inline content or file path)</li>
  *   <li>File / Path objects</li>
  *   <li>Topic tuples: [process, tool, version]</li>
+ *   <li>Topic records: record(process, tool, version), as emitted by typed processes</li>
  *   <li>Maps (tool->version or nested process blocks)</li>
  *   <li>Mixed lists of any of the above</li>
  * </ul>
@@ -44,6 +46,8 @@ import java.nio.file.Path
  */
 @Slf4j(category = 'nextflow.nfcore.SoftwareVersionReport')
 class SoftwareVersionReport {
+
+    private static final List<String> VERSION_RECORD_FIELDS = ['process', 'tool', 'version']
 
     private final Map<String, Map<String, Object>> merged = [:].withDefault { [:] as Map<String, Object> }
     private String workflowYaml = null
@@ -111,6 +115,8 @@ class SoftwareVersionReport {
                 processPathEntry(entry.toPath())
             } else if (entry instanceof Path) {
                 processPathEntry(entry)
+            } else if (entry instanceof Record) {
+                processRecordEntry((Record) entry)
             } else if (entry instanceof Map) {
                 mergeParsedYaml(entry as Map)
             } else if (entry instanceof List || entry.getClass().isArray()) {
@@ -147,22 +153,43 @@ class SoftwareVersionReport {
         def list = (entry instanceof List) ? (List) entry : (entry as Object[]).toList()
         if (list.isEmpty()) return
 
-        if (list[0] instanceof List) {
+        if (list[0] instanceof List || list[0] instanceof Record) {
             list.each { processVersionEntry(it) }
             return
         }
 
         // Topic tuple: [process, tool, version]
         if (list.size() >= 3) {
-            def procRaw = list[0]?.toString() ?: ''
-            def processName = procRaw.contains(':') ?
-                procRaw.substring(procRaw.lastIndexOf(':') + 1) : procRaw
-            def tool = list[1]?.toString()
-            def version = list[2]
-            if (processName && tool) {
-                merged[processName][tool] = version instanceof CharSequence ?
-                    version.toString() : version
-            }
+            mergeTopicEntry(list[0], list[1], list[2])
+        }
+    }
+
+    private void processRecordEntry(Record record) {
+        def tuple = versionRecordTuple(record)
+        if (!tuple) {
+            log.warn("Skipping versions record without process, tool and version fields: ${record}")
+            return
+        }
+        mergeTopicEntry(tuple[0], tuple[1], tuple[2])
+    }
+
+    /** The [process, tool, version] tuple of a versions topic record, or null when a field is missing. */
+    @PackageScope
+    static List versionRecordTuple(Record record) {
+        if (!(record instanceof Map)) return null
+        def fields = (Map) record
+        if (!VERSION_RECORD_FIELDS.every { fields.containsKey(it) }) return null
+        return VERSION_RECORD_FIELDS.collect { fields.get(it) }
+    }
+
+    private void mergeTopicEntry(Object process, Object tool, Object version) {
+        def procRaw = process?.toString() ?: ''
+        def processName = procRaw.contains(':') ?
+            procRaw.substring(procRaw.lastIndexOf(':') + 1) : procRaw
+        def toolName = tool?.toString()
+        if (processName && toolName) {
+            merged[processName][toolName] = version instanceof CharSequence ?
+                version.toString() : version
         }
     }
 
