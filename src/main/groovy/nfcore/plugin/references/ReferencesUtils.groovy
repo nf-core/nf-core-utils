@@ -18,6 +18,7 @@ package nfcore.plugin
 
 import groovy.transform.CompileStatic
 import nextflow.Session
+import nextflow.exception.AbortOperationException
 
 /**
  * Implements utility functions for handling reference files and values
@@ -78,5 +79,24 @@ class ReferencesUtils {
         if (!genome.containsKey(attribute)) return null
 
         return genome.get(attribute)
+    }
+
+    /**
+     * Abort if params.genome is set but is not a key of params.genomes.
+     * Message text matches the nf-core pipeline template's genomeExistsError().
+     * A null genome, or a null or empty genomes map, passes.
+     */
+    static void genomeExistsError(Map params) {
+        final Object genomes = params?.get('genomes')
+        final Object genome = params?.get('genome')
+        if (genomes instanceof Map && genomes && genome && !((Map) genomes).containsKey(genome)) {
+            throw new AbortOperationException(
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
+                "  Genome '${genome}' not found in any config files provided to the pipeline.\n" +
+                "  Currently, the available genome keys are:\n" +
+                "  ${((Map) genomes).keySet().join(', ')}\n" +
+                "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+            )
+        }
     }
 }

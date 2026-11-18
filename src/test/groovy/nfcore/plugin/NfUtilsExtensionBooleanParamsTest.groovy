@@ -102,6 +102,23 @@ class NfUtilsExtensionBooleanParamsTest extends Specification {
         extension.generateYamlFromEvalSyntax([['FASTQC', 'fastqc', '0.12.1']]).contains('Workflow:')
     }
 
+    def 'logColours(#flag) returns escape codes only when the flag means false'() {
+        when:
+        def colours = new NfUtilsExtension().logColours(flag)
+
+        then:
+        colours.red == red
+        colours.reset == reset
+        colours.values().every { it.startsWith('\033[') } == coloured
+
+        where:
+        flag    || red          | reset     | coloured
+        'true'  || ''           | ''        | false
+        'false' || '\033[0;31m' | '\033[0m' | true
+        true    || ''           | ''        | false
+        false   || '\033[0;31m' | '\033[0m' | true
+    }
+
     def 'completionEmail accepts text for plaintextEmail and monochromeLogs'() {
         when:
         new NfUtilsExtension().completionEmail([:], 'a@example.invalid', null, 'true', './results', 'false', [])

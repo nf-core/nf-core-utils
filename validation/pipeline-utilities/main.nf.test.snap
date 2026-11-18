@@ -16,6 +16,8 @@
                 "\u2705 Parameters dumped successfully",
                 "=== Testing edge cases ===",
                 "\u2705 Null output directory handled correctly",
+                "\u2705 genomeExistsError() passed with no genome set",
+                "\u2705 logColours() returned codes for both modes",
                 "=== Validating outputs ===",
                 "=== Validating version strings ===",
                 "\u2705 All version string validations passed",
