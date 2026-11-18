@@ -20,7 +20,10 @@ import groovy.util.logging.Slf4j
 import nextflow.Session
 import nextflow.Const
 import nextflow.script.types.Record
+import nfcore.plugin.nextflow.NextflowPipelineUtils
 import org.yaml.snakeyaml.Yaml
+
+import java.nio.file.Files
 
 /**
  * Utility class for handling version information in nf-core pipelines.
@@ -222,8 +225,8 @@ class NfcoreVersionUtils {
         def allVersions = [:]
         versionsFileData.each { filePath ->
             try {
-                def file = new File(filePath)
-                if (file.exists()) {
+                def file = NextflowPipelineUtils.toPath(filePath)
+                if (file != null && Files.exists(file)) {
                     def yamlContent = file.text
                     def processedYaml = processVersionsFromYAML(yamlContent)
                     if (processedYaml) {
