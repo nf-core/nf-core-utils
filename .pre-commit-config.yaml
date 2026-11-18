@@ -34,6 +34,12 @@ repos:
           - ast-grep-cli==0.44.1
         files: '^(CHANGELOG\.md|sgconfig\.yml|rules/.*|rule-tests/.*)$'
         pass_filenames: false
+      - id: changelog-links
+        name: Check CHANGELOG release links
+        entry: scripts/hooks/check_changelog_links.py
+        language: python
+        files: '^CHANGELOG\.md$'
+        pass_filenames: false
       - id: gradle-test
         name: Run unit tests before push
         entry: mise run test

@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `genomeExistsError()`: aborts with the available keys when `params.genome` is not in `params.genomes`, as in the pipeline template.
 - Added `citationOutputs()`: citations as MultiQC HTML, BibTeX or CSL-JSON ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Citation map entries carry `info` (raw `meta.yml` tool map) and `version` ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
-- Added ast-grep rules, run by pre-commit, that hold `CHANGELOG.md` to [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) release headings and change types. The 0.7.0 "Compatibility and migration" and "Known limitations" sections are now bold notes under the release heading.
+- Added ast-grep rules, run by pre-commit, that hold `CHANGELOG.md` to [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) release headings and change types, and a hook that checks each release has its compare link at the bottom. Fixed the 0.1.0–0.3.0 links (tags have no `v` prefix) and added the missing 0.3.1 and 0.4.0 links. The 0.7.0 "Compatibility and migration" and "Known limitations" sections are now bold notes under the release heading.
 - `collectVersions()`, `generateVersionReport()`, `generateComprehensiveReport()`, `toolsFromVersionsTopic()`, `citationsOnTheFly()` and the deprecated `processVersionsFromTopic()` / `processMixedVersionSources()` read versions topic records from typed processes, `record(process, tool, version)`, like `[process, tool, version]` tuples ([#137](https://github.com/nf-core/nf-core-utils/pull/137)).
 
 ### Changed
@@ -198,8 +198,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.7.0]: https://github.com/nf-core/nf-core-utils/compare/0.6.0...0.7.0
 [0.6.0]: https://github.com/nf-core/nf-core-utils/compare/0.5.0...0.6.0
 [0.5.0]: https://github.com/nf-core/nf-core-utils/compare/0.4.0...0.5.0
-[0.3.0]: https://github.com/nf-core/nf-core-utils/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/nf-core/nf-core-utils/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/nf-core/nf-core-utils/releases/tag/v0.1.0
-
-<!-- TODO For future releases: [1.1.1]: https://github.com/olivierlacan/keep-a-changelog/compare/v1.1.0...v1.1.1 -->
+[0.4.0]: https://github.com/nf-core/nf-core-utils/compare/0.3.1...0.4.0
+[0.3.1]: https://github.com/nf-core/nf-core-utils/compare/0.3.0...0.3.1
+[0.3.0]: https://github.com/nf-core/nf-core-utils/compare/0.2.0...0.3.0
+[0.2.0]: https://github.com/nf-core/nf-core-utils/compare/0.1.0...0.2.0
+[0.1.0]: https://github.com/nf-core/nf-core-utils/releases/tag/0.1.0
