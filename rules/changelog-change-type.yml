@@ -1,0 +1,15 @@
+# Keep a Changelog 1.1.0: https://keepachangelog.com/en/1.1.0/#how
+id: changelog-change-type
+language: markdown
+severity: error
+message: "Group changes under `### Added`, `Changed`, `Deprecated`, `Removed`, `Fixed` or `Security` (Keep a Changelog 1.1.0)."
+files:
+  - CHANGELOG.md
+rule:
+  kind: atx_heading
+  has:
+    kind: atx_h3_marker
+  not:
+    has:
+      field: heading_content
+      regex: "^(Added|Changed|Deprecated|Removed|Fixed|Security)$"

@@ -26,6 +26,14 @@ repos:
         language: python
         pass_filenames: false
         files: '\.snap$'
+      - id: ast-grep
+        name: ast-grep (Keep a Changelog format)
+        entry: bash -c 'ast-grep test --skip-snapshot-tests && ast-grep scan'
+        language: python
+        additional_dependencies:
+          - ast-grep-cli==0.44.1
+        files: '^(CHANGELOG\.md|sgconfig\.yml|rules/.*|rule-tests/.*)$'
+        pass_filenames: false
       - id: gradle-test
         name: Run unit tests before push
         entry: mise run test
