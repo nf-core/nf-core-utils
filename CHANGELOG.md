@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Citations ignore, with a warning, a `doi` that is not a bare DOI ([#116](https://github.com/nf-core/nf-core-utils/pull/116)).
 - Fixed `completionEmail()`, `completionSummary()` and `checkProfileProvided()` rejecting `--monochrome_logs` and `--plaintext_email` given on the command line: they now accept `true`/`false` text ([#94](https://github.com/nf-core/nf-core-utils/issues/94)).
 - Fixed `completionEmail()` ignoring the email templates of a pipeline on a remote file system ([#139](https://github.com/nf-core/nf-core-utils/pull/139)).
+- Fixed `generateYamlFromEvalSyntax()` rejecting an `includeWorkflow` flag given on the command line: it now accepts `true`/`false` text ([#140](https://github.com/nf-core/nf-core-utils/pull/140)).
 
 ## [0.7.0] - 2026-10-30
 

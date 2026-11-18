@@ -3,6 +3,7 @@ package nfcore.plugin
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
+import nextflow.Session
 import nextflow.exception.AbortOperationException
 import nfcore.plugin.nfcore.PipelineExecutionContext
 import nfcore.plugin.nfcore.ValidationAdapter
@@ -70,6 +71,35 @@ class NfUtilsExtensionBooleanParamsTest extends Specification {
         then:
         def e = thrown(AbortOperationException)
         !e.message.contains('\033[')
+    }
+
+    def 'generateYamlFromEvalSyntax(evalData, #flag) adds the workflow entry only when the flag means true'() {
+        given:
+        def extension = new NfUtilsExtension()
+        extension.session = Mock(Session)
+
+        when:
+        def yaml = extension.generateYamlFromEvalSyntax([['FASTQC', 'fastqc', '0.12.1']], flag)
+
+        then:
+        yaml.contains('fastqc: 0.12.1')
+        yaml.contains('Workflow:') == included
+
+        where:
+        flag    || included
+        'true'  || true
+        'false' || false
+        true    || true
+        false   || false
+    }
+
+    def 'generateYamlFromEvalSyntax(evalData) still adds the workflow entry'() {
+        given:
+        def extension = new NfUtilsExtension()
+        extension.session = Mock(Session)
+
+        expect:
+        extension.generateYamlFromEvalSyntax([['FASTQC', 'fastqc', '0.12.1']]).contains('Workflow:')
     }
 
     def 'logColours(#flag) returns escape codes only when the flag means false'() {
