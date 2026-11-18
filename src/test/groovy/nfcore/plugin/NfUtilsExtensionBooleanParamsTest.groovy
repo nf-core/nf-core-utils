@@ -3,6 +3,7 @@ package nfcore.plugin
 import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
+import nextflow.Nextflow
 import nextflow.Session
 import nextflow.exception.AbortOperationException
 import nfcore.plugin.nfcore.PipelineExecutionContext
@@ -10,6 +11,7 @@ import nfcore.plugin.nfcore.ValidationAdapter
 import org.slf4j.LoggerFactory
 import spock.lang.Issue
 import spock.lang.Specification
+import spock.util.mop.ConfineMetaClassChanges
 
 /** Command-line flags reach the plugin as Strings, so these functions must dispatch on text. */
 @Issue("https://github.com/nf-core/nf-core-utils/issues/94")
@@ -119,7 +121,11 @@ class NfUtilsExtensionBooleanParamsTest extends Specification {
         false   || '\033[0;31m' | '\033[0m' | true
     }
 
+    @ConfineMetaClassChanges(Nextflow)
     def 'completionEmail accepts text for plaintextEmail and monochromeLogs'() {
+        given: 'no session, whatever an earlier spec left behind'
+        Nextflow.metaClass.static.getSession = { -> null }
+
         when:
         new NfUtilsExtension().completionEmail([:], 'a@example.invalid', null, 'true', './results', 'false', [])
 
