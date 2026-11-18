@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# Build this checkout's plugin into a per-run scratch dir and drive it through real `nextflow run`s.
+# Usage: verify launch | doctor | drive <label> <pipeline.nf|dir> [nextflow args...] | cleanup
+# launch records the run in <repo>/.nextflow-verify-run (gitignored by .nextflow*); VERIFY_RUN overrides it.
+set -euo pipefail
+
+repo=$(cd "$(dirname "$0")/../../../.." && pwd)
+version=$(sed -n "s/^version = '\(.*\)'$/\1/p" "$repo/build.gradle")
+[[ -n "$version" ]] || { echo "cannot read version from $repo/build.gradle" >&2; exit 1; }
+
+# The repo's locked Java/Nextflow, plus its [env]: unset AGENT/CLAUDECODE (Nextflow agent mode changes output).
+mise_env=$(cd "$repo" && mise env -s bash) || { echo "mise env failed; in $repo run: mise trust mise.toml && mise install" >&2; exit 1; }
+eval "$mise_env"
+export NXF_AGENT_MODE=false
+
+need_run() {
+    VERIFY_RUN=${VERIFY_RUN:-$(cat "$repo/.nextflow-verify-run" 2>/dev/null || true)}
+    [[ -n "${VERIFY_RUN:-}" && -f "$VERIFY_RUN/state/built-from" ]] ||
+        { echo "VERIFY_RUN is unset or not a launched run; run '$0 launch' first" >&2; exit 1; }
+    export NXF_PLUGINS_DIR="$VERIFY_RUN/state/plugins" NXF_HOME="$VERIFY_RUN/state/home"
+}
+
+checkout_id() { (cd "$repo" && git rev-parse HEAD && { git diff HEAD -- src build.gradle; git status --porcelain -- src build.gradle; } | shasum -a 256); }
+
+case "${1:-}" in
+launch)
+    root=${VERIFY_ROOT:-${TMPDIR:-/tmp}}
+    root="${root%/}/verify-nf-core-utils"  # no '//': drive greps .nextflow.log for this exact path
+    VERIFY_RUN="$root/$(date +%Y%m%d-%H%M%S)-$$"
+    mkdir -p "$VERIFY_RUN/state/plugins" "$VERIFY_RUN/state/home" "$VERIFY_RUN/evidence"
+    (cd "$repo" && NXF_PLUGINS_DIR="$VERIFY_RUN/state/plugins" ./gradlew -q install) >&2
+    checkout_id > "$VERIFY_RUN/state/built-from"
+    echo "$VERIFY_RUN" > "$repo/.nextflow-verify-run"
+    echo "VERIFY_RUN=$VERIFY_RUN"
+    ;;
+doctor)
+    need_run
+    fail=0
+    plugin="$NXF_PLUGINS_DIR/nf-core-utils-$version"
+    [[ -d "$plugin/classes" ]] || { echo "FAIL: $plugin missing; relaunch"; fail=1; }
+    # Identity, not just version: the installed classes must be this checkout's build output.
+    if [[ -d "$plugin/classes" ]] && ! diff -rq -x META-INF "$repo/build/classes/groovy/main" "$plugin/classes" >/dev/null; then
+        echo "FAIL: installed classes differ from $repo/build; relaunch"; fail=1
+    fi
+    [[ "$(checkout_id)" == "$(cat "$VERIFY_RUN/state/built-from")" ]] ||
+        { echo "FAIL: src/ or build.gradle changed since launch; relaunch"; fail=1; }
+    nextflow -version 2>&1 | grep -E 'version [0-9]' | sed 's/^ */nextflow: /' || { echo "FAIL: nextflow"; fail=1; }
+    echo "plugin: nf-core-utils@$version at $plugin"
+    echo "evidence: $VERIFY_RUN/evidence"
+    (( fail == 0 )) && echo "DOCTOR OK" || { echo "DOCTOR FAILED"; exit 1; }
+    ;;
+drive)
+    need_run
+    label=${2:?label}; target=${3:?pipeline .nf file or directory}; shift 3
+    [[ "$target" = /* ]] || target="$PWD/$target"
+    [[ -e "$target" ]] || { echo "no such pipeline: $target" >&2; exit 1; }
+    launch_dir="$VERIFY_RUN/state/launch/$label"; ev="$VERIFY_RUN/evidence/$label"
+    rm -rf "$launch_dir" "$ev" && mkdir -p "$launch_dir" "$ev"
+    cmd=(nextflow run "$target" -plugins "nf-core-utils@$version" "$@")
+    printf '%q ' "${cmd[@]}" > "$ev/command.txt"; echo >> "$ev/command.txt"
+    status=0
+    (cd "$launch_dir" && "${cmd[@]}") > "$ev/stdout.txt" 2> "$ev/stderr.txt" || status=$?
+    echo "$status" > "$ev/exit-code.txt"
+    cp "$launch_dir/.nextflow.log" "$ev/nextflow.log" 2>/dev/null || true
+    [[ -d "$launch_dir/results" ]] && cp -R "$launch_dir/results" "$ev/results"
+    # Prove which plugin build ran: Nextflow logs the plugin path it loaded.
+    grep -E "plugins-dir=$NXF_PLUGINS_DIR;|Plugin started nf-core-utils@$version" "$ev/nextflow.log" \
+        | cut -c1-200 > "$ev/plugin-loaded.txt" || true
+    [[ $(wc -l < "$ev/plugin-loaded.txt") -eq 2 ]] ||
+        echo "WARN: nextflow.log does not show nf-core-utils@$version started from $NXF_PLUGINS_DIR" >&2
+    echo "exit=$status evidence=$ev"
+    ;;
+cleanup)
+    need_run
+    rm -rf "$VERIFY_RUN/state"
+    [[ "$(cat "$repo/.nextflow-verify-run" 2>/dev/null)" == "$VERIFY_RUN" ]] && rm -f "$repo/.nextflow-verify-run"
+    echo "removed $VERIFY_RUN/state; evidence kept at $VERIFY_RUN/evidence"
+    ;;
+*)
+    sed -n '2,4p' "$0" >&2; exit 2 ;;
+esac
