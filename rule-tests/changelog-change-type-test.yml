@@ -1,0 +1,21 @@
+id: changelog-change-type
+valid:
+  - |
+    ## [1.0.0] - 2026-01-01
+
+    ### Added
+
+    ### Security
+invalid:
+  - |
+    ## [1.0.0] - 2026-01-01
+
+    ### added
+  - |
+    ## [1.0.0] - 2026-01-01
+
+    ### Known limitations
+  - |
+    ## [1.0.0] - 2026-01-01
+
+    ### Bug fixes
