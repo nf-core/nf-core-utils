@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `citationOutputs()`: citations as MultiQC HTML, BibTeX or CSL-JSON ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Citation map entries carry `info` (raw `meta.yml` tool map) and `version` ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
-- `collectVersions()`, `generateVersionReport()`, `generateComprehensiveReport()`, `toolsFromVersionsTopic()`, `toolVersionsFromTopic()` and `citationsOnTheFly()` read versions topic records from typed processes, `record(process, tool, version)`, like `[process, tool, version]` tuples ([#137](https://github.com/nf-core/nf-core-utils/pull/137)).
+- `collectVersions()`, `generateVersionReport()`, `generateComprehensiveReport()`, `toolsFromVersionsTopic()`, `citationsOnTheFly()` and the deprecated `processVersionsFromTopic()` / `processMixedVersionSources()` read versions topic records from typed processes, `record(process, tool, version)`, like `[process, tool, version]` tuples ([#137](https://github.com/nf-core/nf-core-utils/pull/137)).
 
 ### Changed
 

@@ -212,6 +212,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      *   <li><b>String</b>: YAML content or file path (auto-detected)</li>
      *   <li><b>File/Path</b>: Reads YAML content from file</li>
      *   <li><b>List&lt;List&gt;</b>: Topic channel tuples [[process, tool, version], ...]</li>
+     *   <li><b>Record</b>: Topic channel records record(process, tool, version) from typed processes</li>
      *   <li><b>List&lt;String&gt;</b>: File paths to versions.yml files</li>
      *   <li><b>Map</b>: Direct version data</li>
      *   <li><b>Mixed List</b>: Any combination of the above</li>
@@ -427,7 +428,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate comprehensive version and citation report
      *
-     * @param topicVersions List of topic channel data [process, name, version]
+     * @param topicVersions List of topic channel data: [process, name, version] tuples or record(process, tool, version)
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @param metaFilePaths List of paths to module meta.yml files (optional)
      * @param mqcMethodsYaml MultiQC methods description template, as a Path or a path string, local or remote (optional)
@@ -448,7 +449,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate version-only report
      *
-     * @param topicVersions List of topic channel data [process, name, version]
+     * @param topicVersions List of topic channel data: [process, name, version] tuples or record(process, tool, version)
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @return Map containing only versions information
      */
@@ -556,7 +557,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Extract the unique set of tool names that actually ran, from collected
-     * 'versions' topic data ([process, tool, version] tuples).
+     * 'versions' topic data ([process, tool, version] tuples or record(process, tool, version)).
      *
      * @param topicVersions Versions-topic data, e.g. channel.topic('versions').toList()
      * @return Sorted, de-duplicated list of tool names

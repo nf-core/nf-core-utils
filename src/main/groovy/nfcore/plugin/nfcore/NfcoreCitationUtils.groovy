@@ -466,16 +466,14 @@ class NfcoreCitationUtils {
      */
     static List<String> toolsFromVersionsTopic(List topicVersions) {
         if (!topicVersions) return []
-        def incompleteRecords = topicVersions.count { it instanceof Record && !SoftwareVersionReport.versionRecordTuple((Record) it) }
+        def converted = versionTuples(topicVersions)
+        def incompleteRecords = [topicVersions, converted].transpose().count { entry, tuple -> entry instanceof Record && tuple == null }
         if (incompleteRecords) {
             log.warn("toolsFromVersionsTopic skipped ${incompleteRecords} versions record(s) without process, tool and version fields")
         }
-        def tuples = versionTuples(topicVersions).findAll { it instanceof List && it.size() >= 2 }
-        if (tuples.isEmpty()) {
-            if (topicVersions.size() > incompleteRecords) {
-                log.warn("toolsFromVersionsTopic received ${topicVersions.size()} item(s) but no [process, tool, version] tuples — collect the versions topic with .collect(flat: false) to preserve tuples")
-            }
-            return []
+        def tuples = converted.findAll { it instanceof List && it.size() >= 2 }
+        if (tuples.isEmpty() && topicVersions.size() > incompleteRecords) {
+            log.warn("toolsFromVersionsTopic received ${topicVersions.size()} item(s) but no [process, tool, version] tuples — collect the versions topic with .collect(flat: false) to preserve tuples")
         }
         return tuples.collect { it[1]?.toString()?.trim() }.findAll { it }.unique().sort()
     }

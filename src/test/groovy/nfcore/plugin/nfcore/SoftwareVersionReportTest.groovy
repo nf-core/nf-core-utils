@@ -6,7 +6,6 @@ import spock.lang.See
 import spock.lang.Specification
 import spock.lang.TempDir
 import spock.lang.Title
-import nextflow.script.types.Record
 import org.yaml.snakeyaml.Yaml
 
 import java.nio.file.FileSystems
@@ -166,7 +165,7 @@ class SoftwareVersionReportTest extends Specification {
         def report = new SoftwareVersionReport()
 
         when:
-        report.addInput([versionsRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0')])
+        report.addInput([new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0')])
 
         then:
         report.renderYaml() == "PRESEQ_LCEXTRAP:\n  preseq: 3.2.0"
@@ -177,7 +176,7 @@ class SoftwareVersionReportTest extends Specification {
         def report = new SoftwareVersionReport()
 
         when:
-        report.addInput(versionsRecord('PRESEQ_LCEXTRAP', 'preseq', '3.2.0'))
+        report.addInput(new TestRecord(process: 'PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0'))
 
         then:
         report.renderYaml() == "PRESEQ_LCEXTRAP:\n  preseq: 3.2.0"
@@ -192,9 +191,9 @@ class SoftwareVersionReportTest extends Specification {
         when:
         report.addInput([
             ['NFCORE:FASTQC', 'fastqc', '0.12.1'],
-            versionsRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0'),
+            new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0'),
             versionsYml,
-            [[versionsRecord('NFCORE:SAMTOOLS_SORT', 'samtools', '1.21')]]
+            [[new TestRecord(process: 'NFCORE:SAMTOOLS_SORT', tool: 'samtools', version: '1.21')]]
         ])
 
         then:
@@ -222,8 +221,7 @@ class SoftwareVersionReportTest extends Specification {
     def 'skips a record without the versions fields'() {
         given:
         def report = new SoftwareVersionReport()
-        def record = new TestRecord()
-        record.putAll(id: 'sample1', bam: 'sample1.bam')
+        def record = new TestRecord(id: 'sample1', bam: 'sample1.bam')
 
         when:
         report.addInput([record, ['FASTQC', 'fastqc', '0.12.1']])
@@ -340,13 +338,4 @@ class SoftwareVersionReportTest extends Specification {
         yaml.contains('NFCORE_FASTQC:')
         yaml.contains('NFCORE_SAMTOOLS:')
     }
-
-    private static Record versionsRecord(String process, String tool, String version) {
-        def record = new TestRecord()
-        record.putAll(process: process, tool: tool, version: version)
-        return record
-    }
-
-    /** A mutable stand-in for nextflow.util.RecordMap (a LinkedHashMap implementing Record). */
-    static class TestRecord extends LinkedHashMap<String, Object> implements Record {}
 }

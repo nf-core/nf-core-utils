@@ -5,7 +5,6 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import nextflow.Session
 import nextflow.config.Manifest
-import nextflow.script.types.Record
 import nfcore.plugin.nfcore.NfcoreCitationUtils
 import org.slf4j.LoggerFactory
 import spock.lang.Issue
@@ -952,28 +951,18 @@ ${tool_bibliography}
         detachAppender(appender)
     }
 
-    def "toolsFromVersionsTopic reads records from typed processes alongside tuples"() {
+    def "toolsFromVersionsTopic reads records alone and alongside tuples"() {
         given:
         def appender = captureLogsFor(NfcoreCitationUtils)
-        def topicVersions = [
-            versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0'),
-            ['NFCORE:FASTQC', 'fastqc', '0.12.1']
-        ]
+        def preseq = new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0')
 
-        when:
-        def result = NfcoreCitationUtils.toolsFromVersionsTopic(topicVersions)
-
-        then:
-        result == ['fastqc', 'preseq']
+        expect:
+        NfcoreCitationUtils.toolsFromVersionsTopic([preseq]) == ['preseq']
+        NfcoreCitationUtils.toolsFromVersionsTopic([preseq, ['NFCORE:FASTQC', 'fastqc', '0.12.1']]) == ['fastqc', 'preseq']
         logMessages(appender).every { !it.contains('flat: false') }
 
         cleanup:
         detachAppender(appender)
-    }
-
-    def "toolsFromVersionsTopic reads a topic made only of records"() {
-        expect:
-        NfcoreCitationUtils.toolsFromVersionsTopic([versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0')]) == ['preseq']
     }
 
     def "toolsFromVersionsTopic ignores plain maps with versions keys"() {
@@ -986,8 +975,7 @@ ${tool_bibliography}
     def "toolsFromVersionsTopic warns about records without versions fields, not about flattening"() {
         given:
         def appender = captureLogsFor(NfcoreCitationUtils)
-        def incomplete = new SoftwareVersionReportTest.TestRecord()
-        incomplete.putAll(id: 'sample1')
+        def incomplete = new TestRecord(id: 'sample1')
 
         when:
         def result = NfcoreCitationUtils.toolsFromVersionsTopic([incomplete])
@@ -1003,18 +991,14 @@ ${tool_bibliography}
 
     def "toolsFromVersionsTopic skips incomplete records and keeps complete ones"() {
         given:
-        def incomplete = new SoftwareVersionReportTest.TestRecord()
-        incomplete.putAll(id: 'sample1')
+        def topicVersions = [
+            new TestRecord(id: 'sample1'),
+            new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0')
+        ]
 
         expect:
-        NfcoreCitationUtils.toolsFromVersionsTopic([
-            incomplete,
-            versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0')
-        ]) == ['preseq']
-        NfcoreCitationUtils.toolVersionsFromTopic([
-            incomplete,
-            versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0')
-        ]) == [preseq: '3.2.0']
+        NfcoreCitationUtils.toolsFromVersionsTopic(topicVersions) == ['preseq']
+        NfcoreCitationUtils.toolVersionsFromTopic(topicVersions) == [preseq: '3.2.0']
     }
 
     def "filterCitationsByTools keeps only tools that ran, matching case-insensitively"() {
@@ -1101,7 +1085,7 @@ ${tool_bibliography}
     def "toolVersionsFromTopic maps versions from records and tuples"() {
         given:
         def topicVersions = [
-            versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0'),
+            new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0'),
             ['NFCORE:MULTIQC', 'multiqc', '1.21']
         ]
 
@@ -1121,7 +1105,7 @@ ${tool_bibliography}
 
         when:
         def result = NfcoreCitationUtils.citationsOnTheFly(
-            [versionRecord('NFCORE:PRESEQ_LCEXTRAP', 'preseq', '3.2.0')], [preseqMeta.absolutePath])
+            [new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0')], [preseqMeta.absolutePath])
 
         then:
         result.keySet() == ['preseq'] as Set
@@ -1383,11 +1367,5 @@ ${tool_bibliography}
 
         then:
         meta == [workflow: [:], manifest_map: [:], tool_citations: 'seqtk']
-    }
-
-    private static Record versionRecord(String process, String tool, String version) {
-        def record = new SoftwareVersionReportTest.TestRecord()
-        record.putAll(process: process, tool: tool, version: version)
-        return record
     }
 }
