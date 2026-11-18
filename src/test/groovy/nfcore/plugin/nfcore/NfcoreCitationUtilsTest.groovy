@@ -583,6 +583,32 @@ ${tool_bibliography}
         'getCitation'                             | { NfcoreCitationUtils.getCitation("${it.toUri()}") }                         | [['FASTQC', 'fastqc', [doi: '10.1093/bioinformatics/btv033']]]
     }
 
+    def 'generateModuleToolCitation names a missing remote meta.yml by its full URI'() {
+        given:
+        def fs = FileSystems.newFileSystem(URI.create("jar:${tempDir.resolve('modules.zip').toUri()}"), [create: 'true'])
+        def missing = fs.getPath('/modules/star/meta.yml')
+
+        when:
+        NfcoreCitationUtils.generateModuleToolCitation(missing)
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.startsWith('meta.yml file not found at: jar:file:')
+        e.message.endsWith('modules.zip!/modules/star/meta.yml')
+
+        cleanup:
+        fs?.close()
+    }
+
+    def 'generateModuleToolCitation names a missing local meta.yml by its absolute path'() {
+        when:
+        NfcoreCitationUtils.generateModuleToolCitation('missing/meta.yml')
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message == "meta.yml file not found at: ${Path.of('missing/meta.yml').toAbsolutePath()}"
+    }
+
     def "topic channel functions should handle empty input"() {
         when:
         def topicResult = NfcoreCitationUtils.processCitationsFromTopic([])

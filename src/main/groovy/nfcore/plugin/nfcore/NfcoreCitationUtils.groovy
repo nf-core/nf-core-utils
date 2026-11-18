@@ -21,6 +21,7 @@ import nextflow.Session
 import nextflow.script.types.Record
 import nfcore.plugin.nextflow.NextflowPipelineUtils
 import java.nio.file.Files
+import java.nio.file.FileSystems
 import java.nio.file.Path
 import org.yaml.snakeyaml.Yaml
 
@@ -42,7 +43,9 @@ class NfcoreCitationUtils {
         // Read through the Path: new File() loses the file system of a remote path
         Path file = metaFilePath instanceof File ? metaFilePath.toPath() : NextflowPipelineUtils.toPath(metaFilePath)
         if (file == null || !Files.exists(file)) {
-            throw new IllegalArgumentException("meta.yml file not found at: ${file?.toAbsolutePath()}")
+            // A remote path's toString() drops its scheme and host; its URI keeps them
+            def location = file?.fileSystem == FileSystems.default ? file.toAbsolutePath() : file?.toUri()
+            throw new IllegalArgumentException("meta.yml file not found at: ${location}")
         }
         def yaml = new Yaml()
         Map meta
