@@ -21,6 +21,15 @@ plugins {
 
 The template migration itself is carried by nf-core/tools#3870.
 
+:::note{title="Migrating with an agent"}
+The [`nf-core-utils-migration`](https://github.com/nf-core/nf-core-utils/tree/main/skills/nf-core-utils-migration) skill walks a coding agent through this migration on a real pipeline: inventory, signatures from the pinned plugin, the replacements, external `plugins {}` blocks, verification and the PR. Install it into the pipeline with the [skills CLI](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add nf-core/nf-core-utils --skill nf-core-utils-migration
+```
+
+:::
+
 ## Updating your pipeline
 
 Import from the plugin in the file that calls the function:

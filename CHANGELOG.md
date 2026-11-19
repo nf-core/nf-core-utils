@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added the `nf-core-utils-migration` agent skill by Maxime U Garcia, from [maxulysse/nf-core-utils-migration](https://github.com/maxulysse/nf-core-utils-migration), under `skills/`. Install it with `npx skills add nf-core/nf-core-utils --skill nf-core-utils-migration`.
 - Added [Migrating from the template utilities](docs/migrations/template-utilities.md): replacing the pipeline template's helpers and utils subworkflows with plugin imports (a verified run against an installed candidate is still to do).
 - Added `logColours(monochromeLogs)`: ANSI colour codes for terminal output, the same keys as the pipeline template.
 - Added `genomeExistsError()`: aborts with the available keys when `params.genome` is not in `params.genomes`, as in the pipeline template.
