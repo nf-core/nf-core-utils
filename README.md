@@ -8,6 +8,14 @@ The nf-core-utils plugin provides utility functions used by nf-core pipelines.
 - [ReferencesExtension](docs/ReferencesExtension.md)
 - [NfCore Utilities](docs/NfCoreUtilities.md)
 
+## Agent skills
+
+`skills/nf-core-utils-migration` is a skill that walks a coding agent through moving an nf-core pipeline onto this plugin. Install it into a pipeline with the [skills CLI](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add nf-core/nf-core-utils --skill nf-core-utils-migration
+```
+
 ## Development setup
 
 Install [mise](https://mise.jdx.dev/getting-started.html), then from the repository root:
