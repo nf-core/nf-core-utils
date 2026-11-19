@@ -23,7 +23,7 @@ workflow {
         .map { v -> collectVersions(v) }
         .subscribe { yaml -> file("${params.outdir}/versions.yml").text = yaml }
 
-    def meta_yml_paths = files("${projectDir}/meta/*.yml").collect { it.toString() }
+    def meta_yml_paths = files("${projectDir}/meta/*.yml").collect { path -> path.toString() }
     versions
         .map { v -> citationsOnTheFly(v, meta_yml_paths) }
         .subscribe { citations ->
