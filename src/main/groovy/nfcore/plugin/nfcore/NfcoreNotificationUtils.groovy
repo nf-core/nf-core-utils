@@ -293,21 +293,20 @@ class NfcoreNotificationUtils {
         def email_html = "<html><body>Default email content</body></html>"
 
         try {
-            def tf = new File("${wf?.projectDir}/assets/email_template.txt")
-            if (tf.exists()) {
-                def txt_template = TEMPLATE_ENGINE.createTemplate(tf).make(email_fields)
-                email_txt = txt_template.toString()
+            // Read through the Path: the project directory may be on a remote file system
+            Path tf = wf?.projectDir?.resolve('assets/email_template.txt')
+            if (tf != null && Files.exists(tf)) {
+                email_txt = Files.newBufferedReader(tf).withCloseable { TEMPLATE_ENGINE.createTemplate(it).make(email_fields).toString() }
             } else {
-                log.warn("Email template not found: ${tf.absolutePath}")
+                log.warn("Email template not found: ${tf}")
             }
 
             // Render the HTML template
-            def hf = new File("${wf?.projectDir}/assets/email_template.html")
-            if (hf.exists()) {
-                def html_template = TEMPLATE_ENGINE.createTemplate(hf).make(email_fields)
-                email_html = html_template.toString()
+            Path hf = wf?.projectDir?.resolve('assets/email_template.html')
+            if (hf != null && Files.exists(hf)) {
+                email_html = Files.newBufferedReader(hf).withCloseable { TEMPLATE_ENGINE.createTemplate(it).make(email_fields).toString() }
             } else {
-                log.warn("HTML email template not found: ${hf.absolutePath}")
+                log.warn("HTML email template not found: ${hf}")
             }
         } catch (Exception e) {
             log.warn("Failed to render email templates: ${e.message}")
@@ -527,13 +526,13 @@ class NfcoreNotificationUtils {
             // Different JSON depending on the service provider
             // Defaults to "Adaptive Cards" (https://adaptivecards.io), except Slack which has its own format
             def json_path = hook_url.contains("hooks.slack.com") ? "slackreport.json" : "adaptivecard.json"
-            def hf = new File("${wf?.projectDir}/assets/${json_path}")
+            // Read through the Path: the project directory may be on a remote file system
+            Path hf = wf?.projectDir?.resolve("assets/${json_path}")
 
-            if (hf.exists()) {
-                def json_template = TEMPLATE_ENGINE.createTemplate(hf).make(msg_fields)
-                json_message = json_template.toString()
+            if (hf != null && Files.exists(hf)) {
+                json_message = Files.newBufferedReader(hf).withCloseable { TEMPLATE_ENGINE.createTemplate(it).make(msg_fields).toString() }
             } else {
-                log.warn("IM notification template not found: ${hf.absolutePath}")
+                log.warn("IM notification template not found: ${hf}")
                 // Create a basic JSON message as fallback
                 json_message = groovy.json.JsonOutput.toJson([
                     text: "Pipeline ${msg_fields.runName ?: 'unknown'} ${msg_fields.success ? 'completed successfully' : 'failed'}"

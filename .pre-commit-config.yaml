@@ -26,6 +26,20 @@ repos:
         language: python
         pass_filenames: false
         files: '\.snap$'
+      - id: ast-grep
+        name: ast-grep (Keep a Changelog format)
+        entry: bash -c 'ast-grep test --skip-snapshot-tests && ast-grep scan'
+        language: python
+        additional_dependencies:
+          - ast-grep-cli==0.44.1
+        files: '^(CHANGELOG\.md|sgconfig\.yml|rules/.*|rule-tests/.*)$'
+        pass_filenames: false
+      - id: changelog-links
+        name: Check CHANGELOG release links
+        entry: scripts/hooks/check_changelog_links.py
+        language: python
+        files: '^CHANGELOG\.md$'
+        pass_filenames: false
       - id: gradle-test
         name: Run unit tests before push
         entry: mise run test
@@ -33,13 +47,14 @@ repos:
         pass_filenames: false
         stages: [pre-push]
         verbose: true
-
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v3.1.0"
-    hooks:
-      - id: prettier
+      - id: oxfmt
+        name: oxfmt
+        # Every text file is passed in; oxfmt skips the types it does not format.
+        entry: oxfmt --no-error-on-unmatched-pattern
+        language: node
         additional_dependencies:
-          - prettier@3.6.2
+          - oxfmt@0.78.0
+        types: [text]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

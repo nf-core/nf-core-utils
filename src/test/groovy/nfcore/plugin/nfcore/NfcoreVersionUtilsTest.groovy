@@ -3,11 +3,18 @@ package nfcore.plugin.nfcore
 import nextflow.Session
 import nextflow.config.Manifest
 import nextflow.script.WorkflowMetadata
+import org.yaml.snakeyaml.Yaml
 import spock.lang.Issue
 import spock.lang.Specification
 import spock.lang.TempDir
 
+import java.nio.file.FileSystems
+import java.nio.file.Path
+
 class NfcoreVersionUtilsTest extends Specification {
+
+    @TempDir
+    Path tempDir
 
     @Issue("https://github.com/nf-core/proposals/issues/46")
     def 'getWorkflowVersion formats version with v prefix when using Session'() {
@@ -487,6 +494,19 @@ class NfcoreVersionUtilsTest extends Specification {
         result.contains("multiqc: '1.15'") || result.contains('multiqc: 1.15')
     }
 
+    def 'processVersionsFromTopic reads records alongside tuples and skips incomplete records'() {
+        given:
+        def topicData = [
+            new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0'),
+            new TestRecord(id: 'sample1'),
+            ['NFCORE_FASTQC', 'fastqc', '0.12.1']
+        ]
+
+        expect:
+        new Yaml().load(NfcoreVersionUtils.processVersionsFromTopic(topicData)) ==
+            [preseq: '3.2.0', fastqc: '0.12.1']
+    }
+
     @Issue("https://github.com/nf-core/proposals/issues/46")
     def 'processVersionsFromTopic should handle empty or malformed data'() {
         when:
@@ -743,6 +763,22 @@ class NfcoreVersionUtilsTest extends Specification {
 
         then:
         result == '{}'
+    }
+
+    def 'processVersionsFromFile reads a versions file on a remote file system, given as #form'() {
+        given: 'a zip file system stands for object storage; registered by URI, so that a URI string resolves to it'
+        def fs = FileSystems.newFileSystem(URI.create("jar:${tempDir.resolve('work.zip').toUri()}"), [create: 'true'])
+        def versions = fs.getPath('/versions.yml')
+        versions.text = 'fastqc: 0.12.1\n'
+
+        expect:
+        NfcoreVersionUtils.processVersionsFromFile([form == 'a Path' ? versions : versions.toUri().toString()]) == 'fastqc: 0.12.1'
+
+        cleanup:
+        fs?.close()
+
+        where:
+        form << ['a URI string', 'a Path']
     }
 
     @Issue("https://github.com/nf-core/proposals/issues/46")

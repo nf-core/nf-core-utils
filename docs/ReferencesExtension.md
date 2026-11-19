@@ -17,6 +17,7 @@ The References Extension solves this by providing a unified interface that autom
 The extension provides:
 
 - `getGenomeAttribute()`: reads one attribute of the selected genome from `params.genomes` (see [1.2](#12-migration-from-legacy-systems)).
+- `genomeExistsError()`: aborts the pipeline when `params.genome` is not a key of `params.genomes`.
 - `getReferencePath()`, `getReferenceMetadata()` and `getReferenceAttribute()`: resolve references from a references datasheet (see [2.1](#21-reference-datasheet-resolution)).
 
 ### 1.2. Migration from Legacy Systems
@@ -61,6 +62,24 @@ include { getGenomeAttribute } from 'plugin/nf-core-utils'
 workflow {
     fasta = getGenomeAttribute('fasta') // 's3://bucket/genome.fa'
     star  = getGenomeAttribute('star')  // null: GRCh38 has no 'star'
+}
+```
+
+### 1.3. Genome Key Check
+
+`genomeExistsError()` replaces the template's `genomeExistsError()` helper. It reads `params.genome` and `params.genomes` from the session config (falling back to `session.params`), the same source as `getGenomeAttribute()`.
+
+```groovy
+void genomeExistsError()
+```
+
+It does nothing when `params.genome` is unset or `params.genomes` is missing or empty. Otherwise, if `params.genome` is not a key of `params.genomes`, it throws an `AbortOperationException` that names the genome and lists the available keys.
+
+```nextflow
+include { genomeExistsError } from 'plugin/nf-core-utils'
+
+workflow {
+    genomeExistsError()
 }
 ```
 

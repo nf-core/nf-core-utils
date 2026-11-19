@@ -18,6 +18,10 @@ package nfcore.plugin.nfcore
 
 import groovy.util.logging.Slf4j
 import nextflow.Session
+import nextflow.script.types.Record
+import nfcore.plugin.nextflow.NextflowPipelineUtils
+import java.nio.file.Files
+import java.nio.file.FileSystems
 import java.nio.file.Path
 import org.yaml.snakeyaml.Yaml
 
@@ -32,13 +36,16 @@ class NfcoreCitationUtils {
 
     /**
      * Generate citation for a tool from meta.yml at the module level
-     * @param metaFilePath Path to the meta.yml file (String or File)
+     * @param metaFilePath Path to the meta.yml file (String, File or Path)
      * @return Map containing tool citations for the module
      */
     static Map generateModuleToolCitation(Object metaFilePath) {
-        File file = metaFilePath instanceof File ? metaFilePath : new File(metaFilePath.toString())
-        if (!file.exists()) {
-            throw new IllegalArgumentException("meta.yml file not found at: ${file.getAbsolutePath()}")
+        // Read through the Path: new File() loses the file system of a remote path
+        Path file = metaFilePath instanceof File ? metaFilePath.toPath() : NextflowPipelineUtils.toPath(metaFilePath)
+        if (file == null || !Files.exists(file)) {
+            // A remote path's toString() drops its scheme and host; its URI keeps them
+            def location = file?.fileSystem == FileSystems.default ? file.toAbsolutePath() : file?.toUri()
+            throw new IllegalArgumentException("meta.yml file not found at: ${location}")
         }
         def yaml = new Yaml()
         Map meta
@@ -53,15 +60,8 @@ class NfcoreCitationUtils {
                 def citation = toolName
                 def bibEntry = null
 
-                // Generate citation text
                 if (toolInfo instanceof Map) {
-                    if (toolInfo.doi) {
-                        citation += " (DOI: ${toolInfo.doi})"
-                    } else if (toolInfo.description) {
-                        citation += " (${toolInfo.description})"
-                    }
-
-                    // Generate bibliography entry using shared formatter
+                    citation = formatCitationFromData(toolName, toolInfo as Map)
                     bibEntry = formatBibliographyFromData(toolName, toolInfo as Map)
                 }
 
@@ -197,13 +197,13 @@ class NfcoreCitationUtils {
      */
     static List<List> convertMetaYamlToTopicFormat(String metaFilePath, String moduleName = null) {
         try {
-            def file = new File(metaFilePath)
-            if (!file.exists()) {
+            Path file = NextflowPipelineUtils.toPath(metaFilePath)
+            if (file == null || !Files.exists(file)) {
                 return []
             }
 
             if (!moduleName) {
-                moduleName = file.getParentFile()?.getName() ?: 'unknown'
+                moduleName = file.parent?.fileName?.toString() ?: 'unknown'
             }
 
             def yaml = new Yaml()
@@ -237,8 +237,9 @@ class NfcoreCitationUtils {
      */
     private static String formatCitationFromData(String toolName, Map citationData) {
         def citation = toolName
-        if (citationData.doi) {
-            citation += " (DOI: ${citationData.doi})"
+        def doi = NfcoreCitationFormats.referenceOf(toolName, citationData).doi
+        if (doi) {
+            citation += " (DOI: ${doi})"
         } else if (citationData.description) {
             citation += " (${citationData.description})"
         }
@@ -254,7 +255,8 @@ class NfcoreCitationUtils {
      */
     private static String formatBibliographyFromData(String toolName, Map citationData) {
         def pub = NfcoreCitationFormats.publicationOf(citationData)
-        def doi = citationData.doi ? "doi: <a href='https://doi.org/${citationData.doi}'>${citationData.doi}</a>" : ""
+        def ref = NfcoreCitationFormats.referenceOf(toolName, citationData)
+        def link = ref.doi ? "doi: <a href='https://doi.org/${ref.doi}'>${ref.doi}</a>" : ref.url ? "<a href='${ref.url}'>${ref.url}</a>" : null
 
         // Publication present: academic-style reference "Author. (year). title. source. doi: link".
         // The meta-schema treats publication as all-or-nothing; field guards keep entries clean
@@ -266,15 +268,13 @@ class NfcoreCitationUtils {
             if (pub.year) parts << "(${pub.year})"
             if (pub.title) parts << pub.title
             if (pub.source) parts << pub.source
-            if (doi) parts << doi
-            else if (citationData.homepage) parts << "<a href='${citationData.homepage}'>${citationData.homepage}</a>"
+            if (link) parts << link
             return "<li>${parts.join('. ')}.</li>"
         }
 
         // No publication object: identify by tool name, linking out via DOI or homepage.
         def parts = [toolName]
-        if (doi) parts << doi
-        else if (citationData.homepage) parts << "<a href='${citationData.homepage}'>${citationData.homepage}</a>"
+        if (link) parts << link
         return "<li>${parts.join('. ')}.</li>"
     }
 
@@ -328,8 +328,8 @@ class NfcoreCitationUtils {
      */
     static List getCitation(String metaYmlPath) {
         try {
-            File metaFile = new File(metaYmlPath)
-            if (!metaFile.exists()) {
+            Path metaFile = NextflowPipelineUtils.toPath(metaYmlPath)
+            if (metaFile == null || !Files.exists(metaFile)) {
                 log.warn("meta.yml not found at ${metaYmlPath}")
                 return []
             }
@@ -464,17 +464,22 @@ class NfcoreCitationUtils {
      * no per-module changes — the basis for citations that match what ran.
      *
      * Expects each entry to be a [process, tool, version] tuple, i.e. the topic
-     * collected with {@code .collect(flat: false)}.
+     * collected with {@code .collect(flat: false)}, or a record(process, tool, version)
+     * as emitted by typed processes.
      *
-     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples or records)
      * @return Sorted, de-duplicated list of tool names (never null)
      */
     static List<String> toolsFromVersionsTopic(List topicVersions) {
         if (!topicVersions) return []
-        def tuples = topicVersions.findAll { it instanceof List && it.size() >= 2 }
-        if (tuples.isEmpty()) {
+        def converted = versionTuples(topicVersions)
+        def incompleteRecords = [topicVersions, converted].transpose().count { entry, tuple -> entry instanceof Record && tuple == null }
+        if (incompleteRecords) {
+            log.warn("toolsFromVersionsTopic skipped ${incompleteRecords} versions record(s) without process, tool and version fields")
+        }
+        def tuples = converted.findAll { it instanceof List && it.size() >= 2 }
+        if (tuples.isEmpty() && topicVersions.size() > incompleteRecords) {
             log.warn("toolsFromVersionsTopic received ${topicVersions.size()} item(s) but no [process, tool, version] tuples — collect the versions topic with .collect(flat: false) to preserve tuples")
-            return []
         }
         return tuples.collect { it[1]?.toString()?.trim() }.findAll { it }.unique().sort()
     }
@@ -484,12 +489,12 @@ class NfcoreCitationUtils {
      *
      * Keeps the first version seen per tool (tool names preserved as emitted).
      *
-     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples or records)
      * @return Map of tool name -> version (never null)
      */
     static Map toolVersionsFromTopic(List topicVersions) {
         def versions = [:]
-        topicVersions?.each { entry ->
+        versionTuples(topicVersions).each { entry ->
             if (entry instanceof List && entry.size() >= 3 && entry[1] != null) {
                 def tool = entry[1].toString().trim()
                 def ver = entry[2]?.toString()?.trim()
@@ -497,6 +502,12 @@ class NfcoreCitationUtils {
             }
         }
         return versions
+    }
+
+    private static List versionTuples(List topicVersions) {
+        return (topicVersions ?: []).collect { entry ->
+            entry instanceof Record ? SoftwareVersionReport.versionRecordTuple((Record) entry) : entry
+        }
     }
 
     /**
@@ -544,16 +555,10 @@ class NfcoreCitationUtils {
     static String formatShortCitation(String tool, Map info, String version = null) {
         def parts = []
         if (version) parts << version
-        def ref = shortReference(info ?: [:])
-        if (ref) {
-            // Link to DOI if available, else link to homepage
-            if (info?.doi) {
-                ref = "<a href='https://doi.org/${info.doi}'>${ref}</a>"
-            } else if (info?.homepage) {
-                ref = "<a href='${info.homepage}'>${ref}</a>"
-            }
-            parts << ref
-        }
+        def ref = NfcoreCitationFormats.referenceOf(tool, info)
+        def text = shortReference(ref, info?.description)
+        def href = ref.doi ? "https://doi.org/${ref.doi}" : ref.url
+        if (text) parts << (href ? "<a href='${href}'>${text}</a>" : text)
         return parts ? "${tool} (${parts.join(', ')})" : tool.toString()
     }
 
@@ -572,7 +577,7 @@ class NfcoreCitationUtils {
      * (e.g. a MultiQC plugin like {@code multiqcsav}); they are resolved from
      * meta.yml just like the rest, with no version segment.
      *
-     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples)
+     * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples or records)
      * @param metaFilePaths Paths to module meta.yml files
      * @param extraTools Extra tool names to cite even though they did not emit a version
      * @return Citations map (tool -> [citation, bibliography, info, version]) for tools that ran
@@ -642,17 +647,13 @@ class NfcoreCitationUtils {
      * "Surname (year)" or "Surname et al. (year)" when an author is known,
      * else "doi: ...", else the homepage url, else description.
      */
-    private static String shortReference(Map info) {
-        def pub = NfcoreCitationFormats.publicationOf(info)
-        def author = pub.author?.toString()?.trim()
-        if (author) {
-            def year = pub.year ? pub.year.toString().trim() : ''
-            def sa = shortAuthor(author)
-            return year ? "${sa} (${year})" : sa
+    private static String shortReference(Map ref, Object description) {
+        if (ref.author) {
+            def sa = shortAuthor(ref.author as String)
+            return ref.year ? "${sa} (${ref.year})" : sa
         }
-        if (info.doi) return "doi: ${info.doi}"
-        if (info.homepage) return info.homepage.toString()
-        return info.description ? info.description.toString() : ''
+        if (ref.doi) return "doi: ${ref.doi}"
+        return ref.url ?: description?.toString() ?: ''
     }
 
     /**

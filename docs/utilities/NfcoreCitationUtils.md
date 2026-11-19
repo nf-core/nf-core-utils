@@ -54,7 +54,7 @@ For example, `Andrews, S.` renders as `Andrews (2010)`, while `van der Walt, S.`
 | `doi` only                                          | `multiqc (1.21, doi: 10.1093/bioinformatics/btw354)` |
 | `homepage` only                                     | `seqtk (1.4, https://github.com/lh3/seqtk)`          |
 
-The full `bibliography` entry includes author, year, title and source when available, followed by a DOI link or, when no DOI is supplied, the homepage link. This applies to both nested publication metadata and legacy flat fields.
+The full `bibliography` entry includes author, year, title and source when available, followed by a DOI link or, when `doi` is empty or not a bare DOI (logged as a warning), the homepage link. This applies to both nested publication metadata and legacy flat fields.
 
 **Function Signature:**
 
@@ -64,7 +64,7 @@ Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<Strin
 
 **Parameters:**
 
-- `topicVersions` (List): Collected `versions` topic data — `[process, tool, version]` tuples. Collect with `.toList()` so the tuples are preserved (plain `.collect()` flattens them, and the function logs a warning if it receives flattened data).
+- `topicVersions` (List): Collected `versions` topic data: `[process, tool, version]` tuples, or `record(process, tool, version)` from typed processes. Collect with `.toList()` so the tuples are preserved (plain `.collect()` flattens them, and the function logs a warning if it receives flattened data).
 - `metaFilePaths` (List\<String\>): Paths to module `meta.yml` files to resolve citation metadata from.
 - `extraTools` (List\<String\>, optional): Tool names to cite even though they never emit a version — e.g. a MultiQC plugin like `multiqcsav`. They're resolved from `meta.yml` like everything else (with no version segment), so you can still add a tool by hand: `citationsOnTheFly(versions, meta_yml_paths, ['multiqcsav'])`.
 
@@ -186,7 +186,7 @@ List<String> toolsFromVersionsTopic(List topicVersions)
 
 **Parameters:**
 
-- `topicVersions` (List): Collected `versions` topic data — `[process, tool, version]` tuples (collect with `.toList()`).
+- `topicVersions` (List): Collected `versions` topic data: `[process, tool, version]` tuples or `record(process, tool, version)` from typed processes (collect with `.toList()`).
 
 **Returns:**
 
@@ -334,7 +334,7 @@ Map generateModuleToolCitation(Object metaFilePath)
 
 **Parameters:**
 
-- `metaFilePath` (String|File): Path to the local meta.yml file. Throws if the file does not exist.
+- `metaFilePath` (String|File|Path): Path to the meta.yml file, local or remote. Throws if the file does not exist.
 
 **Returns:**
 

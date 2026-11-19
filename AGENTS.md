@@ -20,6 +20,9 @@ Guide for autonomous contributors (LLMs and humans).
 
 - Do not break public `@Function` behavior without migration notes.
 - Add/update tests for any functional change.
+- No tautological tests or checks. A test must be able to fail when the behavior is
+  wrong: do not assert a stub's own return value, restate the implementation, or
+  re-check a setting that the platform already enforces.
 - Update docs when behavior or API shape changes.
 - Avoid adding dependencies without documenting rationale in `docs/adr/`.
 

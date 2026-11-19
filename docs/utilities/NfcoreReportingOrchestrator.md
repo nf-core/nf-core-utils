@@ -35,7 +35,7 @@ Map generateComprehensiveReport(
 
 **Parameters:**
 
-- `topicVersions` (List\<List\>): Version data from topic channels in `[process, name, version]` format
+- `topicVersions` (List\<List\>): Version data from topic channels: `[process, name, version]` tuples, or `record(process, tool, version)` from typed processes
 - `legacyVersions` (List\<String\>, optional): Legacy `versions.yml` contents or file paths
 - `metaFilePaths` (List\<String\>, optional): List of paths to module meta.yml files for citations
 - `mqcMethodsYaml` (Path or String, optional): MultiQC methods description template, local or remote (`s3://`, `gs://`, `az://`)
@@ -92,7 +92,7 @@ Map generateVersionReport(List<List> topicVersions, List<String> legacyVersions 
 
 **Parameters:**
 
-- `topicVersions` (List\<List\>): Version data from topic channels in `[process, name, version]` format
+- `topicVersions` (List\<List\>): Version data from topic channels: `[process, name, version]` tuples, or `record(process, tool, version)` from typed processes
 - `legacyVersions` (List\<String\>, optional): Legacy `versions.yml` contents or file paths
 
 **Returns:**

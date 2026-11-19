@@ -55,12 +55,14 @@ This function logs a one-line, color-coded completion status.
 **Function Parameters**
 
 ```groovy title="Function signature"
-void completionSummary(boolean monochromeLogs)
+void completionSummary(Object monochromeLogs)
 ```
 
-| Parameter        | Type    | Description                                           |
-| ---------------- | ------- | ----------------------------------------------------- |
-| `monochromeLogs` | Boolean | If `true`, disables color codes for plain text output |
+| Parameter        | Type                           | Default | Description                                           |
+| ---------------- | ------------------------------ | ------- | ----------------------------------------------------- |
+| `monochromeLogs` | Boolean or `true`/`false` text | `true`  | If `true`, disables color codes for plain text output |
+
+A flag given on the command line (`--monochrome_logs false`) arrives as text and is accepted. Any other text logs a warning and uses the default.
 
 **Output**
 
@@ -128,9 +130,9 @@ void completionEmail(
     Map summaryParams,       // Grouped parameter summary
     String email,            // Primary email address
     String emailOnFail,      // Failure notification email
-    boolean plaintextEmail,  // Use plain text instead of HTML
+    Object plaintextEmail,   // Use plain text instead of HTML: Boolean or true/false text
     String outdir,           // Output directory path
-    boolean monochromeLogs,  // Color settings for email content
+    Object monochromeLogs,   // Color settings for email content: Boolean or true/false text
     List multiqcReports      // MultiQC report attachments
 )
 ```
