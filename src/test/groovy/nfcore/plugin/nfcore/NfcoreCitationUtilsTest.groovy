@@ -13,6 +13,8 @@ import spock.lang.Specification
 import spock.lang.TempDir
 import spock.lang.Unroll
 
+import java.nio.file.FileSystems
+import java.nio.file.Files
 import java.nio.file.Path
 
 class NfcoreCitationUtilsTest extends Specification {
@@ -581,6 +583,52 @@ ${tool_bibliography}
         result.isEmpty()
     }
 
+    def '#reader reads a meta.yml on a remote file system'() {
+        given: 'a zip file system stands for object storage; registered by URI, so that a URI string resolves to it'
+        def fs = FileSystems.newFileSystem(URI.create("jar:${tempDir.resolve('modules.zip').toUri()}"), [create: 'true'])
+        def meta = Files.createDirectories(fs.getPath('/modules/fastqc')).resolve('meta.yml')
+        meta.text = 'tools:\n  - fastqc:\n      doi: "10.1093/bioinformatics/btv033"\n'
+
+        expect:
+        read(meta) == expected
+
+        cleanup:
+        fs?.close()
+
+        where:
+        reader                                    | read                                                                         | expected
+        'generateModuleToolCitation (Path)'       | { NfcoreCitationUtils.generateModuleToolCitation(it).fastqc.info }           | [doi: '10.1093/bioinformatics/btv033']
+        'generateModuleToolCitation (URI string)' | { NfcoreCitationUtils.generateModuleToolCitation("${it.toUri()}").fastqc.info } | [doi: '10.1093/bioinformatics/btv033']
+        'convertMetaYamlToTopicFormat'            | { NfcoreCitationUtils.convertMetaYamlToTopicFormat("${it.toUri()}") }        | [['fastqc', 'fastqc', [doi: '10.1093/bioinformatics/btv033']]]
+        'getCitation'                             | { NfcoreCitationUtils.getCitation("${it.toUri()}") }                         | [['FASTQC', 'fastqc', [doi: '10.1093/bioinformatics/btv033']]]
+    }
+
+    def 'generateModuleToolCitation names a missing remote meta.yml by its full URI'() {
+        given:
+        def fs = FileSystems.newFileSystem(URI.create("jar:${tempDir.resolve('modules.zip').toUri()}"), [create: 'true'])
+        def missing = fs.getPath('/modules/star/meta.yml')
+
+        when:
+        NfcoreCitationUtils.generateModuleToolCitation(missing)
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.startsWith('meta.yml file not found at: jar:file:')
+        e.message.endsWith('modules.zip!/modules/star/meta.yml')
+
+        cleanup:
+        fs?.close()
+    }
+
+    def 'generateModuleToolCitation names a missing local meta.yml by its absolute path'() {
+        when:
+        NfcoreCitationUtils.generateModuleToolCitation('missing/meta.yml')
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message == "meta.yml file not found at: ${Path.of('missing/meta.yml').toAbsolutePath()}"
+    }
+
     def "topic channel functions should handle empty input"() {
         when:
         def topicResult = NfcoreCitationUtils.processCitationsFromTopic([])
@@ -971,6 +1019,56 @@ ${tool_bibliography}
         detachAppender(appender)
     }
 
+    def "toolsFromVersionsTopic reads records alone and alongside tuples"() {
+        given:
+        def appender = captureLogsFor(NfcoreCitationUtils)
+        def preseq = new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0')
+
+        expect:
+        NfcoreCitationUtils.toolsFromVersionsTopic([preseq]) == ['preseq']
+        NfcoreCitationUtils.toolsFromVersionsTopic([preseq, ['NFCORE:FASTQC', 'fastqc', '0.12.1']]) == ['fastqc', 'preseq']
+        logMessages(appender).every { !it.contains('flat: false') }
+
+        cleanup:
+        detachAppender(appender)
+    }
+
+    def "toolsFromVersionsTopic ignores plain maps with versions keys"() {
+        expect:
+        NfcoreCitationUtils.toolsFromVersionsTopic([
+            [process: 'NFCORE:FASTQC', tool: 'fastqc', version: '0.12.1']
+        ]) == []
+    }
+
+    def "toolsFromVersionsTopic warns about records without versions fields, not about flattening"() {
+        given:
+        def appender = captureLogsFor(NfcoreCitationUtils)
+        def incomplete = new TestRecord(id: 'sample1')
+
+        when:
+        def result = NfcoreCitationUtils.toolsFromVersionsTopic([incomplete])
+
+        then:
+        result == []
+        logMessages(appender).any { it.contains('skipped 1 versions record(s)') }
+        logMessages(appender).every { !it.contains('flat: false') }
+
+        cleanup:
+        detachAppender(appender)
+    }
+
+    def "toolsFromVersionsTopic skips incomplete records and keeps complete ones"() {
+        given:
+        def topicVersions = [
+            new TestRecord(id: 'sample1'),
+            new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0')
+        ]
+
+        expect:
+        NfcoreCitationUtils.toolsFromVersionsTopic(topicVersions) == ['preseq']
+        NfcoreCitationUtils.toolVersionsFromTopic(topicVersions) == [preseq: '3.2.0']
+    }
+
     def "filterCitationsByTools keeps only tools that ran, matching case-insensitively"() {
         given:
         def allCitations = [
@@ -1050,6 +1148,36 @@ ${tool_bibliography}
 
         expect:
         NfcoreCitationUtils.toolVersionsFromTopic(topicVersions) == ['fastqc': '0.12.1', 'multiqc': '1.21']
+    }
+
+    def "toolVersionsFromTopic maps versions from records and tuples"() {
+        given:
+        def topicVersions = [
+            new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0'),
+            ['NFCORE:MULTIQC', 'multiqc', '1.21']
+        ]
+
+        expect:
+        NfcoreCitationUtils.toolVersionsFromTopic(topicVersions) == ['preseq': '3.2.0', 'multiqc': '1.21']
+    }
+
+    def "citationsOnTheFly cites tools that reported versions as records"() {
+        given:
+        def preseqMeta = new File(tempDir.toFile(), 'preseq_meta.yml')
+        preseqMeta << '''
+        name: preseq_lcextrap
+        tools:
+          - preseq:
+              doi: "10.1038/nmeth.2375"
+        '''.stripIndent()
+
+        when:
+        def result = NfcoreCitationUtils.citationsOnTheFly(
+            [new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0')], [preseqMeta.absolutePath])
+
+        then:
+        result.keySet() == ['preseq'] as Set
+        result.preseq.version == '3.2.0'
     }
 
     @Issue("https://github.com/nf-core/nf-core-utils/pull/51")

@@ -24,6 +24,7 @@ import nextflow.Nextflow
 import nextflow.plugin.extension.Function
 import nextflow.plugin.extension.PluginExtensionPoint
 import nfcore.plugin.nextflow.NextflowPipelineUtils
+import nfcore.plugin.nfcore.BooleanParam
 import nfcore.plugin.nfcore.NfcoreConfigValidator
 import nfcore.plugin.nfcore.NfcoreVersionUtils
 import nfcore.plugin.nfcore.NfcoreCitationUtils
@@ -68,9 +69,26 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     Object getGenomeAttribute(String attribute) {
+        return ReferencesUtils.getGenomeAttribute(genomeParams(), attribute)
+    }
+
+    /**
+     * Abort the pipeline if params.genome is not a key of params.genomes.
+     * Reads params from the session config (falling back to session.params),
+     * the same source as getGenomeAttribute(). Does nothing when genome is
+     * unset or genomes is missing or empty.
+     *
+     * @throws nextflow.exception.AbortOperationException listing the available genome keys
+     */
+    @Function
+    void genomeExistsError() {
+        ReferencesUtils.genomeExistsError(genomeParams())
+    }
+
+    private Map genomeParams() {
         Map params = session?.getConfig()?.get('params') as Map
         if (!params) params = session?.params as Map
-        return ReferencesUtils.getGenomeAttribute(params, attribute)
+        return params
     }
 
     /**
@@ -117,8 +135,10 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @param multiqcReports List of MultiQC report paths
      */
     @Function
-    void completionEmail(Map summaryParams, String email, String emailOnFail, boolean plaintextEmail, String outdir, boolean monochromeLogs, List multiqcReports) {
-        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionEmail(summaryParams, email, emailOnFail, plaintextEmail, outdir, monochromeLogs, multiqcReports)
+    void completionEmail(Map summaryParams, String email, String emailOnFail, Object plaintextEmail, String outdir, Object monochromeLogs, List multiqcReports) {
+        nfcore.plugin.nfcore.NfcoreNotificationUtils.completionEmail(summaryParams, email, emailOnFail,
+            BooleanParam.coerce(plaintextEmail, false, 'plaintextEmail'), outdir,
+            BooleanParam.coerce(monochromeLogs, true, 'monochromeLogs'), multiqcReports)
     }
 
     /**
@@ -126,14 +146,14 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @param monochromeLogs Whether to use monochrome logs
      */
     @Function
-    void completionSummary(boolean monochromeLogs) {
+    void completionSummary(Object monochromeLogs) {
         def manifest = this.session?.getManifest()
         def workflowName = manifest?.getName() ?: 'unknown'
         def statsObserver = this.session?.getStatsObserver()
         def stats = statsObserver ? statsObserver.getStats() : null
         def ignoredCount = (stats != null) ? stats.getIgnoredCount() : 0
         nfcore.plugin.nfcore.NfcoreNotificationUtils.completionSummary(
-            workflowName, this.session?.success ?: false, ignoredCount, monochromeLogs
+            workflowName, this.session?.success ?: false, ignoredCount, BooleanParam.coerce(monochromeLogs, true, 'monochromeLogs')
         )
     }
 
@@ -153,8 +173,8 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @param monochromeLogs Whether to use monochrome logs (default: true)
      */
     @Function
-    void checkProfileProvided(List args, boolean monochromeLogs = true) {
-        validationAdapter.checkProfileProvided(args, monochromeLogs)
+    void checkProfileProvided(List args, Object monochromeLogs = true) {
+        validationAdapter.checkProfileProvided(args, BooleanParam.coerce(monochromeLogs, true, 'monochromeLogs'))
     }
 
     /**
@@ -212,6 +232,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      *   <li><b>String</b>: YAML content or file path (auto-detected)</li>
      *   <li><b>File/Path</b>: Reads YAML content from file</li>
      *   <li><b>List&lt;List&gt;</b>: Topic channel tuples [[process, tool, version], ...]</li>
+     *   <li><b>Record</b>: Topic channel records record(process, tool, version) from typed processes</li>
      *   <li><b>List&lt;String&gt;</b>: File paths to versions.yml files</li>
      *   <li><b>Map</b>: Direct version data</li>
      *   <li><b>Mixed List</b>: Any combination of the above</li>
@@ -275,8 +296,8 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @return YAML string suitable for MultiQC and reporting
      */
     @Function
-    String generateYamlFromEvalSyntax(List<List> evalData, boolean includeWorkflow = true) {
-        return NfcoreVersionUtils.generateYamlFromEvalSyntax(evalData, this.session, includeWorkflow)
+    String generateYamlFromEvalSyntax(List<List> evalData, Object includeWorkflow = true) {
+        return NfcoreVersionUtils.generateYamlFromEvalSyntax(evalData, this.session, BooleanParam.coerce(includeWorkflow, true, 'includeWorkflow'))
     }
 
     /**
@@ -360,7 +381,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate citation for a tool from meta.yml at the module level
      *
-     * @param metaFilePath Path to the meta.yml file (String or File)
+     * @param metaFilePath Path to the meta.yml file (String, File or Path)
      * @return Map containing tool citations for the module
      */
     @Function
@@ -427,7 +448,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate comprehensive version and citation report
      *
-     * @param topicVersions List of topic channel data [process, name, version]
+     * @param topicVersions List of topic channel data: [process, name, version] tuples or record(process, tool, version)
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @param metaFilePaths List of paths to module meta.yml files (optional)
      * @param mqcMethodsYaml MultiQC methods description template, as a Path or a path string, local or remote (optional)
@@ -448,7 +469,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate version-only report
      *
-     * @param topicVersions List of topic channel data [process, name, version]
+     * @param topicVersions List of topic channel data: [process, name, version] tuples or record(process, tool, version)
      * @param legacyVersions List of legacy YAML version strings (optional)
      * @return Map containing only versions information
      */
@@ -556,7 +577,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
 
     /**
      * Extract the unique set of tool names that actually ran, from collected
-     * 'versions' topic data ([process, tool, version] tuples).
+     * 'versions' topic data ([process, tool, version] tuples or record(process, tool, version)).
      *
      * @param topicVersions Versions-topic data, e.g. channel.topic('versions').toList()
      * @return Sorted, de-duplicated list of tool names
@@ -606,6 +627,16 @@ class NfUtilsExtension extends PluginExtensionPoint {
     @Function
     String paramsSummaryMultiqc(Map summaryParams) {
         return nfcore.plugin.nfcore.NfcoreReportingUtils.paramsSummaryMultiqc(summaryParams)
+    }
+
+    /**
+     * ANSI colour codes for terminal logging, same keys as the pipeline template's logColours().
+     * @param monochromeLogs When true every code is an empty string (default: true)
+     * @return Map of colour name to escape code
+     */
+    @Function
+    Map logColours(Object monochromeLogs = true) {
+        return nfcore.plugin.nfcore.NfcoreNotificationUtils.logColours(BooleanParam.coerce(monochromeLogs, true, 'monochromeLogs'))
     }
 
 }

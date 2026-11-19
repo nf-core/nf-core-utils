@@ -18,7 +18,7 @@ mise tasks ls
 ```
 
 `mise.toml` defines the development commands and tools: Temurin Java 21 (required
-by the Gradle plugin), Nextflow 26.10.2, nf-test 0.9.3, and uv 0.13.7. `mise.lock` records exact
+by the Gradle plugin), Nextflow 26.10.6, nf-test 0.9.5, and uv 0.13.7. `mise.lock` records exact
 versions and checksums for Linux and macOS on x64 and ARM64. CI uses the same
 configuration via `jdx/mise-action`.
 
@@ -67,7 +67,7 @@ The plugin requires Nextflow 25.10.4 or newer, as declared in `build.gradle`.
 CI runs the full end-to-end suite, including startup warning counts and exit
 statuses, on every supported stable release line: 25.10, 26.04, and 26.10.
 The [validation matrix](.github/workflows/validation.yml) pins the latest patch of
-each line (25.10.8, 26.04.7, and 26.10.2), plus the minimum 25.10.4 for the
+each line (25.10.9, 26.04.9, and 26.10.6), plus the minimum 25.10.4 for the
 startup-validation regression. Keep this matrix current when adopting a new stable release line or
 changing the minimum supported version; edge releases are not part of it.
 
@@ -110,21 +110,19 @@ Use the manually triggered [Publish plugin release workflow](.github/workflows/r
 It publishes the commit selected when the workflow starts, not a later main-branch commit.
 
 The [release access controls](docs/release-access-control.md) document
-the team, environment, credential, and tag boundaries and their limits.
-Team IDs are verified and independent second-person approval is required.
-The checked-in activation flag remains off until credential setup and native
-approval validation are complete; release attempts fail closed in that state.
+the approval model and its limits. Anyone who can run workflows may dispatch;
+a required reviewer of the `plugin-release` environment, other than the person
+who dispatched, must approve before publishing. The workflow relies on that
+environment's settings and does not read them back.
 The `expected_sha` input optionally binds a manual dispatch to a
 full commit SHA; automation must supply the main commit it checked. It is not an
 authorization override. Existing publication and partial-release checks still apply.
 
 ### One-time setup
 
-Configure the protected `plugin-release` environment as documented in the
-access controls: core/infrastructure reviewers, self-review prevention, no admin
-bypass, and the main branch only. Verify both reviewers persist on read-back.
-Provide a separate organization Members-read credential as
-`RELEASE_MEMBERS_READ_TOKEN` for the read-only authorization preflight.
+Configure the protected `plugin-release` environment: at least one required
+reviewer (whoever should approve releases), self-review prevention, no admin
+bypass, and the main branch only. No other credential is needed for authorization.
 Store `NPR_API_KEY` only in the protected environment; audit and remove broader
 repository/shared-organization copies only after secure migration and recovery
 are verified. Never delete the working copy before the protected replacement is ready.
@@ -135,7 +133,7 @@ The existing `nf_core_bot_auth_token` must also be available to the documentatio
 ### Test controls without publishing
 
 Select `dry_run` when dispatching `release.yml`. The version input is ignored
-in this mode; authorization and independent environment approval still apply.
+in this mode; independent environment approval still applies.
 The publisher job is unconditionally excluded by the dry-run input, and the
 replacement job uses a read-only token and never references publisher secrets.
 It cannot upload a package, create a tag/release or dispatch documentation.
@@ -146,10 +144,8 @@ gh workflow run release.yml --repo nf-core/nf-core-utils --ref main \
   -f version=0.7.0 -F dry_run=true
 ```
 
-With activation disabled or credentials incomplete, a dry run must fail in
-authorization before either environment approval or publisher execution.
-Successful allowed-actor, denied-actor, self-approval and rerun tests are required
-before considering the controls operational; offline tests alone are insufficient.
+A dry run that waits for approval, and passes once a reviewer other than the
+dispatcher approves it, shows the controls work end to end.
 
 ### Release a prepared version
 

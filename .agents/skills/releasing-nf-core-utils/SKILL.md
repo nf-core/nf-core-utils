@@ -55,7 +55,9 @@ a local upload or recreate their release-note extraction.
 ## Publish through GitHub Actions
 
 Only after explicit publication authorization, use **Publish plugin release** on
-**main**, passing the prepared version without a `v` prefix. Use the command in
+**main**, passing the prepared version without a `v` prefix. A required reviewer of
+the `plugin-release` environment, not the dispatcher, must then approve the run;
+do not approve or work around that gate on the user's behalf. Use the command in
 the README with that version; do not run `make release` or bypass the workflow.
 
 The workflow pins the selected commit and rejects existing tags, GitHub releases,

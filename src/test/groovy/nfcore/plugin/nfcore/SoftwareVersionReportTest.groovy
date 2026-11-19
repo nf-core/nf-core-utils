@@ -160,6 +160,76 @@ class SoftwareVersionReportTest extends Specification {
         yaml.contains('multiqc:')
     }
 
+    def 'collects a versions record like a topic tuple'() {
+        given:
+        def report = new SoftwareVersionReport()
+
+        when:
+        report.addInput([new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0')])
+
+        then:
+        report.renderYaml() == "PRESEQ_LCEXTRAP:\n  preseq: 3.2.0"
+    }
+
+    def 'collects a single versions record'() {
+        given:
+        def report = new SoftwareVersionReport()
+
+        when:
+        report.addInput(new TestRecord(process: 'PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0'))
+
+        then:
+        report.renderYaml() == "PRESEQ_LCEXTRAP:\n  preseq: 3.2.0"
+    }
+
+    def 'merges tuples, records and versions.yml content together'() {
+        given:
+        def report = new SoftwareVersionReport()
+        def versionsYml = tempDir.resolve('versions.yml')
+        Files.writeString(versionsYml, "PIPELINE:LEGACY_TOOL:\n  legacy: '2.0'\n")
+
+        when:
+        report.addInput([
+            ['NFCORE:FASTQC', 'fastqc', '0.12.1'],
+            new TestRecord(process: 'NFCORE:PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0'),
+            versionsYml,
+            [[new TestRecord(process: 'NFCORE:SAMTOOLS_SORT', tool: 'samtools', version: '1.21')]]
+        ])
+
+        then:
+        new Yaml().load(report.renderYaml()) == [
+            FASTQC         : [fastqc: '0.12.1'],
+            LEGACY_TOOL    : [legacy: '2.0'],
+            PRESEQ_LCEXTRAP: [preseq: '3.2.0'],
+            SAMTOOLS_SORT  : [samtools: '1.21'],
+        ]
+    }
+
+    def 'a plain map with process, tool and version keys stays versions.yml content'() {
+        given:
+        def report = new SoftwareVersionReport()
+
+        when:
+        report.addInput([process: 'PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0'])
+
+        then:
+        new Yaml().load(report.renderYaml()) == [
+            Software: [process: 'PRESEQ_LCEXTRAP', tool: 'preseq', version: '3.2.0']
+        ]
+    }
+
+    def 'skips a record without the versions fields'() {
+        given:
+        def report = new SoftwareVersionReport()
+        def record = new TestRecord(id: 'sample1', bam: 'sample1.bam')
+
+        when:
+        report.addInput([record, ['FASTQC', 'fastqc', '0.12.1']])
+
+        then:
+        report.renderYaml() == "FASTQC:\n  fastqc: 0.12.1"
+    }
+
     def 'multiple addInput calls merge versions'() {
         given:
         def report = new SoftwareVersionReport()

@@ -1,0 +1,34 @@
+nextflow_pipeline {
+
+    name "Test genomeExistsError() with --genome from the command line"
+    script "./main.nf"
+    config "./nextflow.config"
+
+    test("Unknown --genome aborts and lists the available keys") {
+        when {
+            params {
+                genome = 'hg99'
+            }
+        }
+        then {
+            def output = workflow.stdout.join('\n') + workflow.stderr.join('\n')
+            assert workflow.failed
+            assert output.contains("Genome 'hg99' not found in any config files provided to the pipeline.")
+            assert output.contains("Currently, the available genome keys are:")
+            assert output.contains("GRCh38, GRCm39")
+            assert !output.contains("genomeExistsError OK")
+        }
+    }
+
+    test("Known --genome passes") {
+        when {
+            params {
+                genome = 'GRCh38'
+            }
+        }
+        then {
+            assert workflow.success
+            assert (workflow.stdout + workflow.stderr).any { it.contains("genomeExistsError OK") }
+        }
+    }
+}
