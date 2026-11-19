@@ -66,11 +66,16 @@ class NfcoreReportingUtils {
     }
 
     /**
-     * Create workflow summary template for MultiQC
-     * @param summary Map of parameters
-     * @param nfMetadataList List of metadata fields to include
-     * @param results Map of pipeline results
-     * @return Map with HTML summaries for MultiQC
+     * Build a Markdown workflow summary: the workflow name, a "Workflow Summary" list,
+     * a "Nextflow Metadata" list and, when results are given, a "Results Summary" table.
+     * Reads the workflow name and the metadata values from the global Nextflow session.
+     * Internal helper: not exported as a plugin function, so a pipeline cannot import it.
+     * @param summary Map of label to value, listed under "Workflow Summary"
+     * @param nfMetadataList Names of Nextflow Session properties to list; a name that is not a
+     *        Session property, or whose value is Groovy-false, shows as N/A
+     * @param results Map of label to value for the results table; the table is left out when null or empty
+     * @return Map with two keys: workflow_summary_txt (the Markdown text) and
+     *         workflow_summary_html (the same text inside a {@code <pre>} element)
      */
     static Map workflowSummaryMQC(Map summary, List nfMetadataList, Map results) {
         def session = (Session) nextflow.Nextflow.session
@@ -121,10 +126,12 @@ class NfcoreReportingUtils {
     }
 
     /**
-     * Generate summary logs for each section of a pipeline
-     * @param sections Map of section names with their log messages
-     * @param monochrome Whether to use colors in logs
-     * @return Map of colored section logs
+     * Prefix every line of each section's text with "-[name]- ", the bracketed name in purple
+     * unless monochrome. Returns the text; it does not log anything.
+     * Internal helper: not exported as a plugin function, so a pipeline cannot import it.
+     * @param sections Map of section name to its text
+     * @param monochrome When true no colour codes are added (default: false)
+     * @return Map of section name to the prefixed text
      */
     static Map sectionLogs(Map sections, boolean monochrome = false) {
         def colors = NfcoreNotificationUtils.logColours(monochrome)

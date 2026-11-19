@@ -209,16 +209,10 @@ test("API errors fail closed; ambiguous dispatch failures are not retried", asyn
 });
 
 test("workflow proposal is unregistered, unconditionally disabled and approval-scoped", () => {
-  const workflow = fs.readFileSync(
-    "docs/release-automation/entrypoint.yml.disabled",
-    "utf8",
-  );
+  const workflow = fs.readFileSync("docs/release-automation/entrypoint.yml.disabled", "utf8");
   assert.match(workflow, /if: \$\{\{ false \}\}/);
   assert.match(workflow, /environment: release-automation-approval/);
   assert.match(workflow, /secrets.RELEASE_DISPATCH_TOKEN/);
   assert.match(workflow, /retries: 0/);
-  assert.equal(
-    fs.existsSync(".github/workflows/release-automation.yml"),
-    false,
-  );
+  assert.equal(fs.existsSync(".github/workflows/release-automation.yml"), false);
 });

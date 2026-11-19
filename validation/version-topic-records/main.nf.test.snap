@@ -1,0 +1,26 @@
+{
+    "Versions topic with records, tuples and a versions.yml": {
+        "content": [
+            [
+                "LEGACY_TOOL:",
+                "  legacy: '2.0'",
+                "RECORD_TOOL:",
+                "  preseq: 3.2.0",
+                "TUPLE_TOOL:",
+                "  fastqc: 0.12.1",
+                "Workflow:",
+                "    nf-core-utils-validation: v1.0.0",
+                "    Nextflow: [VERSION]"
+            ],
+            [
+                "fastqc 0.12.1",
+                "preseq 3.2.0"
+            ]
+        ],
+        "timestamp": "2026-11-18T09:32:25.611793",
+        "meta": {
+            "nf-test": "0.9.5",
+            "nextflow": "26.10.2"
+        }
+    }
+}

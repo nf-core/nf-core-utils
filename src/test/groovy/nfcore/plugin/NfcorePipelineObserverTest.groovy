@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import java.nio.file.Paths
+import nextflow.Global
 import nextflow.Session
 import nextflow.script.ScriptBinding
 import org.slf4j.LoggerFactory
@@ -23,6 +24,11 @@ exceptions from observer callbacks instead of aborting the run.
 @Subject(NfcorePipelineObserver)
 @Issue('https://github.com/nf-core/nf-core-utils/issues/73')
 class NfcorePipelineObserverTest extends Specification {
+
+    def cleanup() {
+        // new Session() registers itself as the global session; later specs would see it
+        Global.setSession(null)
+    }
 
     def 'onFlowCreate does not validate configuration or positional arguments'() {
         given:

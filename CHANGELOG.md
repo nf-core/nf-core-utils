@@ -10,11 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added the [migration guide](docs/migration.md) for moving from 0.7.0 and from template-local utilities to 1.0 (a verified run against an installed candidate is still to do).
+- Added `logColours(monochromeLogs)`: ANSI colour codes for terminal output, the same keys as the pipeline template.
+- Added `genomeExistsError()`: aborts with the available keys when `params.genome` is not in `params.genomes`, as in the pipeline template.
 - Added `citationOutputs()`: citations as MultiQC HTML, BibTeX or CSL-JSON ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Citation map entries carry `info` (raw `meta.yml` tool map) and `version` ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
+- Added ast-grep rules, run by pre-commit, that hold `CHANGELOG.md` to [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) release headings and change types, and a hook that checks each release has its compare link at the bottom. Fixed the 0.1.0–0.3.0 links (tags have no `v` prefix) and added the missing 0.3.1 and 0.4.0 links. The 0.7.0 "Compatibility and migration" and "Known limitations" sections are now bold notes under the release heading.
+- `collectVersions()`, `generateVersionReport()`, `generateComprehensiveReport()`, `toolsFromVersionsTopic()`, `citationsOnTheFly()` and the deprecated `processVersionsFromTopic()` / `processMixedVersionSources()` read versions topic records from typed processes, `record(process, tool, version)`, like `[process, tool, version]` tuples ([#137](https://github.com/nf-core/nf-core-utils/pull/137)).
 
 ### Changed
 
+- Release approval now comes from the `plugin-release` environment's required reviewers: the workflow no longer checks team membership or needs `RELEASE_MEMBERS_READ_TOKEN`, and relies on that environment's settings ([ADR-0002](docs/adr/0002-release-approval-through-environment-reviewers.md)).
+- Replaced prettier with oxfmt in the pre-commit hooks.
 - `methodsDescriptionText()` no longer modifies the `meta` map it is given ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Set `locked = true` in `mise.toml`, replacing `mise install --locked`.
 - Unset `AGENT` and `CLAUDECODE` in `mise.toml` `[env]`: they turn on Nextflow agent mode, which breaks validation snapshots.
@@ -24,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a `CI pass` job to `validation.yml`, the single required check.
 - Added Renovate with the nf-core preset. It does not update Nextflow, which is bumped by hand.
 - Deprecated version helpers delegate to `collectVersions()`; missing versions files log a warning ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
+- The `NfcoreReportingUtils` reference page no longer documents `workflowSummaryMQC()` and `sectionLogs()`: they are internal helpers that a pipeline cannot import.
 
 ### Fixed
 
@@ -31,10 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `methodsDescriptionText()` and the report helpers failing on remote methods templates ([#110](https://github.com/nf-core/nf-core-utils/pull/110)).
 - Fixed `collectVersions()` parsing remote path strings (`s3://`) as YAML ([#110](https://github.com/nf-core/nf-core-utils/pull/110)).
 - Citations ignore, with a warning, a `doi` that is not a bare DOI ([#116](https://github.com/nf-core/nf-core-utils/pull/116)).
+- Fixed `completionEmail()`, `completionSummary()` and `checkProfileProvided()` rejecting `--monochrome_logs` and `--plaintext_email` given on the command line: they now accept `true`/`false` text ([#94](https://github.com/nf-core/nf-core-utils/issues/94)).
+- Fixed `completionEmail()` ignoring the email templates of a pipeline on a remote file system ([#139](https://github.com/nf-core/nf-core-utils/pull/139)).
+- Fixed `generateYamlFromEvalSyntax()` rejecting an `includeWorkflow` flag given on the command line: it now accepts `true`/`false` text ([#140](https://github.com/nf-core/nf-core-utils/pull/140)).
+- Fixed `imNotification()`, `generateModuleToolCitation()`, `convertMetaYamlToTopicFormat()`, `getCitation()` and `processVersionsFromFile()` ignoring a file on a remote file system given as a `Path` or a URI string such as `s3://...` ([#141](https://github.com/nf-core/nf-core-utils/pull/141)).
 
 ## [0.7.0] - 2026-10-30
 
-### Compatibility and migration
+**Compatibility and migration:**
 
 - **Nextflow:** requires 25.10.4 or newer; upgrade older runtimes before loading the plugin.
 - **References:** replace removed `getReferencesFile()` / `getReferencesValue()` calls with `getReferencePath()`, `getReferenceMetadata()` or `getReferenceAttribute()` as appropriate.
@@ -42,6 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Mail:** `completionEmail()` uses Nextflow's `sendMail()` transports; the removed `emailCommands()` / `runEmailCommand()` helpers and `assets/sendmail_template.txt` are no longer needed. Platform launches skip nf-core mail unless the Boolean `params.force_completion_email = true` is set; enable Platform notifications separately when relying on them ([#81](https://github.com/nf-core/nf-core-utils/pull/81)).
 - **Citation metadata:** reads nested `publication.author`, `publication.year`, `publication.title` and `publication.source`. When no `publication` map is present, legacy flat `author`, `year`, `title` and `journal` fields remain supported; modules do not need to migrate in lockstep. DOI-only entries retain the tool name, and DOI/homepage links remain available ([#51](https://github.com/nf-core/nf-core-utils/pull/51)).
 - **Citation artifacts:** `toolCitationText()` returns HTML for MultiQC, not plain text. The citations-on-the-fly example now writes `auto_citations.html` rather than `auto_citations.txt`; open the file in a browser and copy rendered text for manuscripts. This release retains the existing citation APIs; it does not introduce CSL-JSON output.
+
+**Known limitations:**
+
+- Versions-topic-driven citations cannot discover tools that do not emit to that topic, including the registry MultiQC module. Its citation and bibliography coverage remain tracked in [#89](https://github.com/nf-core/nf-core-utils/issues/89); the existing `extraTools` argument can select such tools manually, without a version segment. Do not add MultiQC to the same versions topic: its upstream module warns that this can deadlock the workflow.
 
 ### Added
 
@@ -76,10 +91,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed observer-owned startup validation to avoid duplicate warnings when pipelines call exported or template-local checks. Pipelines relying only on the observer must explicitly call `checkConfigProvided()` and `checkProfileProvided(args)` during initialization. Profile validation now aborts with one `ERROR` label instead of two; loading the plugin alone no longer attempts validation whose errors Nextflow swallows ([#73](https://github.com/nf-core/nf-core-utils/issues/73)).
 - Fixed `completionEmail()` renaming remote MultiQC attachments to generated temporary filenames. Attachments keep their original basename, and plaintext emails or runs without an email recipient no longer read/download reports or render the sendmail template. Temporary copies and their directories are cleaned up without changing summary report persistence ([#74](https://github.com/nf-core/nf-core-utils/issues/74)).
 - Fixed parameter types such as `List<String>` showing as `List` in the docs, on GitHub and nf-co.re, where `<String>` was taken for an HTML tag.
-
-### Known limitations
-
-- Versions-topic-driven citations cannot discover tools that do not emit to that topic, including the registry MultiQC module. Its citation and bibliography coverage remain tracked in [#89](https://github.com/nf-core/nf-core-utils/issues/89); the existing `extraTools` argument can select such tools manually, without a version segment. Do not add MultiQC to the same versions topic: its upstream module warns that this can deadlock the workflow.
 
 ## [0.6.0] - 2026-10-17
 
@@ -189,8 +200,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.7.0]: https://github.com/nf-core/nf-core-utils/compare/0.6.0...0.7.0
 [0.6.0]: https://github.com/nf-core/nf-core-utils/compare/0.5.0...0.6.0
 [0.5.0]: https://github.com/nf-core/nf-core-utils/compare/0.4.0...0.5.0
-[0.3.0]: https://github.com/nf-core/nf-core-utils/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/nf-core/nf-core-utils/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/nf-core/nf-core-utils/releases/tag/v0.1.0
-
-<!-- TODO For future releases: [1.1.1]: https://github.com/olivierlacan/keep-a-changelog/compare/v1.1.0...v1.1.1 -->
+[0.4.0]: https://github.com/nf-core/nf-core-utils/compare/0.3.1...0.4.0
+[0.3.1]: https://github.com/nf-core/nf-core-utils/compare/0.3.0...0.3.1
+[0.3.0]: https://github.com/nf-core/nf-core-utils/compare/0.2.0...0.3.0
+[0.2.0]: https://github.com/nf-core/nf-core-utils/compare/0.1.0...0.2.0
+[0.1.0]: https://github.com/nf-core/nf-core-utils/releases/tag/0.1.0

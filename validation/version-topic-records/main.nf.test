@@ -1,0 +1,31 @@
+nextflow_pipeline {
+
+    name "Test collectVersions() with versions records from typed processes"
+    script "./main.nf"
+    config "./nextflow.config"
+
+    test("Versions topic with records, tuples and a versions.yml") {
+
+        // Typed processes and records need Nextflow 26.04 or later
+        def nxfVer = (System.getenv('NXF_VER') ?: '') =~ /^(\d+)\.(\d+)/
+        def nxfRelease = nxfVer.find() ? [nxfVer.group(1) as int, nxfVer.group(2) as int] : null
+        if (nxfRelease && (nxfRelease[0] < 26 || (nxfRelease[0] == 26 && nxfRelease[1] < 4))) {
+            skip()
+        }
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+        }
+
+        then {
+            assert workflow.success
+            def lines = path("${params.outdir}/versions.yml").text.readLines().collect { line ->
+                line.replaceAll(/^(\s*Nextflow: )\S+$/, '$1[VERSION]')
+            }
+            def citations = path("${params.outdir}/citations.txt").text.readLines()
+            assert snapshot(lines, citations).match()
+        }
+    }
+}
