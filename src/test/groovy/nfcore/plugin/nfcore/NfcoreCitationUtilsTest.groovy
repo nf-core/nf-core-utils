@@ -246,6 +246,26 @@ class NfcoreCitationUtilsTest extends Specification {
         result == "<li>Samtools citation details</li> <li>FastQC citation details</li>"
     }
 
+    def "toolBibliographyText renders a publication once when two tools share it, and keeps different publications"() {
+        given:
+        def publication = [author: 'Li H', year: 2009, title: 'The Sequence Alignment/Map format', source: 'Bioinformatics']
+        def shared = [doi: '10.1093/bioinformatics/btp352', publication: publication]
+        def tools = [
+                ['SAMTOOLS_VIEW', 'samtools', shared],
+                ['BCFTOOLS_VIEW', 'bcftools', shared],
+                ['FASTQC', 'fastqc', [doi: '10.1000/other', publication: [author: 'Andrews S', year: 2010, title: 'FastQC', source: 'Tool']]]
+        ]
+        def collected = NfcoreCitationUtils.processCitationsFromTopic(tools)
+
+        when:
+        def result = NfcoreCitationUtils.toolBibliographyText(collected)
+
+        then:
+        result.count("Li H") == 1
+        result.count("<li>") == 2
+        result.contains("Andrews S")
+    }
+
     @spock.lang.Ignore
     def "methodsDescriptionText should generate HTML with collected citations"() {
         given:
