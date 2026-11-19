@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added [Migrating from the template utilities](docs/migrations/template-utilities.md): replacing the pipeline template's helpers and utils subworkflows with plugin imports (a verified run against an installed candidate is still to do).
 - Added `logColours(monochromeLogs)`: ANSI colour codes for terminal output, the same keys as the pipeline template.
 - Added `genomeExistsError()`: aborts with the available keys when `params.genome` is not in `params.genomes`, as in the pipeline template.
 - Added `citationOutputs()`: citations as MultiQC HTML, BibTeX or CSL-JSON ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
