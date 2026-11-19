@@ -21,7 +21,7 @@ import yaml
 
 DOCS = Path(__file__).resolve().parent.parent / "docs"
 # The user docs, the other files in docs/ are for the developers of the plugin
-USER_DOCS = ["NfCoreUtilities.md", "NextflowPipelineExtension.md", "ReferencesExtension.md", "utilities/*.md"]
+USER_DOCS = ["NfCoreUtilities.md", "NextflowPipelineExtension.md", "ReferencesExtension.md", "migrations/index.md", "migrations/*.md", "utilities/*.md"]
 
 
 def main():
@@ -33,7 +33,8 @@ def main():
     for page in output.rglob("*.md"):
         page.unlink()
 
-    docs = [path for pattern in USER_DOCS for path in sorted(DOCS.glob(pattern))]
+    # dict.fromkeys drops repeats, as migrations/index.md is listed before the other migration guides
+    docs = list(dict.fromkeys(path for pattern in USER_DOCS for path in sorted(DOCS.glob(pattern))))
     for weight, path in enumerate(docs, start=1):
         doc = path.relative_to(DOCS).as_posix()
         text = path.read_text()
