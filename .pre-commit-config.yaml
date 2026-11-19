@@ -53,7 +53,7 @@ repos:
         entry: oxfmt --no-error-on-unmatched-pattern
         language: node
         additional_dependencies:
-          - oxfmt@0.78.0
+          - oxfmt@0.79.0
         types: [text]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
