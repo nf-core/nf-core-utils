@@ -311,8 +311,8 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @return YAML string suitable for MultiQC and reporting
      */
     @Function
-    String generateYamlFromEvalSyntax(List<List> evalData, boolean includeWorkflow = true) {
-        return NfcoreVersionUtils.generateYamlFromEvalSyntax(evalData, this.session, includeWorkflow)
+    String generateYamlFromEvalSyntax(List<List> evalData, Object includeWorkflow = true) {
+        return NfcoreVersionUtils.generateYamlFromEvalSyntax(evalData, this.session, BooleanParam.coerce(includeWorkflow, true, 'includeWorkflow'))
     }
 
     /**
@@ -396,7 +396,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Generate citation for a tool from meta.yml at the module level
      *
-     * @param metaFilePath Path to the meta.yml file (String or File)
+     * @param metaFilePath Path to the meta.yml file (String, File or Path)
      * @return Map containing tool citations for the module
      */
     @Function

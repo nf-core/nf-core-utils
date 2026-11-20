@@ -18,7 +18,7 @@ mise tasks ls
 ```
 
 `mise.toml` defines the development commands and tools: Temurin Java 21 (required
-by the Gradle plugin), Nextflow 26.10.2, nf-test 0.9.3, and uv 0.13.7. `mise.lock` records exact
+by the Gradle plugin), Nextflow 26.10.6, nf-test 0.9.5, and uv 0.13.7. `mise.lock` records exact
 versions and checksums for Linux and macOS on x64 and ARM64. CI uses the same
 configuration via `jdx/mise-action`.
 
@@ -67,7 +67,7 @@ The plugin requires Nextflow 25.10.4 or newer, as declared in `build.gradle`.
 CI runs the full end-to-end suite, including startup warning counts and exit
 statuses, on every supported stable release line: 25.10, 26.04, and 26.10.
 The [validation matrix](.github/workflows/validation.yml) pins the latest patch of
-each line (25.10.8, 26.04.7, and 26.10.2), plus the minimum 25.10.4 for the
+each line (25.10.9, 26.04.9, and 26.10.6), plus the minimum 25.10.4 for the
 startup-validation regression. Keep this matrix current when adopting a new stable release line or
 changing the minimum supported version; edge releases are not part of it.
 

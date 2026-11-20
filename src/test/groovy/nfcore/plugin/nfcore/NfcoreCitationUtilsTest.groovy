@@ -13,6 +13,8 @@ import spock.lang.Specification
 import spock.lang.TempDir
 import spock.lang.Unroll
 
+import java.nio.file.FileSystems
+import java.nio.file.Files
 import java.nio.file.Path
 
 class NfcoreCitationUtilsTest extends Specification {
@@ -559,6 +561,52 @@ ${tool_bibliography}
 
         then:
         result.isEmpty()
+    }
+
+    def '#reader reads a meta.yml on a remote file system'() {
+        given: 'a zip file system stands for object storage; registered by URI, so that a URI string resolves to it'
+        def fs = FileSystems.newFileSystem(URI.create("jar:${tempDir.resolve('modules.zip').toUri()}"), [create: 'true'])
+        def meta = Files.createDirectories(fs.getPath('/modules/fastqc')).resolve('meta.yml')
+        meta.text = 'tools:\n  - fastqc:\n      doi: "10.1093/bioinformatics/btv033"\n'
+
+        expect:
+        read(meta) == expected
+
+        cleanup:
+        fs?.close()
+
+        where:
+        reader                                    | read                                                                         | expected
+        'generateModuleToolCitation (Path)'       | { NfcoreCitationUtils.generateModuleToolCitation(it).fastqc.info }           | [doi: '10.1093/bioinformatics/btv033']
+        'generateModuleToolCitation (URI string)' | { NfcoreCitationUtils.generateModuleToolCitation("${it.toUri()}").fastqc.info } | [doi: '10.1093/bioinformatics/btv033']
+        'convertMetaYamlToTopicFormat'            | { NfcoreCitationUtils.convertMetaYamlToTopicFormat("${it.toUri()}") }        | [['fastqc', 'fastqc', [doi: '10.1093/bioinformatics/btv033']]]
+        'getCitation'                             | { NfcoreCitationUtils.getCitation("${it.toUri()}") }                         | [['FASTQC', 'fastqc', [doi: '10.1093/bioinformatics/btv033']]]
+    }
+
+    def 'generateModuleToolCitation names a missing remote meta.yml by its full URI'() {
+        given:
+        def fs = FileSystems.newFileSystem(URI.create("jar:${tempDir.resolve('modules.zip').toUri()}"), [create: 'true'])
+        def missing = fs.getPath('/modules/star/meta.yml')
+
+        when:
+        NfcoreCitationUtils.generateModuleToolCitation(missing)
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.startsWith('meta.yml file not found at: jar:file:')
+        e.message.endsWith('modules.zip!/modules/star/meta.yml')
+
+        cleanup:
+        fs?.close()
+    }
+
+    def 'generateModuleToolCitation names a missing local meta.yml by its absolute path'() {
+        when:
+        NfcoreCitationUtils.generateModuleToolCitation('missing/meta.yml')
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message == "meta.yml file not found at: ${Path.of('missing/meta.yml').toAbsolutePath()}"
     }
 
     def "topic channel functions should handle empty input"() {
