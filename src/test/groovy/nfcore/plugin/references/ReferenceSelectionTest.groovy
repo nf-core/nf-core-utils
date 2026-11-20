@@ -4,7 +4,10 @@ import spock.lang.Narrative
 import spock.lang.Issue
 import spock.lang.See
 import spock.lang.Specification
+import spock.lang.TempDir
 import spock.lang.Title
+
+import java.nio.file.Path
 
 @Title("ReferenceSelection concentrates genome lookup and basepath substitution")
 @Narrative("""
@@ -228,6 +231,110 @@ class ReferenceSelectionTest extends Specification {
         call << [
             { ReferenceSelection.getReferenceAttribute(datasheet: [fasta: 'a.fa']) },
             { ReferenceSelection.getReferenceMetadata([:]) },
+            { ReferenceSelection.genomeExistsError(genome: 'GRCh38', genome_key: 'x') },
+            { ReferenceSelection.getReferenceNames([:]) },
         ]
+    }
+
+    def 'genomeExistsError aborts for an unknown genome and lists the available keys'() {
+        when:
+        ReferenceSelection.genomeExistsError(genome: 'hg99', genomes: [GRCh38: [:], GRCm39: [:]])
+
+        then:
+        def e = thrown(nextflow.exception.AbortOperationException)
+        e.message.contains("Genome 'hg99' not found in any config files provided to the pipeline.")
+        e.message.contains('  GRCh38, GRCm39\n')
+    }
+
+    def 'genomeExistsError passes for a known or unset genome, or empty genomes'() {
+        when:
+        ReferenceSelection.genomeExistsError(args)
+
+        then:
+        noExceptionThrown()
+
+        where:
+        args << [
+            [genome: 'GRCh38', genomes: [GRCh38: [:]]],
+            [genome: null, genomes: [GRCh38: [:]]],
+            [genome: 'null', genomes: [GRCh38: [:]]],
+            [genomes: [GRCh38: [:]]],
+            [genome: 'hg99', genomes: [:]],
+            [genome: 'hg99'],
+            [:],
+            null,
+        ]
+    }
+
+    @TempDir
+    Path tempDir
+
+    private String schema() {
+        def file = tempDir.resolve('schema_references.json')
+        file.text = '''{"items": {"properties": {
+            "genome": {"meta": ["genome", "id"]},
+            "fasta": {"meta": ["fasta"]},
+            "fasta_dict": {"meta": ["dict"]}
+        }}}'''
+        return file.toString()
+    }
+
+    def 'getReferenceNames skips the meta names in ignore, genome and id by default'() {
+        expect:
+        ReferenceSelection.getReferenceNames(schema: schema()) == ['fasta', 'dict']
+        ReferenceSelection.getReferenceNames(schema: schema(), ignore: []) == ['genome', 'id', 'fasta', 'dict']
+        ReferenceSelection.getReferenceNames(schema: schema(), ignore: ['genome', 'id', 'dict']) == ['fasta']
+    }
+
+    def 'getReferences reads the genomes config without datasheet rows'() {
+        expect:
+        ReferenceSelection.getReferences(schema: schema(), genome: 'GRCh38', genomes: [GRCh38: [fasta: 'g.fa', dict: 'g.dict', gtf: 'g.gtf']]) ==
+            [fasta: 'g.fa', dict: 'g.dict']
+    }
+
+    def 'getReferences reads only the datasheet when rows are given'() {
+        expect:
+        ReferenceSelection.getReferences(schema: schema(), rows: [[[genome: 'GRCh38', fasta: 'd.fa']]],
+            genome: 'GRCh38', genomes: [GRCh38: [fasta: 'g.fa', dict: 'g.dict']]) == [fasta: 'd.fa', dict: null]
+    }
+
+    def 'getReferences lets a param present in params win, even null'() {
+        expect:
+        ReferenceSelection.getReferences(schema: schema(), rows: [[[genome: 'GRCh38', fasta: 'd.fa', dict: 'd.dict']]],
+            params: [fasta: 'p.fa', dict: null, genome: 'GRCh38']) == [fasta: 'p.fa', dict: null]
+    }
+
+    def 'getReferences resolves only the names getReferenceNames returns for the same ignore'() {
+        expect:
+        ReferenceSelection.getReferences(schema: schema(), rows: [[[genome: 'GRCh38', fasta: 'd.fa', dict: 'd.dict']]],
+            params: [dict: 'p.dict'], ignore: ['genome', 'id', 'dict']) == [fasta: 'd.fa']
+    }
+
+    def 'getReferences aborts for an unknown genome without datasheet rows'() {
+        when:
+        ReferenceSelection.getReferences(schema: schema(), genome: 'hg99', genomes: [GRCh38: [:]])
+
+        then:
+        def e = thrown(nextflow.exception.AbortOperationException)
+        e.message.contains("Genome 'hg99' not found in any config files provided to the pipeline.")
+    }
+
+    def 'getReferences skips the genome key check with datasheet rows'() {
+        expect:
+        ReferenceSelection.getReferences(schema: schema(), rows: [[[genome: 'Ensembl/GRCh38', fasta: 'd.fa']]],
+            genome: 'Ensembl/GRCh38', genomes: [GRCh38: [:]]) == [fasta: 'd.fa', dict: null]
+    }
+
+    def 'getReferences rejects a schema without items.properties'() {
+        given:
+        def file = tempDir.resolve('bad.json')
+        file.text = '{"type": "array"}'
+
+        when:
+        ReferenceSelection.getReferences(schema: file.toString())
+
+        then:
+        def e = thrown(IllegalArgumentException)
+        e.message.contains('has no items.properties')
     }
 }

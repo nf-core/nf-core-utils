@@ -16,6 +16,10 @@
 
 package nfcore.plugin.references
 
+import groovy.json.JsonSlurper
+import nextflow.exception.AbortOperationException
+import nfcore.plugin.nextflow.NextflowPipelineUtils
+
 /**
  * Concentrates reference-shape knowledge: genome lookup, attribute extraction,
  * basepath substitution, and null handling in a single deep module.
@@ -108,6 +112,70 @@ class ReferenceSelection {
             return referenceDatasheet(genome, datasheetPath)
         }
         return null
+    }
+
+    /**
+     * Resolve every reference param that getReferenceNames() lists for a references schema.
+     * A param present in params, even null, wins. Otherwise the datasheet rows are the only
+     * source when given, and the genomes config when not: a datasheet never falls back to config.
+     * Without rows, aborts like genomeExistsError() when genome is not a key of genomes.
+     *
+     * @param args Named arguments: schema (required), rows (output of samplesheetToList), params, genome, genomes,
+     *             ignore (passed to getReferenceNames())
+     * @return Map of reference param name to resolved value
+     * @throws AbortOperationException listing the available genome keys
+     */
+    static Map getReferences(Map args) {
+        args = checkArgs(args, 'getReferences', ['schema', 'rows', 'params', 'genome', 'genomes', 'ignore'], ['schema'])
+        List<String> names = getReferenceNames(args.subMap(['schema', 'ignore']))
+        Map source
+        if (args.rows != null) {
+            source = getReferenceMetadata(rows: args.rows)
+        } else {
+            genomeExistsError(genome: args.genome, genomes: args.genomes)
+            source = ((args.genomes as Map)?.get(args.genome) ?: [:]) as Map
+        }
+        return names.collectEntries { name -> [name, source[name]] } + ((args.params ?: [:]) as Map).subMap(names)
+    }
+
+    /**
+     * List the reference param names in a references schema: every `meta` name not in ignore.
+     *
+     * @param args Named arguments: schema (required), path to the references schema (local or remote);
+     *             ignore, meta names to skip (default ['genome', 'id'], which name the genome itself)
+     * @throws IllegalArgumentException if the schema has no items.properties
+     */
+    static List<String> getReferenceNames(Map args) {
+        args = checkArgs(args, 'getReferenceNames', ['schema', 'ignore'], ['schema'])
+        List ignore = args.containsKey('ignore') ? (args.ignore ?: []) as List : ['genome', 'id']
+        def properties = new JsonSlurper().parseText(NextflowPipelineUtils.toPath(args.schema).text)?.items?.properties
+        if (!(properties instanceof Map)) {
+            throw new IllegalArgumentException("References schema ${args.schema} has no items.properties")
+        }
+        return ((Map) properties).values().collectMany { property -> (property.meta ?: []) as List<String> }
+            .findAll { name -> !(name in ignore) }
+            .unique()
+    }
+
+    /**
+     * Abort if genome is set but is not a key of genomes, with the message of the nf-core template's genomeExistsError().
+     *
+     * @param args Named arguments: genome, genomes (all default null)
+     * @throws AbortOperationException listing the available genome keys
+     */
+    static void genomeExistsError(Map args) {
+        args = checkArgs(args, 'genomeExistsError', ['genome', 'genomes'])
+        Map genomes = args.genomes as Map
+        if (args.genome in [null, 'null'] || !genomes || genomes.containsKey(args.genome)) {
+            return
+        }
+        throw new AbortOperationException(
+            "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
+            "  Genome '${args.genome}' not found in any config files provided to the pipeline.\n" +
+            "  Currently, the available genome keys are:\n" +
+            "  ${genomes.keySet().join(', ')}\n" +
+            "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        )
     }
 
     /**

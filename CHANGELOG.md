@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `logColours(monochromeLogs)`: ANSI colour codes for terminal output, the same keys as the pipeline template.
 - Added `genomeExistsError()`: aborts with the available keys when `params.genome` is not in `params.genomes`, as in the pipeline template.
+- `genomeExistsError()` takes `genome` and `genomes` as named arguments; passes with a `'null'` genome.
+- Added `getReferences()` and `getReferenceNames()`: resolve and list the reference params named in a references schema.
 - Added `citationOutputs()`: citations as MultiQC HTML, BibTeX or CSL-JSON ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Citation map entries carry `info` (raw `meta.yml` tool map) and `version` ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - `collectVersions()`, `generateVersionReport()`, `generateComprehensiveReport()`, `toolsFromVersionsTopic()`, `citationsOnTheFly()` and the deprecated `processVersionsFromTopic()` / `processMixedVersionSources()` read versions topic records from typed processes, `record(process, tool, version)`, like `[process, tool, version]` tuples ([#137](https://github.com/nf-core/nf-core-utils/pull/137)).
@@ -29,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Renovate with the nf-core preset. It does not update Nextflow, which is bumped by hand.
 - Deprecated version helpers delegate to `collectVersions()`; missing versions files log a warning ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
 - The `NfcoreReportingUtils` reference page no longer documents `workflowSummaryMQC()` and `sectionLogs()`: they are internal helpers that a pipeline cannot import.
+
+### Deprecated
+
+- `getReferenceMetadata()` and `getReferenceAttribute()`: use `getReferences()`.
 
 ### Fixed
 

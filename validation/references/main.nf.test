@@ -1,0 +1,58 @@
+nextflow_pipeline {
+
+    name "Test getReferences() and getReferenceNames() from the installed plugin"
+    script "./main.nf"
+    config "./nextflow.config"
+
+    test("--genome reads the genome config") {
+        when {
+            params {
+                genome = 'GRCh38'
+            }
+        }
+        then {
+            assert workflow.success
+            assert workflow.stdout.any { it.contains("references: [fasta:config.fa, dict:config.dict]") }
+        }
+    }
+
+    test("Datasheet rows are the only source") {
+        when {
+            params {
+                genome    = 'GRCh38'
+                datasheet = true
+            }
+        }
+        then {
+            assert workflow.success
+            assert workflow.stdout.any { it.contains("references: [fasta:datasheet.fa, dict:null]") }
+        }
+    }
+
+    test("A set param wins over the genome config") {
+        when {
+            params {
+                genome = 'GRCh38'
+                fasta  = 'custom.fa'
+            }
+        }
+        then {
+            assert workflow.success
+            assert workflow.stdout.any { it.contains("references: [fasta:custom.fa, dict:config.dict]") }
+        }
+    }
+
+    test("Unknown --genome aborts and lists the available keys") {
+        when {
+            params {
+                genome = 'hg99'
+            }
+        }
+        then {
+            def output = workflow.stdout.join('\n') + workflow.stderr.join('\n')
+            assert workflow.failed
+            assert output.contains("Genome 'hg99' not found in any config files provided to the pipeline.")
+            assert output.contains("GRCh38")
+        }
+    }
+}

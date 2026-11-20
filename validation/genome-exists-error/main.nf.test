@@ -31,4 +31,16 @@ nextflow_pipeline {
             assert (workflow.stdout + workflow.stderr).any { it.contains("genomeExistsError OK") }
         }
     }
+
+    test("--genome null passes") {
+        when {
+            params {
+                genome = 'null'
+            }
+        }
+        then {
+            assert workflow.success
+            assert (workflow.stdout + workflow.stderr).any { it.contains("genomeExistsError OK") }
+        }
+    }
 }

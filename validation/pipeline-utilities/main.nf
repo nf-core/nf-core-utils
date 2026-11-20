@@ -6,7 +6,7 @@
  * This test validates the core pipeline utility functions:
  * - getWorkflowVersion(): Generate workflow version strings
  * - dumpParametersToJSON(): Save pipeline parameters to JSON file
- * - genomeExistsError(): Pass when params.genome is unset
+ * - genomeExistsError(): Pass when genome is unset
  * - logColours(): ANSI colour codes for both monochrome modes
  */
 
@@ -72,8 +72,8 @@ workflow {
     dumpParametersToJSON(null, test_params)
     log.info("✅ Null output directory handled correctly")
 
-    // Test 3: genomeExistsError() passes when params.genome is null
-    genomeExistsError()
+    // Test 3: genomeExistsError() passes when genome is null
+    genomeExistsError(genome: null, genomes: [GRCh38: [:]])
     log.info("✅ genomeExistsError() passed with no genome set")
 
     // Test 4: logColours() in both modes
