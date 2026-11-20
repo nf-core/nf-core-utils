@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `logColours(monochromeLogs)`: ANSI colour codes for terminal output, the same keys as the pipeline template.
 - Added `genomeExistsError()`: aborts with the available keys when `params.genome` is not in `params.genomes`, as in the pipeline template.
-- `genomeExistsError()` takes `genome` and `genomes` as named arguments; passes with a `'null'` genome.
-- Added `getReferences()` and `getReferenceNames()`: resolve and list the reference params named in a references schema.
+- `genomeExistsError()` takes `genome` and `genomes` as named arguments; passes with a `'null'` genome ([#148](https://github.com/nf-core/nf-core-utils/pull/148)).
+- Added `getReferences()` and `getReferenceNames()`: resolve and list the reference params named in a references schema ([#148](https://github.com/nf-core/nf-core-utils/pull/148)).
 - Added `citationOutputs()`: citations as MultiQC HTML, BibTeX or CSL-JSON ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Citation map entries carry `info` (raw `meta.yml` tool map) and `version` ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Added ast-grep rules, run by pre-commit, that hold `CHANGELOG.md` to [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) release headings and change types, and a hook that checks each release has its compare link at the bottom. Fixed the 0.1.0–0.3.0 links (tags have no `v` prefix) and added the missing 0.3.1 and 0.4.0 links. The 0.7.0 "Compatibility and migration" and "Known limitations" sections are now bold notes under the release heading.
@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
-- `getReferenceMetadata()` and `getReferenceAttribute()`: use `getReferences()`.
+- `getReferenceMetadata()` and `getReferenceAttribute()`: use `getReferences()` ([#148](https://github.com/nf-core/nf-core-utils/pull/148)).
 
 ### Fixed
 
