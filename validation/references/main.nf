@@ -4,7 +4,7 @@ include { samplesheetToList } from 'plugin/nf-schema'
 
 workflow {
     def schema = "${projectDir}/schema_references.json"
-    def rows = params.datasheet ? samplesheetToList("${projectDir}/references.yml", schema, unrecognisedHeaders: 'skip') : null
+    def rows = params.datasheet ? samplesheetToList("${projectDir}/references.yml", schema) : null
     def references = getReferences(
         schema: schema,
         rows: rows,
