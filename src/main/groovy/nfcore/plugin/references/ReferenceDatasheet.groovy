@@ -36,7 +36,7 @@ class ReferenceDatasheet {
      */
     static String getReferencePath(Map args) {
         args = checkArgs(args, 'getReferencePath', ['references', 'genome', 'igenomesIgnore', 'datasheetPath'])
-        String references = args.references
+        String references = cliValue(args.references) ?: null
         String genome = cliValue(args.genome) ?: null
         Boolean igenomesIgnore = args.igenomesIgnore
         String datasheetPath = args.datasheetPath
@@ -72,7 +72,7 @@ class ReferenceDatasheet {
         if (args.rows != null) {
             source = datasheetMeta(args.rows as List)
         } else {
-            ReferenceSelection.genomeExistsError(genome: args.genome, genomes: args.genomes)
+            genomeExistsError(genome: args.genome, genomes: args.genomes)
             source = ((args.genomes as Map)?.get(args.genome) ?: [:]) as Map
         }
         Map params = (args.params ?: [:]) as Map
@@ -99,6 +99,27 @@ class ReferenceDatasheet {
         return ((Map) properties).values().collectMany { property -> (property.meta ?: []) as List<String> }
             .findAll { name -> !(name in ignore) }
             .unique()
+    }
+
+    /**
+     * Abort if genome is set but is not a key of genomes, with the message of the nf-core template's genomeExistsError().
+     *
+     * @param args Named arguments: genome, genomes (all default null)
+     * @throws AbortOperationException listing the available genome keys
+     */
+    static void genomeExistsError(Map args) {
+        args = checkArgs(args, 'genomeExistsError', ['genome', 'genomes'])
+        Map genomes = args.genomes as Map
+        if (!cliValue(args.genome) || !genomes || genomes.containsKey(args.genome)) {
+            return
+        }
+        throw new AbortOperationException(
+            "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
+            "  Genome '${args.genome}' not found in any config files provided to the pipeline.\n" +
+            "  Currently, the available genome keys are:\n" +
+            "  ${genomes.keySet().join(', ')}\n" +
+            "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        )
     }
 
     private static String referenceDatasheet(String genomeKey, String basePath) {

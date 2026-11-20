@@ -16,8 +16,6 @@
 
 package nfcore.plugin.references
 
-import nextflow.exception.AbortOperationException
-
 /**
  * Legacy genome lookup in params.genomes, removed with the igenomes config files.
  * New code resolves references with {@link ReferenceDatasheet}.
@@ -77,27 +75,6 @@ class ReferenceSelection {
         args = ReferenceDatasheet.checkArgs(args, 'getReferenceAttribute', ['param', 'datasheet', 'genomeMap', 'genomeKey'], ['param'])
         def value = args.datasheet ? args.datasheet[args.param] : null
         return value ?: new ReferenceSelection(args.genomeKey, args.genomeMap as Map).getAttribute(args.param)
-    }
-
-    /**
-     * Abort if genome is set but is not a key of genomes, with the message of the nf-core template's genomeExistsError().
-     *
-     * @param args Named arguments: genome, genomes (all default null)
-     * @throws AbortOperationException listing the available genome keys
-     */
-    static void genomeExistsError(Map args) {
-        args = ReferenceDatasheet.checkArgs(args, 'genomeExistsError', ['genome', 'genomes'])
-        Map genomes = args.genomes as Map
-        if (!ReferenceDatasheet.cliValue(args.genome) || !genomes || genomes.containsKey(args.genome)) {
-            return
-        }
-        throw new AbortOperationException(
-            "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n" +
-            "  Genome '${args.genome}' not found in any config files provided to the pipeline.\n" +
-            "  Currently, the available genome keys are:\n" +
-            "  ${genomes.keySet().join(', ')}\n" +
-            "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-        )
     }
 
     /**

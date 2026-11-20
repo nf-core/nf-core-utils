@@ -49,10 +49,47 @@ class ReferenceDatasheetTest extends Specification {
         e.message.contains('igenomeIgnore')
     }
 
-    def 'getReferencePath and getReferenceNames check their named arguments'() {
+    def 'genomeExistsError aborts for an unknown genome and lists the available keys'() {
+        when:
+        ReferenceDatasheet.genomeExistsError(genome: 'hg99', genomes: [GRCh38: [:], GRCm39: [:]])
+
+        then:
+        def e = thrown(nextflow.exception.AbortOperationException)
+        e.message.contains("Genome 'hg99' not found in any config files provided to the pipeline.")
+        e.message.contains('  GRCh38, GRCm39\n')
+    }
+
+    def 'genomeExistsError passes for a known or unset genome, or empty genomes'() {
+        when:
+        ReferenceDatasheet.genomeExistsError(args)
+
+        then:
+        noExceptionThrown()
+
+        where:
+        args << [
+            [genome: 'GRCh38', genomes: [GRCh38: [:]]],
+            [genome: null, genomes: [GRCh38: [:]]],
+            [genome: 'null', genomes: [GRCh38: [:]]],
+            [genomes: [GRCh38: [:]]],
+            [genome: 'hg99', genomes: [:]],
+            [genome: 'hg99'],
+            [:],
+            null,
+        ]
+    }
+
+    def 'getReferencePath, genomeExistsError and getReferenceNames check their named arguments'() {
         expect:
         ReferenceDatasheet.getReferencePath(references: 'my.yml') == 'my.yml'
         ReferenceDatasheet.getReferencePath([:]) == null
+        ReferenceDatasheet.getReferencePath(references: 'null', genome: 'GRCh38') == null
+
+        when:
+        ReferenceDatasheet.genomeExistsError(genome: 'GRCh38', genome_key: 'x')
+
+        then:
+        thrown(IllegalArgumentException)
 
         when:
         ReferenceDatasheet.getReferenceNames([:])

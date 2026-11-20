@@ -82,7 +82,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     void genomeExistsError(Map args) {
-        ReferenceSelection.genomeExistsError(args)
+        ReferenceDatasheet.genomeExistsError(args)
     }
 
     /**
@@ -124,7 +124,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * Resolve the reference params named in a references schema.
      * Accepts named arguments (Groovy style).
      * @param args Named arguments: schema, rows, params, genome, genomes, ignore
-     * @return Map of reference param name to value: explicit param, else datasheet rows, else genomes config
+     * @return Map of reference param name to value: non-null param (false turns it off), else datasheet rows, else genomes config
      */
     @Function
     Map getReferences(Map args) {
