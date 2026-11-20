@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `getReferenceMetadata()` drops the empty lists nf-schema gives missing datasheet fields ([#148](https://github.com/nf-core/nf-core-utils/pull/148)).
 - Fixed `collectVersions()` dropping a single versions `Path`, local or remote ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
 - Fixed `methodsDescriptionText()` and the report helpers failing on remote methods templates ([#110](https://github.com/nf-core/nf-core-utils/pull/110)).
 - Fixed `collectVersions()` parsing remote path strings (`s3://`) as YAML ([#110](https://github.com/nf-core/nf-core-utils/pull/110)).

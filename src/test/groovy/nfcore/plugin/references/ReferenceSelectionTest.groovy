@@ -4,10 +4,7 @@ import spock.lang.Narrative
 import spock.lang.Issue
 import spock.lang.See
 import spock.lang.Specification
-import spock.lang.TempDir
 import spock.lang.Title
-
-import java.nio.file.Path
 
 @Title("ReferenceSelection concentrates genome lookup and basepath substitution")
 @Narrative("""
@@ -127,40 +124,7 @@ class ReferenceSelectionTest extends Specification {
         sel.resolveFile('bowtie2', '/base') == null
     }
 
-    // --- getReferencePath / getReferenceMetadata / getReferenceAttribute ---
-
-    def 'getReferencePath prefers an explicit references path'() {
-        expect:
-        ReferenceSelection.getReferencePath(references: 'my.yml', genome: null, igenomesIgnore: false, datasheetPath: null) == 'my.yml'
-    }
-
-    def 'getReferencePath builds the catalogue path'() {
-        expect:
-        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: 'https://host/') == 'https://host/Ensembl/GRCh38.yml'
-        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: 's3://bucket/refs//') == 's3://bucket/refs/Ensembl/GRCh38.yml'
-    }
-
-    def 'getReferencePath requires a datasheet base path'() {
-        when:
-        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: '')
-
-        then:
-        thrown(IllegalArgumentException)
-    }
-
-    def 'getReferencePath returns null without a source'() {
-        expect:
-        ReferenceSelection.getReferencePath(references: null, genome: 'GRCh38', igenomesIgnore: false, datasheetPath: null) == null
-        ReferenceSelection.getReferencePath(references: null, genome: 'null', igenomesIgnore: true, datasheetPath: 'x') == null
-    }
-
-    def 'getReferencePath rejects references and genome together'() {
-        when:
-        ReferenceSelection.getReferencePath(references: 'my.yml', genome: 'GRCh38', igenomesIgnore: false, datasheetPath: null)
-
-        then:
-        thrown(IllegalArgumentException)
-    }
+    // --- getReferenceMetadata / getReferenceAttribute ---
 
     def 'getReferenceMetadata unwraps a samplesheet row'() {
         expect:
@@ -169,7 +133,7 @@ class ReferenceSelectionTest extends Specification {
 
     def 'getReferenceMetadata drops empty values'() {
         expect:
-        ReferenceSelection.getReferenceMetadata(rows: [[[genome: 'GRCh38', fasta: null], null]]) == [genome: 'GRCh38']
+        ReferenceSelection.getReferenceMetadata(rows: [[[genome: 'GRCh38', fasta: null, dict: '', gtf: []], null]]) == [genome: 'GRCh38']
     }
 
     def 'getReferenceMetadata rejects an empty datasheet'() {
@@ -205,19 +169,8 @@ class ReferenceSelectionTest extends Specification {
 
     def 'optional named arguments default to null'() {
         expect:
-        ReferenceSelection.getReferencePath(references: 'my.yml') == 'my.yml'
-        ReferenceSelection.getReferencePath([:]) == null
         ReferenceSelection.getReferenceAttribute(param: 'fasta') == null
         ReferenceSelection.getReferenceAttribute(param: 'gtf', genomeMap: GENOMES, genomeKey: 'GRCh38') == 's3://bucket/genes.gtf'
-    }
-
-    def 'reference functions reject unknown named arguments'() {
-        when:
-        ReferenceSelection.getReferencePath(references: null, igenomeIgnore: true)
-
-        then:
-        def e = thrown(IllegalArgumentException)
-        e.message.contains('igenomeIgnore')
     }
 
     def 'reference functions require param and rows'() {
@@ -232,7 +185,6 @@ class ReferenceSelectionTest extends Specification {
             { ReferenceSelection.getReferenceAttribute(datasheet: [fasta: 'a.fa']) },
             { ReferenceSelection.getReferenceMetadata([:]) },
             { ReferenceSelection.genomeExistsError(genome: 'GRCh38', genome_key: 'x') },
-            { ReferenceSelection.getReferenceNames([:]) },
         ]
     }
 
@@ -266,75 +218,5 @@ class ReferenceSelectionTest extends Specification {
         ]
     }
 
-    @TempDir
-    Path tempDir
 
-    private String schema() {
-        def file = tempDir.resolve('schema_references.json')
-        file.text = '''{"items": {"properties": {
-            "genome": {"meta": ["genome", "id"]},
-            "fasta": {"meta": ["fasta"]},
-            "fasta_dict": {"meta": ["dict"]}
-        }}}'''
-        return file.toString()
-    }
-
-    def 'getReferenceNames skips the meta names in ignore, genome and id by default'() {
-        expect:
-        ReferenceSelection.getReferenceNames(schema: schema()) == ['fasta', 'dict']
-        ReferenceSelection.getReferenceNames(schema: schema(), ignore: []) == ['genome', 'id', 'fasta', 'dict']
-        ReferenceSelection.getReferenceNames(schema: schema(), ignore: ['genome', 'id', 'dict']) == ['fasta']
-    }
-
-    def 'getReferences reads the genomes config without datasheet rows'() {
-        expect:
-        ReferenceSelection.getReferences(schema: schema(), genome: 'GRCh38', genomes: [GRCh38: [fasta: 'g.fa', dict: 'g.dict', gtf: 'g.gtf']]) ==
-            [fasta: 'g.fa', dict: 'g.dict']
-    }
-
-    def 'getReferences reads only the datasheet when rows are given'() {
-        expect:
-        ReferenceSelection.getReferences(schema: schema(), rows: [[[genome: 'GRCh38', fasta: 'd.fa']]],
-            genome: 'GRCh38', genomes: [GRCh38: [fasta: 'g.fa', dict: 'g.dict']]) == [fasta: 'd.fa', dict: null]
-    }
-
-    def 'getReferences lets a param present in params win, even null'() {
-        expect:
-        ReferenceSelection.getReferences(schema: schema(), rows: [[[genome: 'GRCh38', fasta: 'd.fa', dict: 'd.dict']]],
-            params: [fasta: 'p.fa', dict: null, genome: 'GRCh38']) == [fasta: 'p.fa', dict: null]
-    }
-
-    def 'getReferences resolves only the names getReferenceNames returns for the same ignore'() {
-        expect:
-        ReferenceSelection.getReferences(schema: schema(), rows: [[[genome: 'GRCh38', fasta: 'd.fa', dict: 'd.dict']]],
-            params: [dict: 'p.dict'], ignore: ['genome', 'id', 'dict']) == [fasta: 'd.fa']
-    }
-
-    def 'getReferences aborts for an unknown genome without datasheet rows'() {
-        when:
-        ReferenceSelection.getReferences(schema: schema(), genome: 'hg99', genomes: [GRCh38: [:]])
-
-        then:
-        def e = thrown(nextflow.exception.AbortOperationException)
-        e.message.contains("Genome 'hg99' not found in any config files provided to the pipeline.")
-    }
-
-    def 'getReferences skips the genome key check with datasheet rows'() {
-        expect:
-        ReferenceSelection.getReferences(schema: schema(), rows: [[[genome: 'Ensembl/GRCh38', fasta: 'd.fa']]],
-            genome: 'Ensembl/GRCh38', genomes: [GRCh38: [:]]) == [fasta: 'd.fa', dict: null]
-    }
-
-    def 'getReferences rejects a schema without items.properties'() {
-        given:
-        def file = tempDir.resolve('bad.json')
-        file.text = '{"type": "array"}'
-
-        when:
-        ReferenceSelection.getReferences(schema: file.toString())
-
-        then:
-        def e = thrown(IllegalArgumentException)
-        e.message.contains('has no items.properties')
-    }
 }

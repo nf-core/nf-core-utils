@@ -34,6 +34,7 @@ import nfcore.plugin.nfcore.ValidationAdapter
 import nfcore.plugin.nfcore.VersionAdapter
 import nfcore.plugin.nfcore.ReportingAdapter
 import nfcore.plugin.ReferencesUtils
+import nfcore.plugin.references.ReferenceDatasheet
 import nfcore.plugin.references.ReferenceSelection
 
 /**
@@ -103,7 +104,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     String getReferencePath(Map args) {
-        return ReferenceSelection.getReferencePath(args)
+        return ReferenceDatasheet.getReferencePath(args)
     }
 
     /**
@@ -114,7 +115,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     List<String> getReferenceNames(Map args) {
-        return ReferenceSelection.getReferenceNames(args)
+        return ReferenceDatasheet.getReferenceNames(args)
     }
 
     /**
@@ -125,7 +126,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     Map getReferences(Map args) {
-        return ReferenceSelection.getReferences(args)
+        return ReferenceDatasheet.getReferences(args)
     }
 
     /**
