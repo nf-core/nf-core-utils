@@ -17,14 +17,8 @@
 package nfcore.plugin.references
 
 /**
- * Concentrates reference-shape knowledge: genome lookup, attribute extraction,
- * basepath substitution, and null handling in a single deep module.
- *
- * Callers get a smaller interface than reaching into params.genomes directly.
- * {@link nfcore.plugin.ReferencesUtils} static methods remain for backward
- * compatibility.
- *
- * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §6
+ * Legacy genome lookup in params.genomes, removed with the igenomes config files.
+ * New code resolves references with {@link ReferenceDatasheet}.
  */
 class ReferenceSelection {
 
@@ -78,36 +72,9 @@ class ReferenceSelection {
      * @return The attribute value from the datasheet or genome config, or null
      */
     static Object getReferenceAttribute(Map args) {
-        args = checkArgs(args, 'getReferenceAttribute', ['param', 'datasheet', 'genomeMap', 'genomeKey'], ['param'])
+        args = ReferenceDatasheet.checkArgs(args, 'getReferenceAttribute', ['param', 'datasheet', 'genomeMap', 'genomeKey'], ['param'])
         def value = args.datasheet ? args.datasheet[args.param] : null
         return value ?: new ReferenceSelection(args.genomeKey, args.genomeMap as Map).getAttribute(args.param)
-    }
-
-    /**
-     * Determine which reference path to use: explicit --references or built from genome.
-     *
-     * @param args Named arguments: references, genome, igenomesIgnore, datasheetPath (all default null)
-     * @return The datasheet path to load, or null if neither references nor genome is provided
-     * @throws IllegalArgumentException if both references and genome are provided
-     */
-    static String getReferencePath(Map args) {
-        args = checkArgs(args, 'getReferencePath', ['references', 'genome', 'igenomesIgnore', 'datasheetPath'])
-        String references = args.references
-        String genome = args.genome
-        Boolean igenomesIgnore = args.igenomesIgnore
-        String datasheetPath = args.datasheetPath
-        genome = genome in [null, 'null'] ? null : genome
-
-        if (references && genome) {
-            throw new IllegalArgumentException("Use either --references or --genome, not both.")
-        }
-        if (references) {
-            return references
-        }
-        if (genome && igenomesIgnore) {
-            return referenceDatasheet(genome, datasheetPath)
-        }
-        return null
     }
 
     /**
@@ -118,54 +85,7 @@ class ReferenceSelection {
      * @throws IllegalArgumentException if the rows are empty or span multiple genomes
      */
     static Map getReferenceMetadata(Map args) {
-        args = checkArgs(args, 'getReferenceMetadata', ['rows'], ['rows'])
-        return referenceMeta(selectReferenceRow(args.rows))
-    }
-
-    private static String referenceDatasheet(String genomeKey, String basePath) {
-        if (!basePath) {
-            throw new IllegalArgumentException("references_datasheets_path is empty; cannot build datasheet URL for genome '${genomeKey}'")
-        }
-        basePath = basePath.replaceAll(/\/+$/, '')
-        return "${basePath}/${genomeKey}.yml"
-    }
-
-    private static Object selectReferenceRow(List rows) {
-        if (!(rows instanceof List) || rows.isEmpty()) {
-            throw new IllegalArgumentException("Reference datasheet did not contain any genome records")
-        }
-        if (rows.size() > 1) {
-            def names = rows.collect { row -> referenceMeta(row).genome }.findAll { name -> name }
-            throw new IllegalArgumentException("Reference datasheet has multiple genomes (${names.join(', ')}). Use a datasheet with one genome record.")
-        }
-        return rows[0]
-    }
-
-    private static Map referenceMeta(row) {
-        if (row instanceof Map) {
-            return row.findAll { _key, value -> value != null && value != '' }
-        }
-        if (row instanceof List && row && row[0] instanceof Map) {
-            Map meta = row[0] as Map
-            return meta.findAll { _key, value -> value != null && value != '' }
-        }
-        throw new IllegalArgumentException("Reference datasheet record is not a genome mapping: ${row}")
-    }
-
-    /**
-     * Check named arguments: an unknown name throws, since a typo would otherwise read as null.
-     * Required names must be passed; any other missing argument defaults to null.
-     */
-    private static Map checkArgs(Map args, String method, List<String> known, List<String> required = []) {
-        Map checked = args ?: [:]
-        def unknown = checked.keySet().findAll { !(it in known) }
-        if (unknown) {
-            throw new IllegalArgumentException("${method} got unknown named argument(s): ${unknown.join(', ')}. Expected: ${known.join(', ')}")
-        }
-        def missing = required.findAll { !checked.containsKey(it) }
-        if (missing) {
-            throw new IllegalArgumentException("${method} is missing named argument(s): ${missing.join(', ')}")
-        }
-        return checked
+        args = ReferenceDatasheet.checkArgs(args, 'getReferenceMetadata', ['rows'], ['rows'])
+        return ReferenceDatasheet.datasheetMeta(args.rows as List)
     }
 }

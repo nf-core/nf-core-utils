@@ -124,40 +124,7 @@ class ReferenceSelectionTest extends Specification {
         sel.resolveFile('bowtie2', '/base') == null
     }
 
-    // --- getReferencePath / getReferenceMetadata / getReferenceAttribute ---
-
-    def 'getReferencePath prefers an explicit references path'() {
-        expect:
-        ReferenceSelection.getReferencePath(references: 'my.yml', genome: null, igenomesIgnore: false, datasheetPath: null) == 'my.yml'
-    }
-
-    def 'getReferencePath builds the catalogue path'() {
-        expect:
-        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: 'https://host/') == 'https://host/Ensembl/GRCh38.yml'
-        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: 's3://bucket/refs//') == 's3://bucket/refs/Ensembl/GRCh38.yml'
-    }
-
-    def 'getReferencePath requires a datasheet base path'() {
-        when:
-        ReferenceSelection.getReferencePath(references: null, genome: 'Ensembl/GRCh38', igenomesIgnore: true, datasheetPath: '')
-
-        then:
-        thrown(IllegalArgumentException)
-    }
-
-    def 'getReferencePath returns null without a source'() {
-        expect:
-        ReferenceSelection.getReferencePath(references: null, genome: 'GRCh38', igenomesIgnore: false, datasheetPath: null) == null
-        ReferenceSelection.getReferencePath(references: null, genome: 'null', igenomesIgnore: true, datasheetPath: 'x') == null
-    }
-
-    def 'getReferencePath rejects references and genome together'() {
-        when:
-        ReferenceSelection.getReferencePath(references: 'my.yml', genome: 'GRCh38', igenomesIgnore: false, datasheetPath: null)
-
-        then:
-        thrown(IllegalArgumentException)
-    }
+    // --- getReferenceMetadata / getReferenceAttribute ---
 
     def 'getReferenceMetadata unwraps a samplesheet row'() {
         expect:
@@ -166,7 +133,7 @@ class ReferenceSelectionTest extends Specification {
 
     def 'getReferenceMetadata drops empty values'() {
         expect:
-        ReferenceSelection.getReferenceMetadata(rows: [[[genome: 'GRCh38', fasta: null], null]]) == [genome: 'GRCh38']
+        ReferenceSelection.getReferenceMetadata(rows: [[[genome: 'GRCh38', fasta: null, dict: '', gtf: []], null]]) == [genome: 'GRCh38']
     }
 
     def 'getReferenceMetadata rejects an empty datasheet'() {
@@ -202,19 +169,8 @@ class ReferenceSelectionTest extends Specification {
 
     def 'optional named arguments default to null'() {
         expect:
-        ReferenceSelection.getReferencePath(references: 'my.yml') == 'my.yml'
-        ReferenceSelection.getReferencePath([:]) == null
         ReferenceSelection.getReferenceAttribute(param: 'fasta') == null
         ReferenceSelection.getReferenceAttribute(param: 'gtf', genomeMap: GENOMES, genomeKey: 'GRCh38') == 's3://bucket/genes.gtf'
-    }
-
-    def 'reference functions reject unknown named arguments'() {
-        when:
-        ReferenceSelection.getReferencePath(references: null, igenomeIgnore: true)
-
-        then:
-        def e = thrown(IllegalArgumentException)
-        e.message.contains('igenomeIgnore')
     }
 
     def 'reference functions require param and rows'() {
@@ -230,4 +186,5 @@ class ReferenceSelectionTest extends Specification {
             { ReferenceSelection.getReferenceMetadata([:]) },
         ]
     }
+
 }

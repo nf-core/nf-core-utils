@@ -17,8 +17,8 @@ The References Extension solves this by providing a unified interface that autom
 The extension provides:
 
 - `getGenomeAttribute()`: reads one attribute of the selected genome from `params.genomes` (see [1.2](#12-migration-from-legacy-systems)).
-- `genomeExistsError()`: aborts the pipeline when `params.genome` is not a key of `params.genomes`.
-- `getReferencePath()`, `getReferenceMetadata()` and `getReferenceAttribute()`: resolve references from a references datasheet (see [2.1](#21-reference-datasheet-resolution)).
+- `genomeExistsError(genome:, genomes:)`: aborts the pipeline when `genome` is not a key of `genomes`.
+- `getReferencePath()`, `getReferenceMetadata()`, `getReferenceAttribute()` and `getReferences()`: resolve references from a references datasheet (see [2.1](#21-reference-datasheet-resolution)).
 
 ### 1.2. Migration from Legacy Systems
 
@@ -94,21 +94,23 @@ workflow {
 
 ### 1.3. Genome Key Check
 
-`genomeExistsError()` replaces the template's `genomeExistsError()` helper. It reads `params.genome` and `params.genomes` from the session config (falling back to `session.params`), the same source as `getGenomeAttribute()`.
+`genomeExistsError()` replaces the template's `genomeExistsError()` helper. It takes its values as named arguments, like `getReferencePath()`.
 
 ```groovy
-void genomeExistsError()
+void genomeExistsError(Map args) // genome, genomes
 ```
 
-It does nothing when `params.genome` is unset or `params.genomes` is missing or empty. Otherwise, if `params.genome` is not a key of `params.genomes`, it throws an `AbortOperationException` that names the genome and lists the available keys.
+It does nothing when `genome` is unset (or the string `'null'`), or `genomes` is missing or empty. Otherwise, if `genome` is not a key of `genomes`, it throws an `AbortOperationException` that names the genome and lists the available keys.
 
 ```nextflow
 include { genomeExistsError } from 'plugin/nf-core-utils'
 
 workflow {
-    genomeExistsError()
+    genomeExistsError(genome: params.genome, genomes: params.genomes)
 }
 ```
+
+`getReferences()` runs this check itself (see [2.1](#21-reference-datasheet-resolution)).
 
 ## 2. Core Functions Reference
 
@@ -125,6 +127,12 @@ Map getReferenceMetadata(Map args)
 
 Object getReferenceAttribute(Map args)
 // args: param (required), datasheet, genomeMap, genomeKey
+
+Map getReferences(Map args)
+// args: schema (required), rows, params, genome, genomes, ignore
+
+List<String> getReferenceNames(Map args)
+// args: schema (required), ignore (default ['genome', 'id'])
 ```
 
 Missing arguments default to `null`. An unknown argument name throws an `IllegalArgumentException`.
@@ -141,25 +149,34 @@ It throws if `references` and `genome` are both set, or if it needs `datasheetPa
 
 `getReferenceMetadata()` takes the output of `samplesheetToList()` and returns the genome's non-empty values as a map. It throws unless the datasheet holds exactly one genome. Map every property of the datasheet schema to `meta`; other properties are dropped.
 
-`getReferenceAttribute()` returns `datasheet[param]`, else `genomeMap[genomeKey][param]`, else `null`.
+`getReferenceAttribute()` returns `datasheet[param]`, else `genomeMap[genomeKey][param]`, else `null`. An empty datasheet value also falls back to the genome config.
+
+> [!WARNING]
+> `getReferenceMetadata()` and `getReferenceAttribute()` are deprecated: use `getReferences()`, which resolves every reference param in one call and never falls back from a datasheet to the genome config. They will be removed once the igenomes config files are dropped.
+
+`getReferences()` resolves every param that `getReferenceNames()` lists for the datasheet schema, with the same `ignore`. For each name, `null` in `params` means unset, `false` turns that reference off, and any other value wins; the command-line text `'null'` and `'false'` read the same. Otherwise `rows` is the only source when given, and `genomes[genome]` when not: a datasheet never falls back to the genome config. Without `rows`, it aborts like `genomeExistsError()` when `genome` is not a key of `genomes`. List config-only params in the schema too, so the schema stays the one list of reference params. `getReferenceNames()` returns that list, skipping the `meta` names in `ignore` (default `['genome', 'id']`, which name the genome itself), so a pipeline can pass only its reference params, `params.subMap(getReferenceNames(schema: schema))`, to `getReferences()`.
 
 ```nextflow
-include { getReferencePath      } from 'plugin/nf-core-utils'
-include { getReferenceMetadata  } from 'plugin/nf-core-utils'
-include { getReferenceAttribute } from 'plugin/nf-core-utils'
-include { samplesheetToList     } from 'plugin/nf-schema'
+include { getReferenceNames } from 'plugin/nf-core-utils'
+include { getReferencePath  } from 'plugin/nf-core-utils'
+include { getReferences     } from 'plugin/nf-core-utils'
+include { samplesheetToList } from 'plugin/nf-schema'
 
 workflow {
-    reference_path = getReferencePath(
+    def schema = "${projectDir}/assets/schema_references.json"
+    def reference_path = getReferencePath(
         references: params.references,
         genome: params.genome,
         igenomesIgnore: params.igenomes_ignore,
         datasheetPath: params.references_datasheets_path,
     )
-    datasheet = reference_path
-        ? getReferenceMetadata(rows: samplesheetToList(reference_path, "${projectDir}/assets/schema_references.json"))
-        : null
-    fasta = getReferenceAttribute(param: 'fasta', datasheet: datasheet, genomeMap: params.genomes, genomeKey: params.genome)
+    def references = getReferences(
+        schema: schema,
+        rows: reference_path ? samplesheetToList(reference_path, schema, unrecognisedHeaders: 'skip') : null,
+        params: params.subMap(getReferenceNames(schema: schema)),
+        genome: params.genome,
+        genomes: params.genomes,
+    )
 }
 ```
 

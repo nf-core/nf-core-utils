@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "genome": { "meta": ["genome", "id"], "type": "string" },
+      "fasta": { "meta": ["fasta"], "type": "string" },
+      "fasta_dict": { "meta": ["dict"], "type": "string" }
+    },
+    "required": ["genome"]
+  }
+}

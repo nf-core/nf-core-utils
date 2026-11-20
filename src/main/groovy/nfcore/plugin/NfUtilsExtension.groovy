@@ -34,6 +34,7 @@ import nfcore.plugin.nfcore.ValidationAdapter
 import nfcore.plugin.nfcore.VersionAdapter
 import nfcore.plugin.nfcore.ReportingAdapter
 import nfcore.plugin.ReferencesUtils
+import nfcore.plugin.references.ReferenceDatasheet
 import nfcore.plugin.references.ReferenceSelection
 
 /**
@@ -69,26 +70,19 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     Object getGenomeAttribute(String attribute) {
-        return ReferencesUtils.getGenomeAttribute(genomeParams(), attribute)
+        Map params = session?.getConfig()?.get('params') as Map
+        if (!params) params = session?.params as Map
+        return ReferencesUtils.getGenomeAttribute(params, attribute)
     }
 
     /**
-     * Abort the pipeline if params.genome is not a key of params.genomes.
-     * Reads params from the session config (falling back to session.params),
-     * the same source as getGenomeAttribute(). Does nothing when genome is
-     * unset or genomes is missing or empty.
-     *
-     * @throws nextflow.exception.AbortOperationException listing the available genome keys
+     * Abort the pipeline if genome is not a key of genomes.
+     * Accepts named arguments (Groovy style).
+     * @param args Named arguments: genome, genomes. Passes when genome is unset or 'null', or genomes is empty
      */
     @Function
-    void genomeExistsError() {
-        ReferencesUtils.genomeExistsError(genomeParams())
-    }
-
-    private Map genomeParams() {
-        Map params = session?.getConfig()?.get('params') as Map
-        if (!params) params = session?.params as Map
-        return params
+    void genomeExistsError(Map args) {
+        ReferenceDatasheet.genomeExistsError(args)
     }
 
     /**
@@ -96,7 +90,9 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * Accepts named arguments (Groovy style).
      * @param args Named arguments: param, datasheet, genomeMap, genomeKey
      * @return The attribute value from sheet or genome config, or null if not found
+     * @deprecated Use {@link #getReferences(Map)} instead
      */
+    @Deprecated
     @Function
     Object getReferenceAttribute(Map args) {
         return ReferenceSelection.getReferenceAttribute(args)
@@ -110,7 +106,29 @@ class NfUtilsExtension extends PluginExtensionPoint {
      */
     @Function
     String getReferencePath(Map args) {
-        return ReferenceSelection.getReferencePath(args)
+        return ReferenceDatasheet.getReferencePath(args)
+    }
+
+    /**
+     * List the reference param names in a references schema.
+     * Accepts named arguments (Groovy style).
+     * @param args Named arguments: schema, ignore (default ['genome', 'id'])
+     * @return Every `meta` name not in ignore
+     */
+    @Function
+    List<String> getReferenceNames(Map args) {
+        return ReferenceDatasheet.getReferenceNames(args)
+    }
+
+    /**
+     * Resolve the reference params named in a references schema.
+     * Accepts named arguments (Groovy style).
+     * @param args Named arguments: schema, rows, params, genome, genomes, ignore
+     * @return Map of reference param name to value: non-null param (false turns it off), else datasheet rows, else genomes config
+     */
+    @Function
+    Map getReferences(Map args) {
+        return ReferenceDatasheet.getReferences(args)
     }
 
     /**
@@ -118,7 +136,9 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * Accepts named arguments (Groovy style).
      * @param args Named argument: rows (output of samplesheetToList)
      * @return Map of reference metadata attributes
+     * @deprecated Use {@link #getReferences(Map)} instead
      */
+    @Deprecated
     @Function
     Map getReferenceMetadata(Map args) {
         return ReferenceSelection.getReferenceMetadata(args)
