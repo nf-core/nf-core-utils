@@ -37,10 +37,9 @@ class ReferenceDatasheet {
     static String getReferencePath(Map args) {
         args = checkArgs(args, 'getReferencePath', ['references', 'genome', 'igenomesIgnore', 'datasheetPath'])
         String references = args.references
-        String genome = args.genome
+        String genome = cliValue(args.genome) ?: null
         Boolean igenomesIgnore = args.igenomesIgnore
         String datasheetPath = args.datasheetPath
-        genome = unset(genome) ? null : genome
 
         if (references && genome) {
             throw new IllegalArgumentException("Use either --references or --genome, not both.")
@@ -56,9 +55,9 @@ class ReferenceDatasheet {
 
     /**
      * Resolve every reference param that getReferenceNames() lists for a references schema.
-     * A non-null param wins, and false (or 'false' from the command line) turns the reference off.
-     * Otherwise the datasheet rows are the only
-     * source when given, and the genomes config when not: a datasheet never falls back to config.
+     * A null param is unset, false turns the reference off, and any other value wins.
+     * Otherwise the datasheet rows are the only source when given, and the genomes config when not:
+     * a datasheet never falls back to config.
      * Without rows, aborts like genomeExistsError() when genome is not a key of genomes.
      *
      * @param args Named arguments: schema (required), rows (output of samplesheetToList), params, genome, genomes,
@@ -78,8 +77,8 @@ class ReferenceDatasheet {
         }
         Map params = (args.params ?: [:]) as Map
         return names.collectEntries { name ->
-            def value = params[name]
-            [name, value == null ? source[name] : value in [false, 'false'] ? null : value]
+            def value = cliValue(params[name])
+            [name, value == null ? source[name] : value == false ? null : value]
         }
     }
 
@@ -92,7 +91,7 @@ class ReferenceDatasheet {
      */
     static List<String> getReferenceNames(Map args) {
         args = checkArgs(args, 'getReferenceNames', ['schema', 'ignore'], ['schema'])
-        List ignore = args.containsKey('ignore') ? (args.ignore ?: []) as List : ['genome', 'id']
+        List ignore = args.ignore != null ? args.ignore as List : ['genome', 'id']
         def properties = new JsonSlurper().parseText(NextflowPipelineUtils.toPath(args.schema).text)?.items?.properties
         if (!(properties instanceof Map)) {
             throw new IllegalArgumentException("References schema ${args.schema} has no items.properties")
@@ -121,11 +120,11 @@ class ReferenceDatasheet {
     }
 
     /**
-     * True for an unset value: null, or the text 'null' that `--genome null` passes from the command line.
+     * Read the text 'null' and 'false' that the command line passes as null and false.
      */
     @PackageScope
-    static boolean unset(Object value) {
-        return value in [null, 'null']
+    static Object cliValue(Object value) {
+        return value == 'null' ? null : value == 'false' ? false : value
     }
 
     private static Object selectReferenceRow(List rows) {

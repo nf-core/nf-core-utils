@@ -19,14 +19,8 @@ package nfcore.plugin.references
 import nextflow.exception.AbortOperationException
 
 /**
- * Concentrates reference-shape knowledge: genome lookup, attribute extraction,
- * basepath substitution, and null handling in a single deep module.
- *
- * Callers get a smaller interface than reaching into params.genomes directly.
- * {@link nfcore.plugin.ReferencesUtils} static methods remain for backward
- * compatibility.
- *
- * @see docs/adr/0001-prioritize-deep-modules-around-execution-context-and-reporting.md §6
+ * Legacy genome lookup in params.genomes, removed with the igenomes config files.
+ * New code resolves references with {@link ReferenceDatasheet}.
  */
 class ReferenceSelection {
 
@@ -94,7 +88,7 @@ class ReferenceSelection {
     static void genomeExistsError(Map args) {
         args = ReferenceDatasheet.checkArgs(args, 'genomeExistsError', ['genome', 'genomes'])
         Map genomes = args.genomes as Map
-        if (ReferenceDatasheet.unset(args.genome) || !genomes || genomes.containsKey(args.genome)) {
+        if (!ReferenceDatasheet.cliValue(args.genome) || !genomes || genomes.containsKey(args.genome)) {
             return
         }
         throw new AbortOperationException(

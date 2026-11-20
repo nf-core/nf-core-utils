@@ -90,7 +90,9 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * Accepts named arguments (Groovy style).
      * @param args Named arguments: param, datasheet, genomeMap, genomeKey
      * @return The attribute value from sheet or genome config, or null if not found
+     * @deprecated Use {@link #getReferences(Map)} instead
      */
+    @Deprecated
     @Function
     Object getReferenceAttribute(Map args) {
         return ReferenceSelection.getReferenceAttribute(args)
@@ -134,7 +136,9 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * Accepts named arguments (Groovy style).
      * @param args Named argument: rows (output of samplesheetToList)
      * @return Map of reference metadata attributes
+     * @deprecated Use {@link #getReferences(Map)} instead
      */
+    @Deprecated
     @Function
     Map getReferenceMetadata(Map args) {
         return ReferenceSelection.getReferenceMetadata(args)

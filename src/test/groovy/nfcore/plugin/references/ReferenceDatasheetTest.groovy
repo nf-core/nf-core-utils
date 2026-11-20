@@ -93,7 +93,7 @@ class ReferenceDatasheetTest extends Specification {
             genome: 'GRCh38', genomes: [GRCh38: [fasta: 'g.fa', dict: 'g.dict']]) == [fasta: 'd.fa', dict: null]
     }
 
-    def 'getReferences lets a non-null param win, false turn it off, and null fall through'() {
+    def 'getReferences reads null as unset and false as off, also as command-line text'() {
         expect:
         ReferenceDatasheet.getReferences(schema: schema(), rows: [[[genome: 'GRCh38', fasta: 'd.fa', dict: 'd.dict']]],
             params: [fasta: 'p.fa', dict: value, genome: 'GRCh38']) == [fasta: 'p.fa', dict: expected]
@@ -101,6 +101,7 @@ class ReferenceDatasheetTest extends Specification {
         where:
         value   | expected
         null    | 'd.dict'
+        'null'  | 'd.dict'
         false   | null
         'false' | null
     }
