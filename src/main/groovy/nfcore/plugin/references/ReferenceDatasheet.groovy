@@ -56,7 +56,8 @@ class ReferenceDatasheet {
 
     /**
      * Resolve every reference param that getReferenceNames() lists for a references schema.
-     * A param present in params, even null, wins. Otherwise the datasheet rows are the only
+     * A non-null param wins, and false (or 'false' from the command line) turns the reference off.
+     * Otherwise the datasheet rows are the only
      * source when given, and the genomes config when not: a datasheet never falls back to config.
      * Without rows, aborts like genomeExistsError() when genome is not a key of genomes.
      *
@@ -75,7 +76,11 @@ class ReferenceDatasheet {
             ReferenceSelection.genomeExistsError(genome: args.genome, genomes: args.genomes)
             source = ((args.genomes as Map)?.get(args.genome) ?: [:]) as Map
         }
-        return names.collectEntries { name -> [name, source[name]] } + ((args.params ?: [:]) as Map).subMap(names)
+        Map params = (args.params ?: [:]) as Map
+        return names.collectEntries { name ->
+            def value = params[name]
+            [name, value == null ? source[name] : value in [false, 'false'] ? null : value]
+        }
     }
 
     /**

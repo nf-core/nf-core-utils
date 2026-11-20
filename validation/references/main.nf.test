@@ -42,6 +42,19 @@ nextflow_pipeline {
         }
     }
 
+    test("--dict false turns a reference off") {
+        when {
+            params {
+                genome = 'GRCh38'
+                dict   = false
+            }
+        }
+        then {
+            assert workflow.success
+            assert workflow.stdout.any { it.contains("references: [fasta:config.fa, dict:null]") }
+        }
+    }
+
     test("Unknown --genome aborts and lists the available keys") {
         when {
             params {
