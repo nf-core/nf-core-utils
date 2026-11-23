@@ -1,0 +1,34 @@
+nextflow_pipeline {
+
+    name "nf-core template software versions wiring"
+    script "./main.nf"
+    config "./nextflow.config"
+
+    test("topic -> toList -> collectVersions -> collectFile") {
+
+        when {
+            params {
+                outdir = "$outputDir"
+            }
+        }
+
+        then {
+            assert workflow.success
+
+            def report = file("${params.outdir}/pipeline_info/nf_core_test_software_mqc_versions.yml")
+            assert report.name == 'nf_core_test_software_mqc_versions.yml'
+            // Quoted numeric-looking versions are the contract; Nextflow version is normalized
+            def lines = report.text.readLines().collect { it.replaceAll(/^(\s*Nextflow: )\S+$/, '$1[VERSION]') }
+            assert lines == [
+                'FASTQC_LIKE:',
+                '  fastqc: 0.12.1',
+                "  samtools: '1.17'",
+                'LEGACY_TOOL:',
+                "  legacy: '2.0'",
+                'Workflow:',
+                '    nf-core-utils-validation: v1.0.0',
+                '    Nextflow: [VERSION]',
+            ]
+        }
+    }
+}
