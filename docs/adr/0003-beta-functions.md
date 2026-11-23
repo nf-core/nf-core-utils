@@ -8,8 +8,8 @@ Proposed (2026-11-23)
 
 1.0 locks the public API: after it, a breaking change to an exported function needs
 a major release. Some new functions are useful now but their shape is not settled.
-`getReferences()` and `getReferenceNames()` in
-[#148](https://github.com/nf-core/nf-core-utils/pull/148) are the first case.
+`genomeExistsError()`, and `getReferences()` and `getReferenceNames()` in
+[#148](https://github.com/nf-core/nf-core-utils/pull/148), are such functions.
 
 Holding them back until 1.1 delays pipelines that would use them today. Shipping
 them as stable freezes arguments nobody has tried in a real pipeline yet.
@@ -49,54 +49,41 @@ back to beta: changing it is a breaking change.
 
 ## Example
 
-`getReferences()` from [#148](https://github.com/nf-core/nf-core-utils/pull/148)
-ships as beta. The extension method adds one line:
+`genomeExistsError()` is the first beta function. It is not in 0.7.0, and
+[#148](https://github.com/nf-core/nf-core-utils/pull/148) changes its arguments, so
+its API is not settled. It carries all three marks:
 
-```groovy title="NfUtilsExtension.groovy" hl_lines="3"
-@Function
-Map getReferences(Map args) {
-    log.warn1("getReferences() is beta: its arguments and output may change in a minor release")
-    return ReferenceDatasheet.getReferences(args)
-}
-```
+- **Runtime.** `NfUtilsExtension.genomeExistsError()` calls `log.warn1` before it
+  checks the genome:
 
-Its section in `docs/ReferencesExtension.md` opens with the admonition:
+  ```groovy title="src/main/groovy/nfcore/plugin/NfUtilsExtension.groovy"
+  @Function
+  void genomeExistsError() {
+      log.warn1("genomeExistsError() is beta: its arguments and output may change in a minor release")
+      ReferencesUtils.genomeExistsError(genomeParams())
+  }
+  ```
 
-```markdown title="docs/ReferencesExtension.md"
-### `getReferences()`
+- **Docs.** Section 1.3 of `docs/ReferencesExtension.md` opens with the beta
+  admonition.
+- **Changelog.** Its `Added` entry starts with `Beta:`.
 
-!!! warning "Beta"
-
-    This function is beta. Its arguments and output may change in a minor
-    release. See [ADR-0003](adr/0003-beta-functions.md).
-```
-
-Its changelog entry starts with `Beta:`:
-
-```markdown title="CHANGELOG.md"
-### Added
-
-- Beta: `getReferences(schema:, rows:, params:, genome:, genomes:, ignore:)` resolves
-  reference params from `params`, datasheet rows or the genome config.
-```
-
-A pipeline that calls it sees one warning per run, however many times it calls it:
+A pipeline that calls it logs the warning once per run:
 
 ```console title="Output"
-WARN: getReferences() is beta: its arguments and output may change in a minor release
+WARN: genomeExistsError() is beta: its arguments and output may change in a minor release
 ```
 
-When the arguments settle, a later minor release promotes it. That release
-deletes the `log.warn1` line and the admonition, and adds:
+`NfUtilsExtensionBetaTest` checks that two calls log the warning exactly once.
+
+When its arguments settle, a minor release promotes it: delete the `log.warn1`
+line, the admonition and `NfUtilsExtensionBetaTest`, and add a `Changed` entry:
 
 ```markdown title="CHANGELOG.md"
-### Changed
-
-- `getReferences()` is stable and covered by Semantic Versioning.
+- `genomeExistsError()` is stable and covered by Semantic Versioning.
 ```
 
-Pipelines that call `getReferences()` keep working unchanged and stop seeing the
-warning.
+Pipelines that call it keep working unchanged and stop seeing the warning.
 
 ## Rationale
 
