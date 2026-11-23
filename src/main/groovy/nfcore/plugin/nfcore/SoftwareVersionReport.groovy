@@ -20,7 +20,13 @@ import groovy.transform.PackageScope
 import groovy.util.logging.Slf4j
 import nextflow.script.types.Record
 import nfcore.plugin.nextflow.NextflowPipelineUtils
+import org.yaml.snakeyaml.LoaderOptions
 import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.constructor.AbstractConstruct
+import org.yaml.snakeyaml.constructor.SafeConstructor
+import org.yaml.snakeyaml.nodes.Node
+import org.yaml.snakeyaml.nodes.ScalarNode
+import org.yaml.snakeyaml.nodes.Tag
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -196,17 +202,33 @@ class SoftwareVersionReport {
     private void processYamlContent(String yamlContent) {
         def processed = flattenYamlKeys(yamlContent)
         if (processed) {
-            def map = new Yaml().load(processed)
+            def map = newVersionYaml().load(processed)
             if (map instanceof Map) {
                 mergeParsedYaml(map as Map)
             }
         }
     }
 
+    /** Reads floats as BigDecimal so 1.20 keeps its zero (nf-core/tools#4500) and still dumps unquoted. */
+    private static Yaml newVersionYaml() {
+        def constructor = new SafeConstructor(new LoaderOptions())
+        constructor.yamlConstructors.put(Tag.FLOAT, { Node n ->
+            def text = ((ScalarNode) n).value
+            // .inf, 1_0.5, 1e3 and the like do not round-trip as BigDecimal: keep them as text
+            try {
+                def bd = new BigDecimal(text)
+                bd.toString() == text ? bd : text
+            } catch (NumberFormatException ignored) {
+                text
+            }
+        } as AbstractConstruct)
+        return new Yaml(constructor)
+    }
+
     /** Flatten colon-prefixed keys: "tool:foo: 1.0" -> "foo: 1.0" */
     @PackageScope
     static String flattenYamlKeys(String yamlContent) {
-        def yaml = new Yaml()
+        def yaml = newVersionYaml()
         def loaded = yaml.load(yamlContent)
         if (!(loaded instanceof Map)) return ''
         def versions = ((Map) loaded).collectEntries { k, v ->

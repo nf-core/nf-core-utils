@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed `collectVersions()` turning a legacy `versions.yml` version such as `1.20` into `1.2` ([nf-core/tools#4500](https://github.com/nf-core/tools/issues/4500)).
 - Fixed `collectVersions()` dropping a single versions `Path`, local or remote ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
 - Fixed `methodsDescriptionText()` and the report helpers failing on remote methods templates ([#110](https://github.com/nf-core/nf-core-utils/pull/110)).
 - Fixed `collectVersions()` parsing remote path strings (`s3://`) as YAML ([#110](https://github.com/nf-core/nf-core-utils/pull/110)).
