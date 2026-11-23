@@ -103,6 +103,7 @@ class NfcoreCitationUtils {
         def bibEntries = collectedCitations.values()
                 .findAll { it.bibliography }
                 .collect { it.bibliography }
+                .unique()  // tools sharing one publication render its entry once
 
         return bibEntries.join(" ")
     }
