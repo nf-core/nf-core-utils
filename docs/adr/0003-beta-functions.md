@@ -47,6 +47,57 @@ so, and by removing the three marks. Pipelines change nothing when it does.
 Only new functions may ship as beta. A function that is already stable cannot move
 back to beta: changing it is a breaking change.
 
+## Example
+
+`getReferences()` from [#148](https://github.com/nf-core/nf-core-utils/pull/148)
+ships as beta. The extension method adds one line:
+
+```groovy title="NfUtilsExtension.groovy" hl_lines="3"
+@Function
+Map getReferences(Map args) {
+    log.warn1("getReferences() is beta: its arguments and output may change in a minor release")
+    return ReferenceDatasheet.getReferences(args)
+}
+```
+
+Its section in `docs/ReferencesExtension.md` opens with the admonition:
+
+```markdown title="docs/ReferencesExtension.md"
+### `getReferences()`
+
+!!! warning "Beta"
+
+    This function is beta. Its arguments and output may change in a minor
+    release. See [ADR-0003](adr/0003-beta-functions.md).
+```
+
+Its changelog entry starts with `Beta:`:
+
+```markdown title="CHANGELOG.md"
+### Added
+
+- Beta: `getReferences(schema:, rows:, params:, genome:, genomes:, ignore:)` resolves
+  reference params from `params`, datasheet rows or the genome config.
+```
+
+A pipeline that calls it sees one warning per run, however many times it calls it:
+
+```console title="Output"
+WARN: getReferences() is beta: its arguments and output may change in a minor release
+```
+
+When the arguments settle, a later minor release promotes it. That release
+deletes the `log.warn1` line and the admonition, and adds:
+
+```markdown title="CHANGELOG.md"
+### Changed
+
+- `getReferences()` is stable and covered by Semantic Versioning.
+```
+
+Pipelines that call `getReferences()` keep working unchanged and stop seeing the
+warning.
+
 ## Rationale
 
 - Pipelines get the function now, and the warning tells them what they accepted.
