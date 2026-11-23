@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Functions can ship as beta: outside the SemVer promise, marked in the docs and changelog, and warning once per run ([ADR-0003](docs/adr/0003-beta-functions.md)).
 - Added `logColours(monochromeLogs)`: ANSI colour codes for terminal output, the same keys as the pipeline template.
 - Added `genomeExistsError()`: aborts with the available keys when `params.genome` is not in `params.genomes`, as in the pipeline template.
 - Added `citationOutputs()`: citations as MultiQC HTML, BibTeX or CSL-JSON ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
