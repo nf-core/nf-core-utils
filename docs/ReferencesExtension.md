@@ -94,6 +94,11 @@ workflow {
 
 ### 1.3. Genome Key Check
 
+!!! warning "Beta"
+
+    This function is beta. Its arguments and output may change in a minor
+    release. See [ADR-0003](adr/0003-beta-functions.md).
+
 `genomeExistsError()` replaces the template's `genomeExistsError()` helper. It reads `params.genome` and `params.genomes` from the session config (falling back to `session.params`), the same source as `getGenomeAttribute()`.
 
 ```groovy
