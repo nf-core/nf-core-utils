@@ -77,11 +77,13 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * Reads params from the session config (falling back to session.params),
      * the same source as getGenomeAttribute(). Does nothing when genome is
      * unset or genomes is missing or empty.
+     * Beta (ADR-0003): its arguments may change in a minor release.
      *
      * @throws nextflow.exception.AbortOperationException listing the available genome keys
      */
     @Function
     void genomeExistsError() {
+        log.warn1("genomeExistsError() is beta: its arguments and output may change in a minor release")
         ReferencesUtils.genomeExistsError(genomeParams())
     }
 

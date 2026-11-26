@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Functions can ship as beta: outside the SemVer promise, marked in the docs and changelog, and warning once per run ([ADR-0003](docs/adr/0003-beta-functions.md)).
 - Added `logColours(monochromeLogs)`: ANSI colour codes for terminal output, the same keys as the pipeline template.
-- Added `genomeExistsError()`: aborts with the available keys when `params.genome` is not in `params.genomes`, as in the pipeline template.
+- Beta: added `genomeExistsError()`: aborts with the available keys when `params.genome` is not in `params.genomes`, as in the pipeline template.
 - Added `citationOutputs()`: citations as MultiQC HTML, BibTeX or CSL-JSON ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Citation map entries carry `info` (raw `meta.yml` tool map) and `version` ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Added ast-grep rules, run by pre-commit, that hold `CHANGELOG.md` to [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) release headings and change types, and a hook that checks each release has its compare link at the bottom. Fixed the 0.1.0–0.3.0 links (tags have no `v` prefix) and added the missing 0.3.1 and 0.4.0 links. The 0.7.0 "Compatibility and migration" and "Known limitations" sections are now bold notes under the release heading.
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pinned GitHub Actions by commit SHA at their latest releases, and mise 2026.11.5 in CI.
 - Added a `CI pass` job to `validation.yml`, the single required check.
 - Added Renovate with the nf-core preset. It does not update Nextflow, which is bumped by hand.
+- Refreshed the Nextflow pins to the newest stable patches: 25.10.9, 26.04.9 and 26.10.6 in the CI matrix, 26.10.6 for development.
 - Deprecated version helpers delegate to `collectVersions()`; missing versions files log a warning ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
 - The `NfcoreReportingUtils` reference page no longer documents `workflowSummaryMQC()` and `sectionLogs()`: they are internal helpers that a pipeline cannot import.
 
