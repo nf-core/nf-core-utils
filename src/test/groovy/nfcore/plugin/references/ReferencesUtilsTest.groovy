@@ -139,40 +139,4 @@ class ReferencesUtilsTest extends Specification {
         number_result == 42
         boolean_result == true
     }
-
-    def "genomeExistsError aborts for an unknown genome and lists the available keys"() {
-        when:
-        ReferencesUtils.genomeExistsError([genome: 'hg99', genomes: [GRCh38: [:], GRCm39: [:]]])
-
-        then:
-        def e = thrown(nextflow.exception.AbortOperationException)
-        e.message.contains("Genome 'hg99' not found in any config files provided to the pipeline.")
-        e.message.contains('  GRCh38, GRCm39\n')
-    }
-
-    def "genomeExistsError passes for a known genome"() {
-        when:
-        ReferencesUtils.genomeExistsError([genome: 'GRCh38', genomes: [GRCh38: [:]]])
-
-        then:
-        noExceptionThrown()
-    }
-
-    def "genomeExistsError passes when genome is unset or genomes is missing or empty"() {
-        when:
-        ReferencesUtils.genomeExistsError(params)
-
-        then:
-        noExceptionThrown()
-
-        where:
-        params << [
-            [genome: null, genomes: [GRCh38: [:]]],
-            [genomes: [GRCh38: [:]]],
-            [genome: 'hg99', genomes: [:]],
-            [genome: 'hg99'],
-            [:],
-            null,
-        ]
-    }
 }

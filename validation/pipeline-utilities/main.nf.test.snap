@@ -28,13 +28,14 @@
                 "\u2705 Edge cases handled properly",
                 "\u2705 Output validation completed",
                 "Functions ready for use in fetchngs pipeline! \ud83d\ude80",
-                "WARN: JSON file not found at: [PATH]/tests/[NFT_HASH]/work/validation_output/params.json"
+                "WARN: JSON file not found at: [PATH]/tests/[NFT_HASH]/work/validation_output/params.json",
+                "WARN: genomeExistsError() is beta: its arguments and output may change in a minor release"
             ]
         ],
-        "timestamp": "2026-05-22T12:18:13.286028",
+        "timestamp": "2026-11-26T14:42:01.577026945",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "25.10.3"
+            "nextflow": "26.10.6"
         }
     }
 }

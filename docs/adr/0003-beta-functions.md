@@ -58,9 +58,9 @@ its API is not settled. It carries all three marks:
 
   ```groovy title="src/main/groovy/nfcore/plugin/NfUtilsExtension.groovy"
   @Function
-  void genomeExistsError() {
+  void genomeExistsError(Map args) {
       log.warn1("genomeExistsError() is beta: its arguments and output may change in a minor release")
-      ReferencesUtils.genomeExistsError(genomeParams())
+      ReferenceDatasheet.genomeExistsError(args)
   }
   ```
 

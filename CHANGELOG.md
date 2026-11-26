@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Functions can ship as beta: outside the SemVer promise, marked in the docs and changelog, and warning once per run ([ADR-0003](docs/adr/0003-beta-functions.md)).
 - Added `logColours(monochromeLogs)`: ANSI colour codes for terminal output, the same keys as the pipeline template.
 - Beta: added `genomeExistsError()`: aborts with the available keys when `params.genome` is not in `params.genomes`, as in the pipeline template.
+- `genomeExistsError()` takes `genome` and `genomes` as named arguments; passes with a `'null'` genome ([#148](https://github.com/nf-core/nf-core-utils/pull/148)).
+- Beta: added `getReferences()` and `getReferenceNames()`: resolve and list the reference params named in a references schema ([#148](https://github.com/nf-core/nf-core-utils/pull/148)).
 - Added `citationOutputs()`: citations as MultiQC HTML, BibTeX or CSL-JSON ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Citation map entries carry `info` (raw `meta.yml` tool map) and `version` ([#111](https://github.com/nf-core/nf-core-utils/pull/111)).
 - Added ast-grep rules, run by pre-commit, that hold `CHANGELOG.md` to [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) release headings and change types, and a hook that checks each release has its compare link at the bottom. Fixed the 0.1.0–0.3.0 links (tags have no `v` prefix) and added the missing 0.3.1 and 0.4.0 links. The 0.7.0 "Compatibility and migration" and "Known limitations" sections are now bold notes under the release heading.
@@ -33,8 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deprecated version helpers delegate to `collectVersions()`; missing versions files log a warning ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
 - The `NfcoreReportingUtils` reference page no longer documents `workflowSummaryMQC()` and `sectionLogs()`: they are internal helpers that a pipeline cannot import.
 
+### Deprecated
+
+- `getReferenceMetadata()` and `getReferenceAttribute()`: use `getReferences()` ([#148](https://github.com/nf-core/nf-core-utils/pull/148)).
+
 ### Fixed
 
+- `getReferenceMetadata()` drops the empty lists nf-schema gives missing datasheet fields ([#148](https://github.com/nf-core/nf-core-utils/pull/148)).
 - Fixed `collectVersions()` dropping a single versions `Path`, local or remote ([#108](https://github.com/nf-core/nf-core-utils/pull/108)).
 - Fixed `methodsDescriptionText()` and the report helpers failing on remote methods templates ([#110](https://github.com/nf-core/nf-core-utils/pull/110)).
 - Fixed `collectVersions()` parsing remote path strings (`s3://`) as YAML ([#110](https://github.com/nf-core/nf-core-utils/pull/110)).
