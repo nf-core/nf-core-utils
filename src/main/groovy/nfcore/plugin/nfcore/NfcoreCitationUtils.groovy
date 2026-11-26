@@ -57,19 +57,7 @@ class NfcoreCitationUtils {
 
         tools.each { toolEntry ->
             toolEntry.each { toolName, toolInfo ->
-                def citation = toolName
-                def bibEntry = null
-
-                if (toolInfo instanceof Map) {
-                    citation = formatCitationFromData(toolName, toolInfo as Map)
-                    bibEntry = formatBibliographyFromData(toolName, toolInfo as Map)
-                }
-
-                moduleCitations[toolName] = [
-                        citation    : citation,
-                        bibliography: bibEntry,
-                        info        : toolInfo
-                ]
+                moduleCitations[toolName] = NfcoreCitationFormats.citationEntry(toolName as String, toolInfo instanceof Map ? toolInfo as Map : [:])
             }
         }
 
@@ -124,11 +112,7 @@ class NfcoreCitationUtils {
 
                 // Convert citation data to standard format
                 if (citationData instanceof Map) {
-                    citations[tool] = [
-                        citation: formatCitationFromData(tool, citationData),
-                        bibliography: formatBibliographyFromData(tool, citationData),
-                        info: citationData
-                    ]
+                    citations[tool] = NfcoreCitationFormats.citationEntry(tool as String, citationData as Map)
                 } else {
                     // Handle simple string citations
                     citations[tool] = [
@@ -229,56 +213,6 @@ class NfcoreCitationUtils {
     }
 
     /**
-     * Format citation text from citation data
-     *
-     * @param toolName Name of the tool
-     * @param citationData Citation data map
-     * @return Formatted citation string
-     */
-    private static String formatCitationFromData(String toolName, Map citationData) {
-        def citation = toolName
-        def doi = NfcoreCitationFormats.referenceOf(toolName, citationData).doi
-        if (doi) {
-            citation += " (DOI: ${doi})"
-        } else if (citationData.description) {
-            citation += " (${citationData.description})"
-        }
-        return citation
-    }
-
-    /**
-     * Format bibliography entry from citation data
-     *
-     * @param toolName Name of the tool
-     * @param citationData Citation data map
-     * @return Formatted bibliography HTML
-     */
-    private static String formatBibliographyFromData(String toolName, Map citationData) {
-        def pub = NfcoreCitationFormats.publicationOf(citationData)
-        def ref = NfcoreCitationFormats.referenceOf(toolName, citationData)
-        def link = ref.doi ? "doi: <a href='https://doi.org/${ref.doi}'>${ref.doi}</a>" : ref.url ? "<a href='${ref.url}'>${ref.url}</a>" : null
-
-        // Publication present: academic-style reference "Author. (year). title. source. doi: link".
-        // The meta-schema treats publication as all-or-nothing; field guards keep entries clean
-        // while modules migrate to the full object (some still carry a partial publication).
-        if (pub) {
-            def author = pub.author?.toString()?.replaceAll(/\.\s*$/, '') ?: ""
-            def parts = []
-            if (author) parts << author
-            if (pub.year) parts << "(${pub.year})"
-            if (pub.title) parts << pub.title
-            if (pub.source) parts << pub.source
-            if (link) parts << link
-            return "<li>${parts.join('. ')}.</li>"
-        }
-
-        // No publication object: identify by tool name, linking out via DOI or homepage.
-        def parts = [toolName]
-        if (link) parts << link
-        return "<li>${parts.join('. ')}.</li>"
-    }
-
-    /**
      * Generate methods description text using collected citations
      * @param mqc_methods_yaml MultiQC methods YAML file, local or remote
      * @param collectedCitations Map containing all tool citations from modules (optional)
@@ -323,10 +257,10 @@ class NfcoreCitationUtils {
      * Extract citation from meta.yml file for topic channel emission
      * Used by processes to emit citation data at runtime
      *
-     * @param metaYmlPath Path to the module's meta.yml file (typically "${moduleDir}/meta.yml")
+     * @param metaYmlPath Path to the module's meta.yml file (String or Path, typically "${moduleDir}/meta.yml")
      * @return List in topic channel format [module_name, tool_name, citation_data] or empty list if error
      */
-    static List getCitation(String metaYmlPath) {
+    static List getCitation(Object metaYmlPath) {
         try {
             Path metaFile = NextflowPipelineUtils.toPath(metaYmlPath)
             if (metaFile == null || !Files.exists(metaFile)) {
@@ -335,7 +269,7 @@ class NfcoreCitationUtils {
             }
 
             // Extract module name from path (e.g., "modules/nf-core/fastqc/meta.yml" -> "FASTQC")
-            def moduleName = extractModuleNameFromPath(metaYmlPath)
+            def moduleName = extractModuleNameFromPath(metaFile.toString())
 
             // Parse meta.yml and extract tools
             def yaml = new Yaml()
@@ -540,29 +474,6 @@ class NfcoreCitationUtils {
     }
 
     /**
-     * Build a publication-style short citation for a single tool:
-     * {@code tool (version, Author et al. year)}.
-     *
-     * The reference segment is the short author + year when meta.yml provides
-     * them, otherwise it falls back to {@code doi: ...}, then the homepage url,
-     * then the description. The version segment is omitted when unknown.
-     *
-     * @param tool Tool name (display)
-     * @param info Raw meta.yml tool info (doi, homepage, description, publication.author, publication.year)
-     * @param version Tool version (optional)
-     * @return Short citation as HTML (DOI/homepage link, {@code <em>et al.</em>}) for a methods paragraph, not plain text
-     */
-    static String formatShortCitation(String tool, Map info, String version = null) {
-        def parts = []
-        if (version) parts << version
-        def ref = NfcoreCitationFormats.referenceOf(tool, info)
-        def text = shortReference(ref, info?.description)
-        def href = ref.doi ? "https://doi.org/${ref.doi}" : ref.url
-        if (text) parts << (href ? "<a href='${href}'>${text}</a>" : text)
-        return parts ? "${tool} (${parts.join(', ')})" : tool.toString()
-    }
-
-    /**
      * Citations on the fly: build citations for ONLY the tools that ran,
      * resolved from module meta.yml.
      *
@@ -578,11 +489,11 @@ class NfcoreCitationUtils {
      * meta.yml just like the rest, with no version segment.
      *
      * @param topicVersions Collected 'versions' topic data ([process, tool, version] tuples or records)
-     * @param metaFilePaths Paths to module meta.yml files
+     * @param metaFilePaths Paths to module meta.yml files (String or Path)
      * @param extraTools Extra tool names to cite even though they did not emit a version
      * @return Citations map (tool -> [citation, bibliography, info, version]) for tools that ran
      */
-    static Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<String> extraTools = []) {
+    static Map citationsOnTheFly(List topicVersions, List metaFilePaths, List<String> extraTools = []) {
         def toolsUsed = (toolsFromVersionsTopic(topicVersions) + (extraTools ?: [])).unique().sort()
         def versionByLower = toolVersionsFromTopic(topicVersions)
             .collectEntries { tool, ver -> [tool.toString().toLowerCase(), ver] }
@@ -591,12 +502,7 @@ class NfcoreCitationUtils {
 
         return selected.collectEntries { tool, info ->
             def version = versionByLower[tool.toString().toLowerCase()]
-            [(tool): [
-                citation    : formatShortCitation(tool.toString(), info as Map, version),
-                bibliography: formatBibliographyFromData(tool.toString(), info as Map),
-                info        : info,
-                version     : version
-            ]]
+            [(tool): NfcoreCitationFormats.citationEntry(tool.toString(), info as Map, version)]
         }
     }
 
@@ -630,7 +536,7 @@ class NfcoreCitationUtils {
      * Collect raw meta.yml tool info keyed by tool name, reusing {@link #getCitation}
      * for parsing (handles missing/malformed files gracefully).
      */
-    private static Map collectToolInfo(List<String> metaFilePaths) {
+    private static Map collectToolInfo(List metaFilePaths) {
         def info = [:]
         metaFilePaths?.each { path ->
             getCitation(path).each { tuple ->
@@ -640,35 +546,5 @@ class NfcoreCitationUtils {
             }
         }
         return info
-    }
-
-    /**
-     * Short reference for the inline citation in Harvard style:
-     * "Surname (year)" or "Surname et al. (year)" when an author is known,
-     * else "doi: ...", else the homepage url, else description.
-     */
-    private static String shortReference(Map ref, Object description) {
-        if (ref.author) {
-            def sa = shortAuthor(ref.author as String)
-            return ref.year ? "${sa} (${ref.year})" : sa
-        }
-        if (ref.doi) return "doi: ${ref.doi}"
-        return ref.url ?: description?.toString() ?: ''
-    }
-
-    /**
-     * Reduce an author string to "Surname" (single author) or "Surname <em>et al.</em>"
-     * (multiple). Recognize Harvard "Surname, Initials" pairs as well as legacy
-     * "Surname Initials" lists. In Harvard names, preserve compound surnames and
-     * do not mistake the comma before initials for an author separator.
-     */
-    private static String shortAuthor(String author) {
-        def authors = author.split(/\s+(?:&|and)\s+/)
-        def first = authors[0].split(',')*.trim()
-        def harvard = first.size() > 1 && first[1] ==~ /(?:\p{Lu}\.?\s*)+/
-        def surname = harvard ? first[0] : first[0].split(/\s+/)[0]
-        def multiple = authors.size() > 1 || author.toLowerCase().contains('et al') ||
-            first.size() > (harvard ? 2 : 1)
-        return multiple ? "${surname} <em>et al.</em>" : surname
     }
 }

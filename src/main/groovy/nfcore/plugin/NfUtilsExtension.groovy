@@ -547,7 +547,7 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * @return List in topic channel format ready for emission
      */
     @Function
-    List getCitation(String metaYmlPath) {
+    List getCitation(Object metaYmlPath) {
         return NfcoreCitationUtils.getCitation(metaYmlPath)
     }
 
@@ -597,12 +597,12 @@ class NfUtilsExtension extends PluginExtensionPoint {
      * {@link #methodsDescriptionText}.
      *
      * @param topicVersions Versions-topic data, e.g. channel.topic('versions').toList()
-     * @param metaFilePaths Paths to module meta.yml files
+     * @param metaFilePaths Paths to module meta.yml files (String or Path)
      * @param extraTools Extra tool names to cite even though they did not emit a version (e.g. multiqcsav)
      * @return Citations map (tool -> [citation, bibliography]) for tools that ran
      */
     @Function
-    Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths, List<String> extraTools = []) {
+    Map citationsOnTheFly(List topicVersions, List metaFilePaths, List<String> extraTools = []) {
         return NfcoreCitationUtils.citationsOnTheFly(topicVersions, metaFilePaths, extraTools)
     }
 

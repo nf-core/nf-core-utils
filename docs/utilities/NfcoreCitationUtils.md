@@ -33,12 +33,12 @@ Two functions cover the flow:
 
 #### `citationsOnTheFly()`
 
-`citationsOnTheFly(List topicVersions, List<String> metaFilePaths)`
+`citationsOnTheFly(List topicVersions, List metaFilePaths)`
 
 **Description:**
 Builds a citations map for **only the tools that ran**, by intersecting the `versions` topic (what executed) with citations parsed from the supplied `meta.yml` files (the citation source). The returned map plugs directly into `toolCitationText()`, `toolBibliographyText()`, and `methodsDescriptionText()`.
 
-Each **short citation** is formatted for a methods paragraph — `tool (version, Author (year))` — with the version taken from the `versions` topic and the author/year from `meta.yml`. The reference segment degrades gracefully: short author + year → `doi: …` → homepage url → description. So richer `meta.yml` files produce richer citations:
+Each **short citation** is formatted for a methods paragraph — `tool (version, Author (year))` — with the version taken from the `versions` topic and the author/year from `meta.yml`. The reference segment degrades gracefully: short author + year → `doi: …` → homepage url → description. So richer `meta.yml` files produce richer citations. `processCitationsFromTopic()`, `generateModuleToolCitation()` and `autoToolCitationText()` use the same short citation, without the version segment:
 
 !!! note "HTML output"
 Short citations are HTML, meant for the MultiQC methods section: the reference links to the DOI (else the homepage) and `et al.` is wrapped in `<em>`. The table below shows the rendered text. Save `toolCitationText(citations)` to an `.html` file, such as `auto_citations.html`, not a `.txt` file. To reuse a citation in a manuscript, open that file or the MultiQC report in a browser and copy the rendered text. Pasting the HTML source without formatting does not remove literal tags.
@@ -59,18 +59,18 @@ The full `bibliography` entry includes author, year, title and source when avail
 **Function Signature:**
 
 ```nextflow
-Map citationsOnTheFly(List topicVersions, List<String> metaFilePaths)
+Map citationsOnTheFly(List topicVersions, List metaFilePaths)
 ```
 
 **Parameters:**
 
 - `topicVersions` (List): Collected `versions` topic data: `[process, tool, version]` tuples, or `record(process, tool, version)` from typed processes. Collect with `.collect(flat: false)` so the tuples are preserved (plain `.collect()` flattens them, and the function logs a warning if it receives flattened data).
-- `metaFilePaths` (List\<String\>): Paths to module `meta.yml` files to resolve citation metadata from.
+- `metaFilePaths` (List): Paths to module `meta.yml` files (String or Path) to resolve citation metadata from.
 - `extraTools` (List\<String\>, optional): Tool names to cite even though they never emit a version — e.g. a MultiQC plugin like `multiqcsav`. They're resolved from `meta.yml` like everything else (with no version segment), so you can still add a tool by hand: `citationsOnTheFly(versions, meta_yml_paths, ['multiqcsav'])`.
 
 **Returns:**
 
-- `Map`: Citations keyed by tool name (`[citation: ..., bibliography: ..., info: ..., version: ...]`), restricted to tools that ran. `info` is the raw `meta.yml` tool map and `version` the version from the `versions` topic; [`citationOutputs()`](#citation-outputs-html-bibtex-and-csl-json) reads them.
+- `Map`: Citations keyed by tool name (`[citation: ..., bibliography: ..., info: ..., version: ...]`), restricted to tools that ran. `info` is the `meta.yml` tool map, without a `doi` that is not a bare DOI, and `version` the version from the `versions` topic; [`citationOutputs()`](#citation-outputs-html-bibtex-and-csl-json) reads them.
 
 :::note{title="Tool-name matching"}
 Tool names from the `versions` topic are matched against `meta.yml` tool keys **exactly first, then case-insensitively** (so `FastQC` lines up with `fastqc`). A tool that ran but has no matching `meta.yml` citation entry is logged as a warning — add it to that module's `meta.yml` `tools:` section to silence it.
@@ -85,7 +85,7 @@ include { citationsOnTheFly; methodsDescriptionText } from 'plugin/nf-core-utils
 
 // Resolve every module meta.yml once (citation metadata source).
 // files() returns an empty list when nothing matches the glob.
-def meta_yml_paths = files("${projectDir}/modules/**/meta.yml").collect { it.toString() }
+def meta_yml_paths = files("${projectDir}/modules/**/meta.yml")
 
 ch_methods_description = channel.topic('versions')   // every module emits here when it runs
     .collect(flat: false)                            // flat: false keeps each [process, tool, version] tuple
@@ -216,12 +216,12 @@ Extracts citation information from a module's meta.yml file and formats it for t
 **Function Signature:**
 
 ```nextflow
-List getCitation(String metaYmlPath)
+List getCitation(Object metaYmlPath)
 ```
 
 **Parameters:**
 
-- `metaYmlPath` (String): Path to the module's meta.yml file, typically `"${moduleDir}/meta.yml"`
+- `metaYmlPath` (String or Path): Path to the module's meta.yml file, typically `"${moduleDir}/meta.yml"`
 
 **Returns:**
 

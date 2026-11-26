@@ -49,7 +49,7 @@ workflow {
 
     // Citation metadata source: every module meta.yml under this pipeline.
     // files() returns an empty list when nothing matches the glob.
-    def meta_yml_paths = files("${projectDir}/modules/**/meta.yml").collect { it.toString() }
+    def meta_yml_paths = files("${projectDir}/modules/**/meta.yml")
 
     // Build citations from the tools that actually ran (the versions topic).
     // collect(flat: false) preserves each [process, tool, version] tuple.

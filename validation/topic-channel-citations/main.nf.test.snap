@@ -16,7 +16,7 @@
                 "Citation: [MULTIQC, multiqc, [description:MultiQC searches a given directory for analysis logs and compiles a HTML report., homepage:https://multiqc.info/, documentation:https://multiqc.info/docs/, tool_dev_url:https://github.com/ewels/MultiQC, doi:10.1093/bioinformatics/btw354, licence:GPL v3]]",
                 "AUTOMATIC CITATION RESULTS",
                 "Citation Text:",
-                "Tools used in the workflow included: samtools (DOI: 10.1093/bioinformatics/btp352), fastqc (DOI: 10.1093/bioinformatics/btw354), multiqc (DOI: 10.1093/bioinformatics/btw354).",
+                "Tools used in the workflow included: samtools (<a href='https://doi.org/10.1093/bioinformatics/btp352'>doi: 10.1093/bioinformatics/btp352</a>), fastqc (<a href='https://doi.org/10.1093/bioinformatics/btw354'>doi: 10.1093/bioinformatics/btw354</a>), multiqc (<a href='https://doi.org/10.1093/bioinformatics/btw354'>doi: 10.1093/bioinformatics/btw354</a>).",
                 "Bibliography:",
                 "<li>samtools. doi: <a href='https://doi.org/10.1093/bioinformatics/btp352'>10.1093/bioinformatics/btp352</a>.</li> <li>fastqc. doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li> <li>multiqc. doi: <a href='https://doi.org/10.1093/bioinformatics/btw354'>10.1093/bioinformatics/btw354</a>.</li>",
                 "\u2705 Auto-generated citations written to: [PATH]/tests/[NFT_HASH]/output/",
@@ -44,13 +44,13 @@
             ],
             [
                 "auto_bibliography.html:md5,abcb4df3944f959b1c1ba8909c8704a8",
-                "auto_citations.txt:md5,b6f87ba7390abff3a0bc0da48443ab7b"
+                "auto_citations.txt:md5,5ec3282496bef46ac6cec1101a84c1d6"
             ]
         ],
-        "timestamp": "2026-06-23T13:55:14.013985341",
+        "timestamp": "2026-11-19T10:29:15.585379966",
         "meta": {
             "nf-test": "0.9.5",
-            "nextflow": "26.04.4"
+            "nextflow": "26.10.2"
         }
     }
 }

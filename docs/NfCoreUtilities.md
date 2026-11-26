@@ -228,7 +228,7 @@ The lowest-friction option: derive citations from the tools that actually ran (t
 ```nextflow title="Citations on the fly"
 include { citationsOnTheFly; citationOutputs } from 'plugin/nf-core-utils'
 
-def meta_yml_paths = files("${projectDir}/modules/**/meta.yml").collect { it.toString() }
+def meta_yml_paths = files("${projectDir}/modules/**/meta.yml")
 
 ch_methods_description = channel.topic('versions')
     .toList()
