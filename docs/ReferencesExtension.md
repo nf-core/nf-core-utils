@@ -94,6 +94,11 @@ workflow {
 
 ### 1.3. Genome Key Check
 
+!!! warning "Beta"
+
+    This function is beta. Its arguments and output may change in a minor
+    release. See [ADR-0003](adr/0003-beta-functions.md).
+
 `genomeExistsError()` replaces the template's `genomeExistsError()` helper. It takes its values as named arguments, like `getReferencePath()`.
 
 ```groovy
@@ -153,6 +158,11 @@ It throws if `references` and `genome` are both set, or if it needs `datasheetPa
 
 > [!WARNING]
 > `getReferenceMetadata()` and `getReferenceAttribute()` are deprecated: use `getReferences()`, which resolves every reference param in one call and never falls back from a datasheet to the genome config. They will be removed once the igenomes config files are dropped.
+
+!!! warning "Beta"
+
+    `getReferences()` and `getReferenceNames()` are beta. Their arguments and
+    output may change in a minor release. See [ADR-0003](adr/0003-beta-functions.md).
 
 `getReferences()` resolves every param that `getReferenceNames()` lists for the datasheet schema, with the same `ignore`. For each name, `null` in `params` means unset, `false` turns that reference off, and any other value wins; the command-line text `'null'` and `'false'` read the same. Otherwise `rows` is the only source when given, and `genomes[genome]` when not: a datasheet never falls back to the genome config. Without `rows`, it aborts like `genomeExistsError()` when `genome` is not a key of `genomes`. List config-only params in the schema too, so the schema stays the one list of reference params. `getReferenceNames()` returns that list, skipping the `meta` names in `ignore` (default `['genome', 'id']`, which name the genome itself), so a pipeline can pass only its reference params, `params.subMap(getReferenceNames(schema: schema))`, to `getReferences()`.
 

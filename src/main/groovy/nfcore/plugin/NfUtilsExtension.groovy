@@ -78,10 +78,12 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * Abort the pipeline if genome is not a key of genomes.
      * Accepts named arguments (Groovy style).
+     * Beta (ADR-0003): its arguments may change in a minor release.
      * @param args Named arguments: genome, genomes. Passes when genome is unset or 'null', or genomes is empty
      */
     @Function
     void genomeExistsError(Map args) {
+        log.warn1("genomeExistsError() is beta: its arguments and output may change in a minor release")
         ReferenceDatasheet.genomeExistsError(args)
     }
 
@@ -112,22 +114,26 @@ class NfUtilsExtension extends PluginExtensionPoint {
     /**
      * List the reference param names in a references schema.
      * Accepts named arguments (Groovy style).
+     * Beta (ADR-0003): its arguments may change in a minor release.
      * @param args Named arguments: schema, ignore (default ['genome', 'id'])
      * @return Every `meta` name not in ignore
      */
     @Function
     List<String> getReferenceNames(Map args) {
+        log.warn1("getReferenceNames() is beta: its arguments and output may change in a minor release")
         return ReferenceDatasheet.getReferenceNames(args)
     }
 
     /**
      * Resolve the reference params named in a references schema.
      * Accepts named arguments (Groovy style).
+     * Beta (ADR-0003): its arguments may change in a minor release.
      * @param args Named arguments: schema, rows, params, genome, genomes, ignore
      * @return Map of reference param name to value: non-null param (false turns it off), else datasheet rows, else genomes config
      */
     @Function
     Map getReferences(Map args) {
+        log.warn1("getReferences() is beta: its arguments and output may change in a minor release")
         return ReferenceDatasheet.getReferences(args)
     }
 
