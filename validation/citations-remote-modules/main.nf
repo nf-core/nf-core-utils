@@ -19,10 +19,10 @@ workflow {
     if (params.run_multiqc) {
         MULTIQC(FASTQC.out.zip.map { meta, zip -> tuple(meta, [zip], [], [], [], []) })
         // Evidence only: do not inject this output into the versions topic.
-        MULTIQC.out.versions.view { "NON_TOPIC_VERSION: ${it}" }
+        MULTIQC.out.versions.view { version -> "NON_TOPIC_VERSION: ${version}" }
     }
 
-    def metadata = files("${projectDir}/modules/**/meta.yml").collect { it.toString() }.sort()
+    def metadata = files("${projectDir}/modules/**/meta.yml").collect { meta_yml -> meta_yml.toString() }.sort()
     log.info("DISCOVERED_METADATA: ${metadata}")
     channel.topic('versions')
         .collect(flat: false)
@@ -30,7 +30,7 @@ workflow {
             def citations = citationsOnTheFly(versions, metadata)
             def output = new File(params.outdir)
             output.mkdirs()
-            new File(output, 'versions.tsv').text = versions.collect { it.join('\t') }.sort().join('\n') + '\n'
+            new File(output, 'versions.tsv').text = versions.collect { version -> version.join('\t') }.sort().join('\n') + '\n'
             new File(output, 'metadata-paths.txt').text = metadata.join('\n') + '\n'
             new File(output, 'cited-tools.txt').text = citations.keySet().sort().join('\n') + '\n'
             new File(output, 'auto_citations.html').text = toolCitationText(citations)

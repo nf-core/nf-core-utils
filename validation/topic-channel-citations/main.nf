@@ -36,7 +36,7 @@ workflow {
     )
 
     // Create sample data
-    samples = Channel.of('sample1', 'sample2', 'sample3')
+    samples = channel.of('sample1', 'sample2', 'sample3')
 
     // Run processes - each automatically emits citations to topic channel
     fastqc_out = FASTQC(samples)

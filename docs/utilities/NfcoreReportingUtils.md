@@ -7,7 +7,7 @@ MultiQC is the cornerstone of nf-core pipeline reporting, and proper integration
 MultiQC transforms scattered log files and statistics into comprehensive, interactive HTML reports. However, it needs properly formatted input data to work effectively. The `NfcoreReportingUtils` utility bridges this gap by:
 
 - Converting pipeline parameters into MultiQC-compatible YAML format
-- Handling complex data structures for professional report presentation
+- Creating structured workflow summaries with metadata
 
 ### 1.1. Why Structured Reporting Matters
 
@@ -30,7 +30,7 @@ Generates a YAML-formatted string from a map of summary parameters for MultiQC w
 **Function Signature:**
 
 ```groovy
-static String paramsSummaryMultiqc(Map summaryParams)
+String paramsSummaryMultiqc(Map summaryParams)
 ```
 
 **Parameters:**
@@ -45,200 +45,57 @@ static String paramsSummaryMultiqc(Map summaryParams)
 
 ```nextflow
 include { paramsSummaryMultiqc } from 'plugin/nf-core-utils'
+include { FASTQC               } from './modules/nf-core/fastqc'
+include { MULTIQC              } from './modules/local/multiqc'
+
+params {
+    input: Path
+    outdir: Path
+    genome: String?
+}
 
 workflow {
-    // Organize parameters into logical groups
+    main:
+    ch_reads = channel.fromPath(params.input).map { fastq -> tuple([id: fastq.simpleName], fastq) }
+    FASTQC(ch_reads)
+
     def summary_params = [
         'Core Nextflow options': [
-            'revision': workflow.revision ?: 'N/A',
-            'runName': workflow.runName,
-            'containerEngine': workflow.containerEngine,
-            'profile': workflow.profile
+            revision: workflow.revision,
+            runName: workflow.runName,
+            profile: workflow.profile,
         ],
         'Input/output options': [
-            'input': params.input ?: 'N/A',
-            'outdir': params.outdir ?: 'N/A',
-            'publish_dir_mode': params.publish_dir_mode
+            input: params.input,
+            outdir: params.outdir,
         ],
         'Reference genome options': [
-            'genome': params.genome ?: 'None',
-            'fasta': params.fasta ?: 'N/A'
-        ]
+            genome: params.genome,
+        ],
     ]
+    ch_workflow_summary = channel.value(paramsSummaryMultiqc(summary_params))
+        .collectFile(name: 'workflow_summary_mqc.yaml')
 
-    // Generate MultiQC-compatible YAML
-    def yaml_content = paramsSummaryMultiqc(summary_params)
-
-    // Write to file for MultiQC consumption
-    file("${params.outdir}/pipeline_info/workflow_summary_mqc.yaml").text = yaml_content
+    MULTIQC(ch_workflow_summary.mix(FASTQC.out.zip.map { _meta, zip -> zip }).collect())
 }
 ```
 
-**MultiQC Integration Pattern:**
-
-```nextflow
-process MULTIQC {
-    input:
-    path('*')
-
-    output:
-    path("multiqc_report.html"), emit: report
-
-    script:
-    // Include workflow summary in MultiQC
-    def summary = [
-        'Pipeline': workflow.manifest.name,
-        'Version': workflow.manifest.version,
-        'Run Name': workflow.runName
-    ]
-    def yaml = paramsSummaryMultiqc(['Workflow Summary': summary])
-    """
-    echo '$yaml' > workflow_summary_mqc.yaml
-    multiqc -f .
-    """
-}
-```
+Each group must map to a Map of parameters: groups render as separate blocks in the MultiQC summary, empty groups are skipped, and null or empty values render as `N/A`.
 
 ---
 
-## MultiQC Integration Best Practices
+### `workflowSummaryMQC()` and `sectionLogs()`
 
-### 1. Parameter Organization
-
-Structure parameters logically for better MultiQC display:
-
-```nextflow
-// GOOD - Grouped structure
-def summary_params = [
-    'Core Nextflow options': [
-        'runName': workflow.runName,
-        'profile': workflow.profile,
-        'revision': workflow.revision
-    ],
-    'Input/output options': [
-        'input': params.input,
-        'outdir': params.outdir
-    ],
-    'Analysis parameters': [
-        'genome': params.genome,
-        'aligner': params.aligner
-    ]
-]
-
-// AVOID - Flat structure
-def summary_params = [
-    runName: workflow.runName,
-    input: params.input,
-    genome: params.genome
-]
-```
-
-### 2. Null Value Handling
-
-Always provide fallback values for potentially null parameters:
-
-```nextflow
-def summary_params = [
-    'Core Options': [
-        'revision': workflow.revision ?: 'N/A',
-        'runName': workflow.runName ?: 'Unknown',
-        'profile': workflow.profile ?: 'default'
-    ]
-]
-```
-
-### 3. MultiQC File Integration
-
-Integrate reporting utilities with MultiQC processes:
-
-```nextflow
-process MULTIQC {
-    input:
-    path('*')
-
-    output:
-    path("multiqc_report.html"), emit: report
-
-    script:
-    def summary = ['Pipeline': workflow.manifest.name]
-    def workflow_yaml = paramsSummaryMultiqc(['Workflow': summary])
-    """
-    echo '$workflow_yaml' > workflow_summary_mqc.yaml
-    multiqc -f .
-    """
-}
-```
-
----
-
-## Testing Strategies
-
-### Unit Testing
+Static Groovy helpers in `NfcoreReportingUtils`. They are not `@Function`s, so pipelines cannot `include` them.
 
 ```groovy
-test("Parameter summary YAML generation") {
-    when {
-        def params = [
-            'Core Options': [
-                'runName': 'test_run',
-                'profile': 'docker'
-            ]
-        ]
-        def yaml = paramsSummaryMultiqc(params)
-    }
-
-    then {
-        assert yaml.contains('Core Options:')
-        assert yaml.contains('runName: test_run')
-        assert yaml.contains('profile: docker')
-    }
-}
+static Map workflowSummaryMQC(Map summary, List nfMetadataList, Map results)
+static Map sectionLogs(Map sections, boolean monochrome = false)
 ```
 
----
+- `workflowSummaryMQC` returns a Markdown summary of `summary`, the session properties named in `nfMetadataList` and `results`, under the keys `workflow_summary_txt` and `workflow_summary_html` (the same text wrapped in `<pre>`).
+- `sectionLogs` returns a Map of section name to its content, with every line prefixed by `-[section name]-` (purple unless `monochrome`).
 
-## Common Issues and Solutions
-
-### Issue: YAML Formatting Problems
-
-**Problem:**
-Generated YAML has formatting issues for MultiQC
-
-**Solution:**
-
-```nextflow
-// Ensure proper parameter structure
-def params = [
-    'Group Name': [  // Use quoted keys for complex names
-        'param1': value1?.toString() ?: 'N/A',  // Handle null values
-        'param2': value2?.toString() ?: 'Unknown'
-    ]
-]
-
-def yaml = paramsSummaryMultiqc(params)
-```
-
----
-
-## Performance Considerations
-
-### Efficient Parameter Processing
-
-```nextflow
-// Optimize large parameter sets
-workflow LARGE_PARAM_PROCESSING {
-    // Process parameters in chunks for very large pipelines
-    def param_chunks = large_params.collate(100)
-
-    def yaml_sections = []
-    param_chunks.eachWithIndex { chunk, index ->
-        def chunk_yaml = paramsSummaryMultiqc(["Section_${index}": chunk])
-        yaml_sections.add(chunk_yaml)
-    }
-
-    // Combine sections
-    def final_yaml = yaml_sections.join('\n---\n')
-}
-```
+Unit tests: `src/test/groovy/nfcore/plugin/nfcore/NfcoreReportingUtilsTest.groovy`.
 
 For more information on MultiQC integration and pipeline reporting, see the [MultiQC documentation](https://multiqc.info/) and [nf-core reporting guidelines](https://nf-co.re/docs/developing/components/automated-methods-text).
