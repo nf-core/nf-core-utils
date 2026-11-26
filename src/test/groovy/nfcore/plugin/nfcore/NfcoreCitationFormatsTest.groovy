@@ -1,6 +1,7 @@
 package nfcore.plugin.nfcore
 
 import groovy.json.JsonSlurper
+import spock.lang.Issue
 import spock.lang.Specification
 import spock.lang.TempDir
 
@@ -45,9 +46,9 @@ class NfcoreCitationFormatsTest extends Specification {
         def citations = [gfatools: entry]
 
         expect:
-        entry.citation == 'gfatools'
+        entry.info == [homepage: 'https://github.com/lh3/gfatools']
+        entry.citation == "gfatools (<a href='https://github.com/lh3/gfatools'>https://github.com/lh3/gfatools</a>)"
         entry.bibliography == "<li>gfatools. <a href='https://github.com/lh3/gfatools'>https://github.com/lh3/gfatools</a>.</li>"
-        NfcoreCitationUtils.formatShortCitation('gfatools', info, '0.5') == "gfatools (0.5, <a href='https://github.com/lh3/gfatools'>https://github.com/lh3/gfatools</a>)"
         !NfcoreCitationFormats.bibtex(citations).contains('doi')
         !NfcoreCitationFormats.cslJson(citations).contains('DOI')
     }
@@ -100,5 +101,43 @@ class NfcoreCitationFormatsTest extends Specification {
 }
 '''
         }
+    }
+
+    @Issue("https://github.com/nf-core/nf-core-utils/pull/51")
+    def "shortCitation distinguishes single and multiple authors: #author"() {
+        expect:
+        shortCitation([publication: [author: author, year: 2021]], '1.21') == "tool (1.21, ${reference} (2021))"
+        shortCitation([author: author, year: 2021], '1.21') == "tool (1.21, ${reference} (2021))"
+
+        where:
+        author                                       | reference
+        'Andrews S'                                  | 'Andrews'
+        'Andrews, S.'                                | 'Andrews'
+        'van der Walt, S.'                           | 'van der Walt'
+        'Smith-Jones, A. B.'                         | 'Smith-Jones'
+        'Einstein, A., Feynman, R. P. & Hawking, S.' | 'Einstein <em>et al.</em>'
+        'Smith, J. & Jones, B.'                      | 'Smith <em>et al.</em>'
+        'Smith, J., Jones, B.'                       | 'Smith <em>et al.</em>'
+        'Danecek P, Bonfield JK, et al.'             | 'Danecek <em>et al.</em>'
+        'Smith J & Jones B'                          | 'Smith <em>et al.</em>'
+        'Smith J and Jones B'                        | 'Smith <em>et al.</em>'
+        'Li H et al.'                                | 'Li <em>et al.</em>'
+    }
+
+    def "shortCitation falls back to doi, then url, then description"() {
+        expect:
+        shortCitation([doi: '10.1093/bioinformatics/btw354'], '1.21') == "tool (1.21, <a href='https://doi.org/10.1093/bioinformatics/btw354'>doi: 10.1093/bioinformatics/btw354</a>)"
+        shortCitation([homepage: 'https://github.com/lh3/seqtk'], '1.4') == "tool (1.4, <a href='https://github.com/lh3/seqtk'>https://github.com/lh3/seqtk</a>)"
+        shortCitation([description: 'A tool']) == 'tool (A tool)'
+        shortCitation([:]) == 'tool'
+    }
+
+    def "shortCitation omits the version segment when no version is known"() {
+        expect:
+        shortCitation([publication: [author: 'Andrews S', year: 2010]]) == 'tool (Andrews (2010))'
+    }
+
+    private static String shortCitation(Map info, String version = null) {
+        NfcoreCitationFormats.shortCitation(NfcoreCitationFormats.referenceOf('tool', info, version))
     }
 }
